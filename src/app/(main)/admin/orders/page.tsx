@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { BostaManualShipmentDialog } from './_components/bosta-manual-shipment-dialog';
-import { ShipmentDetailsDrawer } from './_components/shipment-details-drawer';
+import { ShipmentDetailsDrawer } from '@/components/shared/shipment-details-drawer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
