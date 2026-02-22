@@ -1,0 +1,22 @@
+
+export const productCategories = [
+  { id: 'electrical-appliances', name: 'أدوات كهربائية', imageUrl: 'https://picsum.photos/seed/electrical-appliances/200', dataAiHint: 'electrical appliances' },
+  { id: 'hand-tools', name: 'أدوات يدوية', imageUrl: 'https://picsum.photos/seed/hand-tools/200', dataAiHint: 'hand tools' },
+  { id: 'decor', name: 'ديكور', imageUrl: 'https://picsum.photos/seed/decor/200', dataAiHint: 'home decor' },
+  { id: 'small-appliances', name: 'الأجهزة الصغيرة', imageUrl: 'https://picsum.photos/seed/small-appliances/200', dataAiHint: 'small appliances' },
+  { id: 'textiles', name: 'منسوجات', imageUrl: 'https://picsum.photos/seed/textiles/200', dataAiHint: 'textiles' },
+  { id: 'smart-phone', name: 'هواتف ذكية', imageUrl: 'https://picsum.photos/seed/smart-phone/200', dataAiHint: 'smart phone' },
+  { id: 'furniture', name: 'أثاث', imageUrl: 'https://picsum.photos/seed/furniture/200', dataAiHint: 'elegant furniture' },
+  { id: 'shaving-machines', name: 'ماكينات حلاقة', imageUrl: 'https://picsum.photos/seed/shaving/200', dataAiHint: 'shaving machines' },
+  { id: 'kitchen-tools', name: 'أدوات المطبخ', imageUrl: 'https://picsum.photos/seed/kitchen-tools/200', dataAiHint: 'kitchen tools' },
+  { id: 'camping', name: 'تخييم', imageUrl: 'https://picsum.photos/seed/camping/200', dataAiHint: 'camping gear' },
+  { id: 'kids-accessories', name: 'أكسسوارات أطفال', imageUrl: 'https://picsum.photos/seed/kids-accessories/200', dataAiHint: 'kids accessories' },
+  { id: 'toys-games', name: 'ألعاب', imageUrl: 'https://picsum.photos/seed/toys-games/200', dataAiHint: 'toys games' },
+  { id: 'mobile-accessories', name: 'اكسسوارات الموبايل', imageUrl: 'https://picsum.photos/seed/mobile-accessories/200', dataAiHint: 'mobile accessories' },
+  { id: 'garden-essentials', name: 'مستلزمات الحدائق', imageUrl: 'https://picsum.photos/seed/garden-essentials/200', dataAiHint: 'garden essentials' },
+  { id: 'gifts', name: 'هدايا', imageUrl: 'https://picsum.photos/seed/gifts/200', dataAiHint: 'gifts' },
+  { id: 'kitchen-accessories', name: 'اكسسوارات المطبخ', imageUrl: 'https://picsum.photos/seed/kitchen-accessories/200', dataAiHint: 'kitchen accessories' },
+  { id: 'home-heating', name: 'سخانات', imageUrl: 'https://picsum.photos/seed/home-heating/200', dataAiHint: 'home heating' },
+  { id: 'cleaning-essentials', name: 'منتجات التنظيف', imageUrl: 'https://picsum.photos/seed/cleaning-essentials/200', dataAiHint: 'cleaning essentials' },
+  { id: 'beauty-health', name: 'صحة وجمال', imageUrl: 'https://picsum.photos/seed/beauty-health/200', dataAiHint: 'beauty health' },
+];

@@ -1,0 +1,1628 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system, which can be a Dropshipper or an Admin, with their authentication and role information. Passwords are not stored in this entity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user, used for login.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user, defining their permissions and access levels. Can be Dropshipper or an Admin-level role.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the user."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the user account is currently active. Deactivated users cannot log in."
+        },
+        "initialPasswordChangeRequired": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is required to change their password upon first login (e.g., for default Admin account)."
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Timestamp of the user's last successful login.",
+          "format": "date-time"
+        },
+        "paymentDetails": {
+          "type": "object",
+          "description": "Stores the user's payment information for withdrawals.",
+          "properties": {
+            "vodafoneCash": {
+              "type": "string",
+              "description": "Vodafone Cash number."
+            },
+            "instaPay": {
+              "type": "string",
+              "description": "InstaPay handle."
+            },
+            "bankAccount": {
+              "type": "string",
+              "description": "Bank account details (IBAN, bank name, etc.)."
+            },
+            "telda": {
+              "type": "string",
+              "description": "Telda account identifier."
+            }
+          }
+        },
+        "monthlySalesTarget": {
+          "type": "number",
+          "description": "The individual monthly sales target for the dropshipper, set by the Admin."
+        },
+        "monthlyReward": {
+          "type": "number",
+          "description": "The reward amount for achieving the individual monthly sales target."
+        },
+        "lastSeen": {
+          "type": "string",
+          "description": "Timestamp of the user's last activity, for presence tracking.",
+          "format": "date-time"
+        },
+        "shiftStatus": {
+          "type": "string",
+          "description": "Indicates if the staff member is currently on or off shift.",
+          "enum": [
+            "on",
+            "off"
+          ]
+        },
+        "activeShiftId": {
+          "type": "string",
+          "description": "The ID of the currently active work session document, if any."
+        },
+        "activeShiftStartTime": {
+          "type": "string",
+          "description": "The start time of the currently active shift.",
+          "format": "date-time"
+        },
+        "canTrackShift": {
+            "type": "boolean",
+            "description": "Flag indicating if a dropshipper is allowed to use the shift tracking feature (for salaried dropshippers)."
+        },
+        "referrerId": {
+            "type": "string",
+            "description": "The ID of the user who referred this user."
+        },
+        "referralCode": {
+            "type": "string",
+            "description": "The unique referral code for this user to share."
+        },
+        "level": {
+            "type": "string",
+            "description": "The gamification level of the marketer.",
+            "enum": [
+                "Beginner Marketer",
+                "Professional Marketer",
+                "Gold Partner",
+                "Platinum Partner"
+            ]
+        },
+        "referredUsersCount": {
+            "type": "number",
+            "description": "The number of users this marketer has successfully referred."
+        },
+        "staffDetails": {
+          "type": "object",
+          "description": "Stores monthly goals and progress for staff members.",
+          "properties": {
+            "monthlyTask": {
+              "type": "string",
+              "description": "A description of the monthly task or goal for the staff member."
+            },
+            "taskProgress": {
+              "type": "number",
+              "description": "The progress of the task, from 0 to 100."
+            },
+            "taskReward": {
+              "type": "number",
+              "description": "The reward amount for completing the task."
+            }
+          }
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "createdAt",
+        "updatedAt",
+        "isActive",
+        "initialPasswordChangeRequired"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product available for dropshipping within the platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the product."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "The selling price of the product."
+        },
+        "commission": {
+          "type": "number",
+          "description": "The commission for the dropshipper on selling this product."
+        },
+        "stockQuantity": {
+          "type": "number",
+          "description": "Current quantity of the product in stock."
+        },
+        "isAvailable": {
+          "type": "boolean",
+          "description": "Indicates if the product is currently available for dropshippers to sell."
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "URL to a video of the product.",
+          "format": "uri"
+        },
+        "imageUrls": {
+          "type": "array",
+          "description": "URLs to images of the product.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "purchaseUrl": {
+          "type": "string",
+          "description": "URL to the product's purchase page for the admin or merchant.",
+          "format": "uri"
+        },
+        "merchantInfo": {
+          "type": "object",
+          "description": "Contact information for the external merchant who owns this product.",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "whatsapp": { "type": "string" }
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the product was added to the system.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the product information was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "commission",
+        "stockQuantity",
+        "isAvailable",
+        "imageUrls",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProductCategory": {
+      "title": "Product Category",
+      "type": "object",
+      "description": "Represents a category for products.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "dataAiHint": { "type": "string" },
+        "isAvailable": { "type": "boolean", "description": "Controls category visibility in the store." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "imageUrl"]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents a customer order placed by a Dropshipper.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Order entity."
+        },
+        "dropshipperId": {
+          "type": "string",
+          "description": "Reference to the User (Dropshipper role) who placed this order."
+        },
+        "dropshipperName": {
+            "type": "string",
+            "description": "Denormalized name of the dropshipper for display in admin panels."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Full name of the end customer."
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Phone number of the end customer."
+        },
+        "customerAddress": {
+          "type": "string",
+          "description": "Street address of the end customer for delivery."
+        },
+        "customerCity": {
+          "type": "string",
+          "description": "City or governorate of the end customer for delivery."
+        },
+        "customerPaymentMethod": {
+          "type": "string",
+          "description": "The payment method selected by the end customer, e.g., Cash on Delivery.",
+          "enum": [
+            "Cash on Delivery",
+            "Vodafone Cash",
+            "InstaPay",
+            "Telda",
+            "Bank Transfer"
+          ]
+        },
+        "customerNotes": {
+          "type": "string",
+          "description": "Additional notes provided by the dropshipper or customer."
+        },
+        "customerPaymentStatus": {
+          "type": "string",
+          "description": "The verification status of the customer's direct payment.",
+          "enum": ["Pending", "Verified", "Rejected"]
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total calculated amount for the order, including all items."
+        },
+        "totalCommission": {
+          "type": "number",
+          "description": "Total commission for the dropshipper for this order."
+        },
+        "platformFee": {
+          "type": "number",
+          "description": "The platform's fee (e.g., 10%) calculated on the product price for this order."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the order."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the order was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the order status or details were last updated.",
+          "format": "date-time"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Denormalized product ID."
+        },
+        "productName": {
+          "type": "string",
+          "description": "Denormalized product name."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product ordered."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit price of the product at time of order."
+        },
+        "unitCommission": {
+          "type": "number",
+          "description": "Unit commission for the dropshipper at time of order."
+        },
+        "confirmedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the order was confirmed and stock was deducted." },
+        "confirmedBy": { "type": "object", "properties": { "userId": { "type": "string" }, "role": { "type": "string" } }, "description": "The admin/manager who confirmed the order." },
+        "stockApplied": { "type": "boolean", "description": "Flag indicating if stock deduction has been successfully applied for this order." },
+        "stockAppliedAt": { "type": "string", "format": "date-time", "description": "Timestamp for when stock was applied." },
+        "stockRestored": { "type": "boolean", "description": "Flag indicating if stock has been restored for a cancelled/returned order." },
+        "stockError": { "type": "object", "description": "Stores details if a stock deduction failed.", "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "item": { "type": "object", "properties": { "productId": { "type": "string" }, "needed": { "type": "number" }, "available": { "type": "number" } } } } },
+        "merchantInfo": {
+          "type": "object",
+          "description": "Denormalized contact info for the external merchant if the product is externally sourced.",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "whatsapp": { "type": "string" }
+          }
+        }
+      },
+      "required": [
+        "id",
+        "dropshipperId",
+        "customerName",
+        "customerPhone",
+        "customerAddress",
+        "customerCity",
+        "customerPaymentMethod",
+        "totalAmount",
+        "platformFee",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "productId",
+        "quantity",
+        "unitPrice",
+        "totalCommission",
+        "unitCommission"
+      ]
+    },
+    "Shipment": {
+      "title": "Shipment",
+      "type": "object",
+      "description": "Represents a shipping record connected to an order, managed via a carrier like Bosta.",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "dropshipperId": { "type": "string" },
+        "carrier": { "type": "string", "enum": ["Bosta"] },
+        "bostaTrackingNumber": { "type": "string" },
+        "bostaShipmentId": { "type": "string" },
+        "status": { "type": "string", "enum": ["CREATED", "PICKUP_SCHEDULED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED", "RETURNED", "CANCELED"] },
+        "fees": {
+          "type": "object",
+          "properties": {
+            "shipping": { "type": "number" },
+            "cod": { "type": "number" },
+            "total": { "type": "number" }
+          }
+        },
+        "codAmount": { "type": "number" },
+        "labelUrl": { "type": "string", "format": "uri" },
+        "pickupDate": { "type": "string", "format": "date-time" },
+        "expectedDeliveryDate": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "orderId", "carrier", "status", "createdAt", "updatedAt", "createdBy"]
+    },
+    "ShipmentEvent": {
+      "title": "Shipment Event",
+      "type": "object",
+      "description": "A single event in the timeline of a shipment's tracking history.",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" },
+        "description": { "type": "string" },
+        "rawPayload": { "type": "string", "description": "JSON string of the raw webhook payload for this event." }
+      },
+      "required": ["id", "timestamp", "status", "description"]
+    },
+    "StockLedger": {
+        "title": "Stock Ledger",
+        "type": "object",
+        "description": "Records all changes to product stock levels for auditing purposes.",
+        "properties": {
+            "id": { "type": "string" },
+            "productId": { "type": "string" },
+            "orderId": { "type": "string" },
+            "changeQty": { "type": "number", "description": "Negative for deduction, positive for restore." },
+            "type": { "type": "string", "enum": ["DEDUCT", "RESTORE", "MANUAL_ADJUST"] },
+            "reason": { "type": "string", "enum": ["ORDER_CONFIRMED", "ORDER_CANCELLED", "ORDER_RETURNED", "MANUAL_CORRECTION"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "actor": { "type": "object", "properties": { "userId": { "type": "string" }, "role": { "type": "string" } } }
+        },
+        "required": ["id", "productId", "changeQty", "type", "reason", "createdAt", "actor"]
+    },
+    "OrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OrderItem",
+      "type": "object",
+      "description": "Represents a single product item included in an Order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OrderItem entity."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to the parent Order. (Relationship: Order 1:N OrderItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to the Product included in this order item. (Relationship: Product 1:N OrderItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the product ordered."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "The price of the product unit at the time the order was placed."
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "The subtotal amount for this order item (quantity * unitPrice)."
+        }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "productId",
+        "quantity",
+        "unitPrice",
+        "subtotal"
+      ]
+    },
+    "PaymentMethod": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PaymentMethod",
+      "type": "object",
+      "description": "Configurable payment methods available in the system (e.g., Vodafone Cash, InstaPay).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PaymentMethod entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "User-friendly name of the payment method (e.g., 'Vodafone Cash')."
+        },
+        "identifier": {
+          "type": "string",
+          "description": "The payment identifier or account number (e.g., phone number, wallet ID) for this method."
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Instructions on how users can make a payment using this method."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the payment method is currently active and available for use."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the payment method was added to the system.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the payment method details were last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "identifier",
+        "instructions",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Payment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Payment",
+      "type": "object",
+      "description": "Represents a payment transaction made by a Dropshipper for a specific Order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Payment entity."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to the Order associated with this payment."
+        },
+        "dropshipperId": {
+          "type": "string",
+          "description": "Reference to the User (Dropshipper role) who made this payment."
+        },
+        "dropshipperName": {
+          "type": "string",
+          "description": "Denormalized name of the dropshipper who made this payment."
+        },
+        "paymentMethodId": {
+          "type": "string",
+          "description": "Reference to the PaymentMethod used for this payment."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount paid in this transaction."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the payment.",
+          "enum": [
+            "Pending",
+            "Verified",
+            "Rejected"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the payment record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the payment status or details were last updated.",
+          "format": "date-time"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Notes added by an Admin regarding the payment review process."
+        },
+        "senderPhoneNumber": {
+          "type": "string",
+          "description": "The phone number of the account that sent the payment."
+        },
+        "referenceNumber": {
+          "type": "string",
+          "description": "Optional reference number for the transaction provided by the user."
+        }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "dropshipperId",
+        "dropshipperName",
+        "paymentMethodId",
+        "amount",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WithdrawalRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WithdrawalRequest",
+      "type": "object",
+      "description": "Represents a request from a user (Dropshipper) to withdraw their earnings.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WithdrawalRequest."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user making the request."
+        },
+        "userName": {
+          "type": "string",
+          "description": "Denormalized name of the user for easy display in admin panels."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount requested for withdrawal."
+        },
+        "method": {
+          "type": "string",
+          "description": "The payment method for the withdrawal.",
+          "enum": [
+            "Vodafone Cash",
+            "InstaPay",
+            "Bank Transfer",
+            "Telda"
+          ]
+        },
+        "paymentIdentifier": {
+          "type": "string",
+          "description": "The specific account identifier for the chosen withdrawal method (e.g., phone number, IBAN)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the withdrawal request.",
+          "enum": [
+            "Pending",
+            "Completed",
+            "Rejected"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the request was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the request was last updated.",
+          "format": "date-time"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Optional notes from the admin who processed the request."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "userName",
+        "amount",
+        "method",
+        "paymentIdentifier",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Bonus": {
+        "title": "Bonus",
+        "type": "object",
+        "description": "Represents a manual bonus or deduction applied to a user's account by an admin.",
+        "properties": {
+            "id": { "type": "string" },
+            "userId": { "type": "string" },
+            "amount": { "type": "number", "description": "The bonus amount. Can be negative for deductions." },
+            "reason": { "type": "string", "description": "Reason for the bonus/deduction, e.g., 'Monthly Target Reward'." },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "adminId": { "type": "string", "description": "The ID of the admin who granted the bonus." },
+            "adminName": { "type": "string", "description": "The name of the admin who granted the bonus." }
+        },
+        "required": ["id", "userId", "amount", "reason", "createdAt", "adminId"]
+    },
+    "SystemSetting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SystemSetting",
+      "type": "object",
+      "description": "Represents a global configuration setting for the entire system, managed by Admins.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SystemSetting entity."
+        },
+        "settingKey": {
+          "type": "string",
+          "description": "A unique key identifying the specific system setting (e.g., 'defaultCurrency', 'googleDriveRootFolderId')."
+        },
+        "settingValue": {
+          "type": "string",
+          "description": "The value associated with the system setting."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what this system setting controls."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the system setting was last updated.",
+          "format": "date-time"
+        },
+        "updatedByUserId": {
+          "type": "string",
+          "description": "Reference to the User (Admin role) who last updated this setting. (Relationship: User 1:N SystemSetting)"
+        }
+      },
+      "required": [
+        "id",
+        "settingKey",
+        "settingValue",
+        "description",
+        "updatedAt"
+      ]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Records sensitive operations and changes within the system for security and compliance.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AuditLog entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who performed the action. (Relationship: User 1:N AuditLog)"
+        },
+        "action": {
+          "type": "string",
+          "description": "A description of the action performed (e.g., 'Product created', 'Order status updated')."
+        },
+        "entityType": {
+          "type": "string",
+          "description": "The type of entity affected by the action (e.g., 'User', 'Product', 'Order')."
+        },
+        "entityId": {
+          "type": "string",
+          "description": "The unique identifier of the entity affected by the action."
+        },
+        "oldValue": {
+          "type": "string",
+          "description": "JSON string representing the state of the entity BEFORE the action, if applicable."
+        },
+        "newValue": {
+          "type": "string",
+          "description": "JSON string representing the state of the entity AFTER the action, if applicable."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the audit log entry was recorded.",
+          "format": "date-time"
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address from which the action was initiated."
+        },
+        "googleDriveFileId": {
+          "type": "string",
+          "description": "Google Drive File ID for the backup of this audit log entry."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "action",
+        "entityType",
+        "createdAt"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a generated analytical report, which can be exported and stored.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Report entity."
+        },
+        "dropshipperId": {
+          "type": "string",
+          "description": "Reference to the User (Dropshipper role) for whom this report was generated, if applicable. (Relationship: User 1:N Report)"
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to the User (Admin role) who generated this report, if applicable. (Relationship: User 1:N Report)"
+        },
+        "reportType": {
+          "type": "string",
+          "description": "The type or category of the report (e.g., 'Sales Summary', 'Profit Report', 'Dropshipper Performance')."
+        },
+        "parameters": {
+          "type": "string",
+          "description": "JSON string of parameters or filters used to generate the report (e.g., date range, specific product IDs)."
+        },
+        "filePath": {
+          "type": "string",
+          "description": "URL or identifier for the generated report file in storage (e.g., Google Drive).",
+          "format": "uri"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The file format of the generated report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the report was generated.",
+          "format": "date-time"
+        },
+        "googleDriveFileId": {
+          "type": "string",
+          "description": "Google Drive File ID for the backup of this report file."
+        }
+      },
+      "required": [
+        "id",
+        "reportType",
+        "filePath",
+        "fileType",
+        "generatedAt"
+      ]
+    },
+    "Conversation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Conversation",
+      "type": "object",
+      "description": "Represents a chat conversation between two or more users.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "participantIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "participantDetails": {
+          "type": "object",
+          "description": "Denormalized user details, mapping userId to an object with name and role.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "role"
+            ]
+          }
+        },
+        "lastMessageText": {
+          "type": "string"
+        },
+        "lastMessageTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastMessageSenderId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "participantIds",
+        "participantDetails",
+        "lastMessageTimestamp",
+        "createdAt"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a single message within a conversation.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "conversationId": {
+          "type": "string"
+        },
+        "senderId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "conversationId",
+        "senderId",
+        "text",
+        "createdAt"
+      ]
+    },
+    "WorkSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WorkSession",
+      "type": "object",
+      "description": "Represents a single work session for a staff member, tracking their clock-in and clock-out times.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the work session."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user this session belongs to."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp when the work session started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp when the work session ended.",
+          "format": "date-time"
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The total duration of the work session in minutes, calculated upon ending the shift."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startTime"
+      ]
+    },
+    "ProductClick": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductClick",
+      "type": "object",
+      "description": "Represents a single click on a product link.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "productId": {
+          "type": "string"
+        },
+        "dropshipperId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "productId",
+        "dropshipperId",
+        "createdAt"
+      ]
+    },
+    "PublicSettings": {
+      "title": "Public Settings",
+      "type": "object",
+      "description": "A single document holding all public-facing system settings.",
+      "properties": {
+        "payment_vodafone_cash_number": { "type": "string", "description": "Vodafone cash number for payments" },
+        "payment_vodafone_cash_enabled": { "type": "boolean" },
+        "payment_instapay_handle": { "type": "string" },
+        "payment_instapay_enabled": { "type": "boolean" },
+        "payment_bank_transfer_details": { "type": "string" },
+        "payment_bank_transfer_enabled": { "type": "boolean" },
+        "payment_telda_handle": { "type": "string" },
+        "payment_telda_enabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "MerchantInquiry": {
+      "title": "Merchant Inquiry",
+      "type": "object",
+      "description": "Represents an inquiry from a potential merchant wanting to sell their products.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "New",
+            "Contacted",
+            "Closed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "phone",
+        "message",
+        "status",
+        "createdAt"
+      ]
+    },
+    "ReferredCustomer": {
+      "title": "Referred Customer",
+      "type": "object",
+      "description": "Represents a customer who came through a marketer referral link.",
+      "properties": {
+        "id": { "type": "string" },
+        "referralMarketerId": { "type": "string" },
+        "contactId": { "type": "string", "description": "Customer's unique ID, e.g., phone number or PSID." },
+        "channel": { "type": "string", "enum": ["whatsapp", "messenger", "instagram", "web"] },
+        "segment": { "type": "string", "description": "e.g., electronics_interest" },
+        "consentStatus": { "type": "string", "enum": ["granted", "denied", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastInteractionAt": { "type": "string", "format": "date-time" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "referralMarketerId", "contactId", "channel", "createdAt"]
+    },
+    "MarketingCampaign": {
+        "title": "Marketing Campaign",
+        "type": "object",
+        "description": "Represents an automated messaging campaign.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "targetSegment": { "type": "string" },
+            "channel": { "type": "string", "enum": ["whatsapp", "messenger", "instagram"] },
+            "messageTemplate": { "type": "string" },
+            "status": { "type": "string", "enum": ["draft", "active", "paused", "completed"] },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "targetSegment", "channel", "messageTemplate", "status"]
+    },
+    "AutomationSettings": {
+      "title": "Automation Settings",
+      "type": "object",
+      "description": "A single document holding all marketing automation settings.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "antiSpam": {
+          "type": "object",
+          "properties": {
+            "maxPerDayPerUser": { "type": "number" },
+            "minMinutesBetweenMessages": { "type": "number" }
+          }
+        },
+        "triggers": {
+          "type": "object",
+          "properties": {
+            "inquiryFollowUp": { "type": "boolean" },
+            "abandonedCheckout": { "type": "boolean" },
+            "orderConfirmation": { "type": "boolean" },
+            "shippingUpdates": { "type": "boolean" },
+            "promoByCategory": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. The `userId` in the path must match `request.auth.uid` for a user to access their own data. The `role` field exists in the document for display/application logic, but security rules must use the various roles collections for actual privilege checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, typically matching Firebase Authentication's UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/productCategories/{categoryId}",
+        "definition": {
+          "entityName": "ProductCategory",
+          "schema": {
+            "$ref": "#/backend/entities/ProductCategory"
+          },
+          "description": "Globally available product categories. Admins and Product Managers have write access. All signed-in users have read access.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for a product category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "This collection's document existence grants Admin rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID assigned the 'Admin' role."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/roles_product_manager/{userId}",
+        "definition": {
+          "entityName": "ProductManagerRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Grants Product Manager rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID assigned the 'Product Manager' role."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/roles_orders_manager/{userId}",
+        "definition": {
+          "entityName": "OrdersManagerRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Grants Orders Manager rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID assigned the 'Orders Manager' role."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/roles_finance_manager/{userId}",
+        "definition": {
+          "entityName": "FinanceManagerRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Grants Finance Manager rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID assigned the 'Finance Manager' role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Globally available products. Admins and Product Managers have write access. Dropshippers have read access.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for a product."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/stockLedger/{ledgerId}",
+        "definition": {
+          "entityName": "StockLedger",
+          "schema": {
+            "$ref": "#/backend/entities/StockLedger"
+          },
+          "description": "Audit trail for all stock movements. Writes should be performed via transactions by authorized staff.",
+          "params": [
+            {
+              "name": "ledgerId",
+              "description": "The unique identifier for a stock ledger entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{dropshipperId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "The primary order document, stored under the dropshipper's user record for their access.",
+          "params": [
+            {
+              "name": "dropshipperId",
+              "description": "The unique identifier of the dropshipper who owns this order."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique identifier for the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{dropshipperId}/orders/{orderId}/orderItems/{orderItemId}",
+        "definition": {
+          "entityName": "OrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/OrderItem"
+          },
+          "description": "Individual items within a specific order. The `dropshipperId` and `orderId` in the path ensure direct ownership and hierarchical context. `dropshipperId` and `orderId` should be explicitly denormalized within each `OrderItem` document for authorization independence.",
+          "params": [
+            {
+              "name": "dropshipperId",
+              "description": "The unique identifier of the dropshipper who owns the parent order."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique identifier for the parent order."
+            },
+            {
+              "name": "orderItemId",
+              "description": "The unique identifier for the specific item within the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/paymentMethods/{paymentMethodId}",
+        "definition": {
+          "entityName": "PaymentMethod",
+          "schema": {
+            "$ref": "#/backend/entities/PaymentMethod"
+          },
+          "description": "Globally configured payment methods. Dropshippers can read active payment methods, while Admins have full CRUD access to manage them.",
+          "params": [
+            {
+              "name": "paymentMethodId",
+              "description": "The unique identifier for a payment method."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{dropshipperId}/payments/{paymentId}",
+        "definition": {
+          "entityName": "Payment",
+          "schema": {
+            "$ref": "#/backend/entities/Payment"
+          },
+          "description": "Payment transactions made by a specific dropshipper. The `dropshipperId` in the path ensures path-based ownership. `dropshipperId` and `orderId` fields are also denormalized within the document for robust authorization.",
+          "params": [
+            {
+              "name": "dropshipperId",
+              "description": "The unique identifier of the dropshipper who made this payment."
+            },
+            {
+              "name": "paymentId",
+              "description": "The unique identifier for the payment transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": {
+            "$ref": "#/backend/entities/WithdrawalRequest"
+          },
+          "description": "Withdrawal requests made by a specific user. The `userId` in the path ensures ownership. Admins can access via collection group queries.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (dropshipper) making the request."
+            },
+            {
+              "name": "requestId",
+              "description": "The unique identifier for the withdrawal request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/bonuses/{bonusId}",
+        "definition": {
+            "entityName": "Bonus",
+            "schema": { "$ref": "#/backend/entities/Bonus" },
+            "description": "A record of a manual bonus or deduction applied to a user's account by an admin.",
+            "params": [
+                { "name": "userId", "description": "The user receiving the bonus." },
+                { "name": "bonusId", "description": "The unique ID for the bonus transaction." }
+            ]
+        }
+      },
+      {
+        "path": "/shipments/{shipmentId}",
+        "definition": {
+          "entityName": "Shipment",
+          "schema": { "$ref": "#/backend/entities/Shipment" },
+          "description": "Top-level collection for all shipments. Accessible by staff.",
+          "params": [{ "name": "shipmentId", "description": "The unique ID for the shipment." }]
+        }
+      },
+      {
+        "path": "/shipments/{shipmentId}/events/{eventId}",
+        "definition": {
+          "entityName": "ShipmentEvent",
+          "schema": { "$ref": "#/backend/entities/ShipmentEvent" },
+          "description": "Tracking history events for a specific shipment.",
+          "params": [
+            { "name": "shipmentId", "description": "The parent shipment ID." },
+            { "name": "eventId", "description": "The unique ID for the shipment event." }
+          ]
+        }
+      },
+      {
+        "path": "/systemSettings/{settingKey}",
+        "definition": {
+          "entityName": "SystemSetting",
+          "schema": {
+            "$ref": "#/backend/entities/SystemSetting"
+          },
+          "description": "Global system configurations. Only Admins have CRUD access to these settings.",
+          "params": [
+            {
+              "name": "settingKey",
+              "description": "A unique key identifying the system setting (e.g., 'defaultCurrency')."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/publicSettings/data",
+        "definition": {
+          "entityName": "PublicSettings",
+          "schema": {
+            "$ref": "#/backend/entities/PublicSettings"
+          },
+          "description": "A single document containing all publicly readable settings. Anyone can read, only admins can write.",
+          "params": []
+        }
+      },
+      {
+        "path": "/auditLogs/{auditLogId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "System-wide audit log entries for sensitive operations. Accessible only by Admins. Writes should be performed by trusted server-side functions.",
+          "params": [
+            {
+              "name": "auditLogId",
+              "description": "The unique identifier for an audit log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{dropshipperId}/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Analytical reports generated for and owned by a specific dropshipper. The `dropshipperId` in the path ensures ownership. `dropshipperId` and `adminId` fields are also denormalized within the document to indicate who the report is for/by.",
+          "params": [
+            {
+              "name": "dropshipperId",
+              "description": "The unique identifier of the dropshipper this report is associated with."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/adminReports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Global or cross-dropshipper reports generated by Admins. Accessible only by Admins. `adminId` and `dropshipperId` (if the report is about a specific dropshipper) fields are denormalized within the document.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The admin-generated report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/conversations/{conversationId}",
+        "definition": {
+          "entityName": "Conversation",
+          "schema": {
+            "$ref": "#/backend/entities/Conversation"
+          },
+          "description": "Stores conversation metadata. Only participants can read or write.",
+          "params": [
+            {
+              "name": "conversationId",
+              "description": "The unique identifier for the conversation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/conversations/{conversationId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stores messages for a conversation. Only participants can read or create messages.",
+          "params": [
+            {
+              "name": "conversationId",
+              "description": "The parent conversation ID."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique ID for the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/workSessions/{sessionId}",
+        "definition": {
+          "entityName": "WorkSession",
+          "schema": {
+            "$ref": "#/backend/entities/WorkSession"
+          },
+          "description": "Stores work session records for a staff member. A user can only access their own sessions, while admins can list all sessions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID of the staff member."
+            },
+            {
+              "name": "sessionId",
+              "description": "The unique identifier for the work session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}/clicks/{clickId}",
+        "definition": {
+          "entityName": "ProductClick",
+          "schema": {
+            "$ref": "#/backend/entities/ProductClick"
+          },
+          "description": "Stores click events for a specific product, used for analytics.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The ID of the product being clicked."
+            },
+            {
+              "name": "clickId",
+              "description": "The unique ID for the click event."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/merchantInquiries/{inquiryId}",
+        "definition": {
+          "entityName": "MerchantInquiry",
+          "schema": {
+            "$ref": "#/backend/entities/MerchantInquiry"
+          },
+          "description": "Stores inquiries from potential merchants. Anyone can create, but only staff can read/manage.",
+          "params": [
+            {
+              "name": "inquiryId",
+              "description": "The unique identifier for the merchant inquiry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/marketingCustomers/{customerId}",
+        "definition": {
+          "entityName": "ReferredCustomer",
+          "schema": {
+            "$ref": "#/backend/entities/ReferredCustomer"
+          },
+          "description": "Stores information about customers acquired through referral links.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique customer identifier, typically their phone number."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/marketingCampaigns/{campaignId}",
+        "definition": {
+          "entityName": "MarketingCampaign",
+          "schema": {
+            "$ref": "#/backend/entities/MarketingCampaign"
+          },
+          "description": "Defines an automated marketing campaign for a specific customer segment.",
+          "params": [
+            {
+              "name": "campaignId",
+              "description": "The unique identifier for a marketing campaign."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/automationSettings/main",
+        "definition": {
+          "entityName": "AutomationSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AutomationSettings"
+          },
+          "description": "A single document containing all marketing automation settings. Admin only.",
+          "params": []
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Clarity of Intent, DBAC (Database Access Control), and QAPs (Queries Are Not Filters) to ensure security, scalability, and debuggability. \n\n1.  **Authorization Independence (Denormalization):** This is critically achieved by denormalizing authorization-relevant fields. User-specific data (Orders, Payments, Reports, Withdrawals) is stored in subcollections under the user's path (`/users/{userId}/...`), enabling direct path-based ownership rules (`request.auth.uid == userId`).\n\n2.  **QAPs (Queries Are Not Filters):** The structure inherently supports secure `list` operations. Dropshippers can only list data from under their own user path. This ensures queries are pre-filtered by path, preventing any possibility of data leakage that could occur if relying on query-based filtering in rules. For global data like `products`, a top-level collection is used with rules that allow public reads but restrict writes to authorized staff.\n\n3.  **DBAC (Database Access Control):** User roles (Admin and other staff) are managed via dedicated collections (`/roles_admin/{userId}`, etc.). The *existence* of a document in these collections grants the role, allowing for simple, efficient `exists()` checks in security rules. This is more secure and performant than checking a role field on a user document, as it avoids extra `get()` calls.\n\n4.  **Structural Segregation & Access Modeling:** Data is organized into collections based on its security posture:\n    *   **Private User Data:** `/users/{userId}/...` for data owned by a specific user.\n    *   **Global Public/Shared Data:** `/products` and `/paymentMethods` for data accessible to multiple roles.\n    *   **Admin-Only Data:** `/systemSettings`, `/auditLogs`, `/stockLedger`, `/marketingCampaigns`, `/automationSettings` etc., are segregated for exclusive admin access.\n\n5.  **Data Clarity:** Naming conventions are consistent and descriptive."
+  }
+}

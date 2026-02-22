@@ -1,0 +1,290 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { doc, updateDoc, serverTimestamp, collection, query, orderBy, writeBatch } from "firebase/firestore";
+import type { Product, ProductCategory } from "@/lib/types";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Briefcase } from "lucide-react";
+
+
+interface EditProductDialogProps {
+    product: Product | null;
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+}
+
+export function EditProductDialog({ product, isOpen, onOpenChange }: EditProductDialogProps) {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const categoriesQuery = useMemoFirebase(() => (firestore && user) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore, user]);
+  const { data: categories } = useCollection<ProductCategory>(categoriesQuery);
+
+  // Product state
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [commission, setCommission] = useState("");
+  const [stockQuantity, setStockQuantity] = useState("");
+  const [imageUrls, setImageUrls] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [purchaseUrl, setPurchaseUrl] = useState("");
+  const [isAvailable, setIsAvailable] = useState(true);
+
+  // Merchant state
+  const [merchantName, setMerchantName] = useState("");
+  const [merchantPhone, setMerchantPhone] = useState("");
+  const [merchantWhatsapp, setMerchantWhatsapp] = useState("");
+  
+  // Control state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (product) {
+        setName(product.name || "");
+        setCategory(product.category || "");
+        setDescription(product.description || "");
+        setPrice(product.price?.toString() || "");
+        setCommission(product.commission?.toString() || "");
+        setStockQuantity(product.stockQuantity?.toString() || "");
+        setImageUrls(product.imageUrls?.join('\n') || "");
+        setVideoUrl(product.videoUrl || "");
+        setPurchaseUrl(product.purchaseUrl || "");
+        setIsAvailable(product.isAvailable);
+        setMerchantName(product.merchantInfo?.name || "");
+        setMerchantPhone(product.merchantInfo?.phone || "");
+        setMerchantWhatsapp(product.merchantInfo?.whatsapp || "");
+    }
+  }, [product]);
+
+  const handleUpdateProduct = async () => {
+    if (!product || !firestore) return;
+
+    const priceNumber = parseFloat(price);
+    const commissionNumber = parseFloat(commission);
+    const quantityNumber = parseInt(stockQuantity, 10);
+
+    if (!name || !description || isNaN(priceNumber) || isNaN(quantityNumber) || isNaN(commissionNumber) || !category) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "الرجاء ملء جميع الحقول المطلوبة بقيم صحيحة، بما في ذلك الفئة.",
+      });
+      return;
+    }
+    
+    if (priceNumber <= 0 || quantityNumber < 0 || commissionNumber < 0) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: "السعر، العمولة، والكمية يجب أن تكون أرقامًا موجبة.",
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
+    onOpenChange(false);
+    toast({ title: "جاري تحديث المنتج..." });
+    
+    try {
+        const batch = writeBatch(firestore);
+        const finalCategoryName = category.trim();
+
+        const existingCategory = categories?.find(c => c.name.trim().toLowerCase() === finalCategoryName.toLowerCase());
+
+        if (!existingCategory && finalCategoryName) {
+            const categoryId = doc(collection(firestore, "productCategories")).id;
+            const categoryDocRef = doc(firestore, "productCategories", categoryId);
+            const newCategoryData = {
+              id: categoryId,
+              name: finalCategoryName,
+              imageUrl: `https://picsum.photos/seed/${encodeURIComponent(finalCategoryName)}/200`,
+              dataAiHint: finalCategoryName.split(" ").slice(0, 2).join(" "),
+            };
+            batch.set(categoryDocRef, newCategoryData);
+        }
+
+        const productDocRef = doc(firestore, "products", product.id);
+        const parsedImageUrls = imageUrls.split('\n').map(url => url.trim()).filter(Boolean);
+
+        const updatedData: any = {
+          name,
+          category: finalCategoryName,
+          description,
+          price: priceNumber,
+          commission: commissionNumber,
+          stockQuantity: quantityNumber,
+          isAvailable,
+          purchaseUrl,
+          imageUrls: parsedImageUrls,
+          videoUrl: videoUrl,
+          updatedAt: serverTimestamp(),
+        };
+
+        if (merchantName && merchantPhone) {
+            updatedData.merchantInfo = {
+                name: merchantName,
+                phone: merchantPhone,
+                whatsapp: merchantWhatsapp || merchantPhone,
+            };
+        } else {
+            updatedData.merchantInfo = null; // Or delete(field) if you want to remove it
+        }
+
+
+        batch.update(productDocRef, updatedData);
+        
+        await batch.commit();
+
+        toast({
+            title: "تم تحديث المنتج بنجاح!",
+        });
+    } catch (error: any) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `products/${product.id} or productCategories`,
+            operation: 'update',
+            requestResourceData: { name, category },
+        }));
+        toast({
+            variant: "destructive",
+            title: "فشل تحديث المنتج",
+            description: "قد لا تملك الصلاحيات الكافية.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+  
+  if (!product) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if(isSubmitting) return;
+        onOpenChange(open);
+    }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>تعديل المنتج</DialogTitle>
+          <DialogDescription>
+            تحديث تفاصيل المنتج. ستنعكس التغييرات على جميع المسوقين.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-2">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-name" className="text-right">
+              الاسم
+            </Label>
+            <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-category" className="text-right">
+                الفئة
+            </Label>
+            <Input id="edit-category" placeholder="اكتب اسم فئة جديدة أو موجودة" value={category} onChange={(e) => setCategory(e.target.value)} className="col-span-3"/>
+          </div>
+           <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="edit-description" className="text-right pt-2">
+              الوصف
+            </Label>
+            <Textarea id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" rows={4}/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-price" className="text-right">
+              السعر (ج.م)
+            </Label>
+            <Input id="edit-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-commission" className="text-right">
+              العمولة (ج.م)
+            </Label>
+            <Input id="edit-commission" type="number" value={commission} onChange={(e) => setCommission(e.target.value)} className="col-span-3"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-stockQuantity" className="text-right">
+              الكمية المتاحة
+            </Label>
+            <Input id="edit-stockQuantity" type="number" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} className="col-span-3"/>
+          </div>
+           <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="edit-imageUrls" className="text-right pt-2">
+              روابط الصور
+            </Label>
+            <Textarea id="edit-imageUrls" placeholder="ضع كل رابط في سطر منفصل" value={imageUrls} onChange={(e) => setImageUrls(e.target.value)} className="col-span-3" rows={4}/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-videoUrl" className="text-right">
+                رابط الفيديو
+            </Label>
+            <Input id="edit-videoUrl" placeholder="https://example.com/video.mp4" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="col-span-3"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-purchaseUrl" className="text-right">
+              رابط الشراء
+            </Label>
+            <Input id="edit-purchaseUrl" placeholder="https://supplier.com/product (اختياري)" value={purchaseUrl} onChange={(e) => setPurchaseUrl(e.target.value)} className="col-span-3"/>
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-isAvailable" className="text-right">
+              الحالة
+            </Label>
+            <div className="col-span-3 flex items-center gap-2">
+                <Switch id="edit-isAvailable" checked={isAvailable} onCheckedChange={setIsAvailable}/>
+                <span>{isAvailable ? "نشط" : "غير نشط"}</span>
+            </div>
+          </div>
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="merchant-info">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-2">
+                            <Briefcase/>
+                            <span>معلومات التاجر الخارجي (اختياري)</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-4 pt-2">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-merchant-name" className="text-right">اسم التاجر</Label>
+                                <Input id="edit-merchant-name" value={merchantName} onChange={(e) => setMerchantName(e.target.value)} className="col-span-3" />
+                            </div>
+                             <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-merchant-phone" className="text-right">هاتف التاجر</Label>
+                                <Input id="edit-merchant-phone" type="tel" value={merchantPhone} onChange={(e) => setMerchantPhone(e.target.value)} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-merchant-whatsapp" className="text-right">واتساب التاجر</Label>
+                                <Input id="edit-merchant-whatsapp" type="tel" value={merchantWhatsapp} onChange={(e) => setMerchantWhatsapp(e.target.value)} className="col-span-3" />
+                            </div>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
+        <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
+          <Button type="button" onClick={handleUpdateProduct} disabled={isSubmitting}>
+            {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

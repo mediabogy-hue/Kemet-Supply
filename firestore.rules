@@ -1,0 +1,219 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Role checking functions using the robust 'exists' method.
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    function isOrdersManager() {
+        return isSignedIn() && exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
+    }
+    function isFinanceManager() {
+        return isSignedIn() && exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
+    }
+    function isProductManager() {
+        return isSignedIn() && exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
+    }
+    function isStaff() {
+      return isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager();
+    }
+    
+    // A function to check if a user is updating only the allowed fields in their own profile.
+    // This uses `request.writeFields` which is available for `update` operations and contains the keys being modified.
+    function userIsUpdatingOwnProfile() {
+      let allowedFields = ['firstName', 'lastName', 'phone', 'photoURL', 'paymentDetails', 'updatedAt', 'lastSeen', 'shiftStatus', 'activeShiftId', 'activeShiftStartTime', 'referralCode'];
+      
+      // Ensure every field in the write request is present in our list of allowed fields.
+      return request.writeFields.hasOnly(allowedFields);
+    }
+
+    function dropshipperIsUpdatingPaymentStatus() {
+      // Allow a dropshipper to update only the payment status and timestamp on their own order.
+      return request.writeFields.hasOnly(['customerPaymentStatus', 'updatedAt']);
+    }
+    
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
+
+    // ROLES: Only Admin can manage roles. This is a critical security boundary.
+    match /roles_admin/{userId}           { allow read, write: if isAdmin(); }
+    match /roles_orders_manager/{userId}  { allow read, write: if isAdmin(); }
+    match /roles_finance_manager/{userId} { allow read, write: if isAdmin(); }
+    match /roles_product_manager/{userId} { allow read, write: if isAdmin(); }
+
+    // USERS
+    match /users/{userId} {
+      // Owner can read their own profile. All staff can read any profile.
+      allow get: if isOwner(userId) || isStaff();
+      // Only staff can list users.
+      allow list: if isStaff();
+      // A logged-in user can create their own 'Dropshipper' profile during registration. Admin can create any.
+      allow create: if isOwner(userId) || isAdmin();
+      // Users can update a limited set of their own profile data. Admins can update anything.
+      allow update: if (isOwner(userId) && userIsUpdatingOwnProfile()) || isAdmin();
+      // Only admin can delete users.
+      allow delete: if isAdmin();
+
+      // --- User Subcollections ---
+      match /orders/{orderId} {
+        // Owner can read their own orders. Staff can view any order.
+        allow get, list: if isOwner(userId) || isStaff();
+        // A logged-in user can create their own order. Staff can create on behalf of users. An unauthenticated user can create an order via a referral link.
+        allow create: if isOwner(userId) || isStaff() || (request.auth == null && request.resource.data.dropshipperId != null);
+        // Admins/OrdersManagers can update orders. A dropshipper can only update the payment status of their own order.
+        allow update: if (isAdmin() || isOrdersManager()) || (isOwner(userId) && dropshipperIsUpdatingPaymentStatus());
+        // Only Admins can delete orders.
+        allow delete: if isAdmin();
+      }
+
+      match /payments/{paymentId} {
+        allow get, list: if isOwner(userId) || isAdmin() || isFinanceManager();
+        allow create: if isOwner(userId);
+        allow update: if isAdmin() || isFinanceManager();
+        allow delete: if isAdmin();
+      }
+
+      match /withdrawalRequests/{requestId} {
+        allow get, list: if isOwner(userId) || isAdmin() || isFinanceManager();
+        allow create: if isOwner(userId);
+        allow update: if isAdmin() || isFinanceManager();
+        allow delete: if isAdmin();
+      }
+      
+      match /workSessions/{sessionId} {
+          allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /bonuses/{bonusId} {
+        allow get, list: if isOwner(userId) || isAdmin() || isFinanceManager();
+        allow create: if isAdmin();
+        allow update, delete: if false; // Immutable
+      }
+      
+      match /reports/{reportId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+    
+    // --- Collection Group Queries ---
+    // Rules for queries that span across multiple users' subcollections.
+    match /{path=**}/orders/{orderId}          { allow list, get: if isStaff(); }
+    match /{path=**}/payments/{paymentId}       { allow list: if isAdmin() || isFinanceManager(); }
+    match /{path=**}/withdrawalRequests/{requestId} { allow list: if isAdmin() || isFinanceManager(); }
+    match /{path=**}/workSessions/{sessionId}  { allow list: if isAdmin(); }
+    match /{path=**}/clicks/{clickId}          { allow list, get: if isAdmin() || isProductManager(); }
+    
+    // --- Global Collections ---
+    match /products/{productId} {
+      // Anyone can read products to allow public product pages.
+      allow read: if true;
+      // Only Admin and Product Managers can write to products.
+      allow write: if isAdmin() || isProductManager();
+      
+      match /clicks/{clickId} {
+        allow create: if true; // Public click tracking
+        allow read, write: if isAdmin() || isProductManager();
+      }
+    }
+
+    match /productCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isProductManager();
+    }
+
+    match /shipments/{shipmentId} {
+        // Staff can read, create, and update shipments
+        allow read, write: if isStaff();
+
+        // Shipment Events: Staff can read and create (via webhook/manual sync)
+        match /events/{eventId} {
+            allow read: if isStaff();
+            // Create should only be allowed from a trusted server environment / webhook
+            allow create: if true; // OPEN FOR WEBHOOK - SECURE VIA OBFUSCATED URL
+            allow update, delete: if false; // Events are immutable
+        }
+    }
+    
+    match /stockLedger/{ledgerId} {
+      allow read: if isStaff();
+      allow create: if isAdmin() || isOrdersManager() || isProductManager();
+      allow update, delete: if false; // Immutable
+    }
+
+    match /paymentMethods/{paymentMethodId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinanceManager();
+    }
+
+    match /systemSettings/{settingKey} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /publicSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /auditLogs/{auditLogId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    match /adminReports/{reportId} {
+      allow read: if isAdmin();
+      allow write: if false; // Must be generated by server
+    }
+    
+    match /conversations/{conversationId} {
+      function isParticipant() {
+        return request.auth.uid in resource.data.participantIds;
+      }
+      allow read, update: if isParticipant();
+      allow create: if request.auth.uid in request.resource.data.participantIds;
+    }
+
+    match /conversations/{conversationId}/messages/{messageId} {
+      function isParentConversationParticipant() {
+        return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+      }
+      allow read, create: if isParentConversationParticipant();
+      allow update, delete: if false;
+    }
+
+    match /merchantInquiries/{inquiryId} {
+      allow create: if true;
+      allow read, list, update, delete: if isAdmin() || isProductManager();
+    }
+    
+    // Marketing Automation Collections
+    match /marketingCustomers/{customerId} {
+      allow read, write: if isAdmin();
+      // Allow creation during checkout if a referral exists
+      allow create: if isAdmin() || (request.auth == null && request.resource.data.referralMarketerId != null);
+    }
+    match /marketingCampaigns/{campaignId} {
+      allow read, write: if isAdmin();
+    }
+    match /automationSettings/{docId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

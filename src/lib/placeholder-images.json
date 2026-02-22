@@ -1,0 +1,40 @@
+{
+  "placeholderImages": [
+    {
+      "id": "product-1",
+      "description": "سماعات لاسلكية حديثة",
+      "imageUrl": "https://images.unsplash.com/photo-1635329086694-d02f81549dea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxoZWFkcGhvbmVzJTIwYXVkaW98ZW58MHx8fHwxNzcxMDQxNDE5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "headphones audio"
+    },
+    {
+      "id": "product-2",
+      "description": "ساعة ذكية مع تتبع اللياقة البدنية",
+      "imageUrl": "https://images.unsplash.com/photo-1664219624031-92065621531b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzbWFydHdhdGNoJTIwdGVjaHxlbnwwfHx8fDE3NzA5NzU2NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartwatch tech"
+    },
+    {
+      "id": "product-3",
+      "description": "لوحة مفاتيح ميكانيكية مريحة",
+      "imageUrl": "https://images.unsplash.com/photo-1672754091891-b58ed53665e6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxrZXlib2FyZCUyMG9mZmljZXxlbnwwfHx8fDE3NzA5NzY2ODB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "keyboard office"
+    },
+    {
+      "id": "product-4",
+      "description": "مكبر صوت بلوتوث محمول",
+      "imageUrl": "https://images.unsplash.com/photo-1563680401337-b77b5e0be9f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzcGVha2VyJTIwbXVzaWN8ZW58MHx8fHwxNzcxMDU0MjI5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "speaker music"
+    },
+    {
+      "id": "product-5",
+      "description": "كاميرا رقمية عالية الدقة",
+      "imageUrl": "https://images.unsplash.com/photo-1668037349467-f1b07bb7c442?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjYW1lcmElMjBwaG90b2dyYXBoeXxlbnwwfHx8fDE3NzEwNTQyMjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "camera photography"
+    },
+    {
+      "id": "product-6",
+      "description": "طائرة بدون طيار مع كاميرا 4K",
+      "imageUrl": "https://images.unsplash.com/photo-1752937395499-18e109d60739?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkcm9uZSUyMHRlY2hub2xvZ3l8ZW58MHx8fHwxNzcxMDU0MjMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "drone technology"
+    }
+  ]
+}
