@@ -6,14 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, updateDoc, serverTimestamp, collectionGroup, query, where } from "firebase/firestore";
+import { collection, doc, updateDoc, serverTimestamp, collectionGroup, query, orderBy, documentId } from "firebase/firestore";
 import type { Order } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -31,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from '@/auth/SessionProvider';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" } = {
@@ -55,20 +49,21 @@ export default function AdminPaymentsPage() {
 
   const canAccess = isAdmin || isFinanceManager;
   
-  const pendingOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), where('customerPaymentStatus', '==', 'Pending')), [firestore, canAccess, isRoleLoading]);
+  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy(documentId())), [firestore, canAccess, isRoleLoading]);
 
-  const { data: allOrders, isLoading: ordersLoading, error: ordersError, setData: setAllOrders, lastUpdated } = useCollection<Order>(pendingOrdersQuery);
+  const { data: allOrders, isLoading: ordersLoading, error: ordersError, setData: setAllOrders, lastUpdated } = useCollection<Order>(allOrdersQuery);
 
   const isLoading = isRoleLoading || ordersLoading;
-  const error = ordersError;
 
   const orders = useMemo((): Order[] => {
     if (!allOrders) return [];
-    return [...allOrders].sort((a, b) => (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0));
+    return allOrders
+      .filter(o => o.customerPaymentStatus === 'Pending')
+      .sort((a, b) => (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0));
   }, [allOrders]);
 
   const handleStatusUpdate = (order: Order, newStatus: 'Verified' | 'Rejected', notes?: string) => {
-    if (!firestore || !allOrders) return;
+    if (!firestore) return;
     const orderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
     
     const updatedData: any = { customerPaymentStatus: newStatus, updatedAt: serverTimestamp() };
@@ -77,12 +72,18 @@ export default function AdminPaymentsPage() {
     }
 
     // Optimistic UI update
-    setAllOrders(prev => (prev || []).filter(o => o.id !== order.id));
+    setAllOrders(prev => {
+      if (!prev) return null;
+      return prev.map(o => o.id === order.id ? { ...o, customerPaymentStatus: newStatus } : o);
+    });
     toast({ title: "تم تحديث حالة الدفع" });
 
     updateDoc(orderRef, updatedData).catch(async (error) => {
         // Revert UI on error
-        setAllOrders(allOrders);
+        setAllOrders(prev => {
+            if (!prev) return null;
+            return prev.map(o => o.id === order.id ? order : o); // Revert to original order
+        });
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: orderRef.path,
             operation: 'update',
@@ -113,6 +114,16 @@ export default function AdminPaymentsPage() {
               <RefreshIndicator isLoading={isLoading} lastUpdated={lastUpdated} />
           </CardHeader>
           <CardContent>
+              {ordersError && (
+                <Alert variant="destructive" className="mb-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>خطأ في جلب البيانات</AlertTitle>
+                    <AlertDescription>
+                        لم نتمكن من تحميل قائمة الدفعات. قد يكون السبب عدم وجود صلاحيات كافية أو مشكلة في قاعدة البيانات.
+                        <p className="mt-2 text-xs font-mono">{ordersError.message}</p>
+                    </AlertDescription>
+                </Alert>
+              )}
               <Table>
                   <TableHeader>
                       <TableRow>
@@ -156,7 +167,7 @@ export default function AdminPaymentsPage() {
                        {(!isLoading && orders.length === 0) && (
                           <TableRow>
                               <TableCell colSpan={7} className="text-center h-24">
-                                  {error ? "فشل في تحميل الطلبات." : 'لا توجد دفعات من العملاء لمراجعتها حاليًا.'}
+                                  {ordersError ? "فشل في تحميل الطلبات." : 'لا توجد دفعات من العملاء لمراجعتها حاليًا.'}
                               </TableCell>
                           </TableRow>
                       )}
