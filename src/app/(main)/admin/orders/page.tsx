@@ -186,14 +186,14 @@ export default function AdminOrdersPage() {
   }, [searchTerm, statusFilter, marketerFilter, paymentFilter]);
   
   const summaryStats = useMemo(() => {
-    if (!orders) return { revenueToday: 0, ordersToday: 0 };
+    if (!orders || !clientRendered) return { revenueToday: 0, ordersToday: 0 };
     const todaysLoadedOrders = orders.filter(o => o.createdAt && typeof o.createdAt.toDate === 'function' && isToday(o.createdAt.toDate()));
     const revenueToday = todaysLoadedOrders.filter(o => o.status === 'Delivered').reduce((sum, o) => sum + o.totalAmount, 0);
     return {
         revenueToday: revenueToday,
         ordersToday: todaysLoadedOrders.length,
     }
-  }, [orders]);
+  }, [orders, clientRendered]);
 
   const handleStatusUpdate = useCallback(async (order: Order, newStatus: string) => {
     if (!firestore || !user || !role || !profile || !orders) return;
@@ -521,7 +521,7 @@ export default function AdminOrdersPage() {
                                 <TableCell className="py-4 text-end"><Skeleton className="h-8 w-8 ms-auto" /></TableCell>
                            </TableRow>
                         ))}
-                        {filteredOrders.map((order) => {
+                        {clientRendered && filteredOrders.map((order) => {
                             const orderDate = order.createdAt && typeof order.createdAt.toDate === 'function' ? order.createdAt.toDate() : new Date();
                             
                             const existingShipment = shipmentsMap.get(order.id);
@@ -567,26 +567,21 @@ export default function AdminOrdersPage() {
                                     </TableCell>
                                     <TableCell className="py-4">{order.dropshipperName || `مسوق غير معروف (${order.dropshipperId.substring(0,5)})`}</TableCell>
                                     <TableCell className="py-4">
-                                        {clientRendered ? (
-                                            <>
-                                                <div className="font-medium">{format(orderDate, 'yyyy/MM/dd')}</div>
-                                                <div className="text-xs text-muted-foreground">{
-                                                    (() => {
-                                                        const seconds = Math.floor((new Date().getTime() - orderDate.getTime()) / 1000);
-                                                        if (seconds < 5) return 'الآن';
-                                                        if (seconds < 60) return 'الآن';
-                                                        if (seconds < 3600) return `منذ ${Math.floor(seconds / 60)} د`;
-                                                        if (seconds < 86400) return `منذ ${Math.floor(seconds / 3600)} س`;
-                                                        return `منذ ${Math.floor(seconds / 86400)} ي`;
-                                                    })()
-                                                }</div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Skeleton className="h-5 w-20" />
-                                                <Skeleton className="h-4 w-16 mt-1" />
-                                            </>
-                                        )}
+                                        
+                                        <>
+                                            <div className="font-medium">{format(orderDate, 'yyyy/MM/dd')}</div>
+                                            <div className="text-xs text-muted-foreground">{
+                                                (() => {
+                                                    const seconds = Math.floor((new Date().getTime() - orderDate.getTime()) / 1000);
+                                                    if (seconds < 5) return 'الآن';
+                                                    if (seconds < 60) return 'الآن';
+                                                    if (seconds < 3600) return `منذ ${Math.floor(seconds / 60)} د`;
+                                                    if (seconds < 86400) return `منذ ${Math.floor(seconds / 3600)} س`;
+                                                    return `منذ ${Math.floor(seconds / 86400)} ي`;
+                                                })()
+                                            }</div>
+                                        </>
+                                        
                                     </TableCell>
                                     <TableCell className="py-4">
                                       <div className="flex items-center gap-1">

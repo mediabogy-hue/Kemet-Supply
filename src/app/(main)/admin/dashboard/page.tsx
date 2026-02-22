@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
             slowMovingProducts: [] as any[],
         };
 
-        if (!allOrders || !users || !products) {
+        if (!isClient || !allOrders || !users || !products) {
             return initialStats;
         }
 
@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
             slowMovingProducts: slowMovers,
         };
 
-      }, [allOrders, users, products]);
+      }, [allOrders, users, products, isClient]);
 
     const primaryStats = [
         { title: "إجمالي الإيرادات (آخر 30 يوم)", value: `${dashboardStats.totalRevenue.toFixed(2)} ج.م`, icon: <DollarSign />, description: "من الطلبات المكتملة." },

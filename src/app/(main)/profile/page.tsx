@@ -126,7 +126,7 @@ export default function ProfilePage() {
         dailyTarget, ordersPerDay, estimatedDailyProfit, targetProgress, estimatedTotalProfitWithReward,
     } = useMemo(() => {
         const fallbackResult = { currentMonthlySales: 0, avgOrderValue: 0, avgCommissionPerOrder: 0, targetRemaining: 0, dailyTarget: 0, ordersPerDay: 0, estimatedDailyProfit: 0, targetProgress: 0, estimatedTotalProfitWithReward: 0 };
-        if (!userProfile || !orders) return fallbackResult;
+        if (!userProfile || !orders || !isClient) return fallbackResult;
         const deliveredOrders = orders.filter(o => o.status === 'Delivered');
         const monthlyDeliveredOrders = deliveredOrders.filter(o => o.createdAt?.toDate?.() >= new Date(new Date().getFullYear(), new Date().getMonth(), 1));
         const currentMonthlySales = monthlyDeliveredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
@@ -143,7 +143,7 @@ export default function ProfilePage() {
         const totalTargetCommission = avgOrderValue > 0 ? (target / avgOrderValue) * avgCommissionPerOrder : 0;
         const finalEstimatedProfit = totalTargetCommission + (userProfile.monthlyReward || 0);
         return { currentMonthlySales, avgOrderValue, avgCommissionPerOrder, targetRemaining, dailyTarget, ordersPerDay, estimatedDailyProfit, targetProgress, estimatedTotalProfitWithReward: finalEstimatedProfit };
-    }, [userProfile, orders, workingDays]);
+    }, [userProfile, orders, workingDays, isClient]);
 
     const handleSaveProfileData = async () => {
         if (!userProfile || !authUser) return;

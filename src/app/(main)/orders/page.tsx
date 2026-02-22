@@ -13,7 +13,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import type { Order } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { exportToExcel } from '@/lib/export';
 import { cn } from "@/lib/utils";
@@ -74,6 +74,12 @@ export default function OrdersPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [activeTab, setActiveTab] = useState("all");
+  const [clientRendered, setClientRendered] = useState(false);
+
+  useEffect(() => {
+    setClientRendered(true);
+  }, []);
+
 
   const ordersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -197,7 +203,7 @@ export default function OrdersPage() {
                                <TableCell className="text-end py-4"><Skeleton className="h-5 w-20 ms-auto" /></TableCell>
                              </TableRow>
                           ))}
-                          {filteredOrders?.map((order) => {
+                          {clientRendered && filteredOrders?.map((order) => {
                             const isCod = order.customerPaymentMethod === 'Cash on Delivery';
 
                             return (
