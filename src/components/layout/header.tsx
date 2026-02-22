@@ -1,11 +1,9 @@
-
 'use client';
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "./user-nav";
 import { useSession } from "@/auth/SessionProvider";
 import { ShiftToggle } from "./shift-toggle";
-import { NotificationsDropdown } from "./notifications-dropdown";
 
 export function Header() {
   const { profile, isStaff, isDropshipper, isLoading } = useSession();
@@ -22,8 +20,6 @@ export function Header() {
       <div className="flex items-center gap-2">
         {canTrackShift && !isLoading && <ShiftToggle />}
         
-        <NotificationsDropdown />
-
         <UserNav />
       </div>
     </header>
