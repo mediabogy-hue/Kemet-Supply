@@ -1,15 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // This is a workaround for a known issue in Next.js with webpack's file-based cache
-  // causing "ENOENT" errors in development. Disabling it for dev stabilizes the server.
-  // This does not affect production builds.
-  webpack: (config, { dev, isServer }) => {
-    if (dev && !isServer) {
-      // In development on the client, disable the filesystem cache.
-      config.cache = false;
-    }
-    return config;
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
