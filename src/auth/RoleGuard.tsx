@@ -11,8 +11,8 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useEffect } from 'react';
 
-const FullPageLoader = ({ message }: { message: string }) => (
-  <div className="flex h-screen w-full flex-col items-center justify-center bg-background text-foreground">
+const ContentLoader = ({ message }: { message: string }) => (
+  <div className="flex h-[calc(100vh_-_15rem)] w-full flex-col items-center justify-center">
     <div className="flex flex-col items-center gap-4 text-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-lg font-semibold">{message}</p>
@@ -23,7 +23,7 @@ const FullPageLoader = ({ message }: { message: string }) => (
 const AuthErrorState = ({ error }: { error: string }) => {
     const auth = useAuth();
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background p-4">
+        <div className="flex h-full w-full items-center justify-center p-4">
              <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>خطأ في الحساب</CardTitle>
@@ -78,7 +78,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, role, pathname, router, isPublicPath]);
 
   if (isLoading) {
-    return <FullPageLoader message="جاري التحقق من الصلاحيات..." />;
+    return <ContentLoader message="جاري التحقق من الصلاحيات..." />;
   }
   
   if (error) {
@@ -86,13 +86,13 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user && !isPublicPath) {
-     return <FullPageLoader message="جاري التوجيه لتسجيل الدخول..." />;
+     return <ContentLoader message="جاري التوجيه لتسجيل الدخول..." />;
   }
   if (user && role && isPublicPath && !pathname.startsWith('/product')) {
-     return <FullPageLoader message="جاري التوجيه للوحة التحكم..." />;
+     return <ContentLoader message="جاري التوجيه للوحة التحكم..." />;
   }
    if (user && role && !hasPermission(role, pathname)) {
-     return <FullPageLoader message="غير مصرح بالدخول، جاري التوجيه..." />;
+     return <ContentLoader message="غير مصرح بالدخول، جاري التوجيه..." />;
   }
 
   return <>{children}</>;

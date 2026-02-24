@@ -10,16 +10,13 @@ import { Logo } from "@/components/logo";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { Header } from "@/components/layout/header";
 import { cn } from "@/lib/utils";
+import { RoleGuard } from "@/auth/RoleGuard";
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // The 'lastSeen' update effect has been removed to improve performance and stability.
-  // The RoleGuard has been moved to the root layout (src/app/layout.tsx)
-  // to centralize auth logic and protect all routes consistently.
-
   return (
     <SidebarProvider defaultOpen={true}>
       <div className={cn(
@@ -39,7 +36,9 @@ export default function MainLayout({
         <main className="flex flex-1 flex-col">
           <Header />
           <div className="flex-1 p-6 sm:p-8 lg:p-10">
-            {children}
+            <RoleGuard>
+              {children}
+            </RoleGuard>
           </div>
         </main>
       </div>
