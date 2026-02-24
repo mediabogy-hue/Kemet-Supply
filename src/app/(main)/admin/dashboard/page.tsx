@@ -90,16 +90,12 @@ export default function AdminDashboardPage() {
     
     const usersQuery = useMemoFirebase(() => (firestore && canAccess) ? collection(firestore, 'users') : null, [firestore, canAccess]);
     
-    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) 
-        ? query(collectionGroup(firestore, 'orders'), orderBy(documentId()))
-        : null, 
-    [firestore, canAccess]);
-
-    const productsQuery = useMemoFirebase(() => (firestore && canAccess) ? collection(firestore, 'products') : null, [firestore, canAccess]);
+    // This query causes permission errors and is temporarily disabled to ensure app stability.
+    const ordersQuery = useMemoFirebase(() => null, []);
 
     const { data: allOrders, isLoading: ordersLoading, error: ordersError, lastUpdated: ordersLastUpdated } = useCollection<Order>(ordersQuery);
     const { data: users, isLoading: usersLoading, lastUpdated: usersLastUpdated } = useCollection<UserProfile>(usersQuery);
-    const { data: products, isLoading: productsLoading, lastUpdated: productsLastUpdated } = useCollection<Product>(productsQuery);
+    const { data: products, isLoading: productsLoading, lastUpdated: productsLastUpdated } = useCollection<Product>(collection(firestore, "products"));
 
     const isLoading = !isClient || isSessionLoading || usersLoading || ordersLoading || productsLoading;
     const queryError = ordersError;

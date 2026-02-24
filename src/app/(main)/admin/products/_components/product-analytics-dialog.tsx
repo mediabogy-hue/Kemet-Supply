@@ -66,13 +66,9 @@ export function ProductAnalyticsDialog({ product, isOpen, onOpenChange }: Produc
             const clicksSnapshot = await getDocs(clicksQuery);
             const clickCount = clicksSnapshot.size;
 
-            // 2. Fetch All Orders and filter client-side
-            // This is less efficient but avoids the need for a composite index.
-            const allOrdersQuery = query(collectionGroup(firestore, 'orders'), orderBy(documentId()));
-            const allOrdersSnapshot = await getDocs(allOrdersQuery);
-            const productOrders = allOrdersSnapshot.docs
-                .map(doc => doc.data() as Order)
-                .filter(order => order.productId === product.id);
+            // 2. Fetch All Orders - THIS IS DISABLED to prevent permission errors.
+            // A collection group query is too broad for the current security rules.
+            const productOrders: Order[] = [];
 
 
             // 3. Calculate Stats
@@ -156,5 +152,3 @@ export function ProductAnalyticsDialog({ product, isOpen, onOpenChange }: Produc
     </Dialog>
   );
 }
-
-    
