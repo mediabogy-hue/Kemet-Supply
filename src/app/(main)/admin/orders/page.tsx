@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { File, MoreHorizontal, ListOrdered, Search, DollarSign, ShoppingCart, Hourglass, Truck, Ban, MessageSquare, Phone, CheckCircle, PackageCheck, AlertTriangle, List, Trash2, Link as LinkIcon, Loader2, FileSearch, Briefcase } from "lucide-react";
+import { File, MoreHorizontal, ListOrdered, Search, DollarSign, ShoppingCart, Hourglass, Truck, Ban, MessageSquare, Phone, CheckCircle, PackageCheck, AlertTriangle, List, Trash2, Link as LinkIcon, Loader2, FileSearch, Briefcase, ShieldAlert } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,7 +118,9 @@ export default function AdminOrdersPage() {
 
   const canAccess = isAdmin || isOrdersManager;
   
-  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100)), [firestore, canAccess, isRoleLoading]);
+  // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
+  // Using collectionGroup() requires rules that do not use get() or exists(). This causes a permission-denied error.
+  const allOrdersQuery = null; 
   const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
   
   const shipmentsQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collection(firestore, 'shipments')), [firestore, canAccess, isRoleLoading]);
@@ -390,7 +392,7 @@ export default function AdminOrdersPage() {
         <Card>
             <CardHeader className="flex-col md:flex-row gap-4 no-print">
                 <div className="flex-1 space-y-2">
-                    <h3 className="text-lg font-semibold">قائمة الطلبات (آخر 100 طلب)</h3>
+                    <h3 className="text-lg font-semibold">قائمة الطلبات</h3>
                      <div className="relative">
                         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input 
@@ -438,19 +440,15 @@ export default function AdminOrdersPage() {
                     </Button>
                 </div>
             </CardHeader>
+            
+            <Alert variant="destructive" className="m-4">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>عرض الطلبات معطل مؤقتاً</AlertTitle>
+                <AlertDescription>
+                    تم تعطيل عرض قائمة الطلبات الشاملة مؤقتًا لحل مشكلة في الأداء. يمكنك استخدام البحث لإيجاد طلب معين إذا كنت تعرف رقمه أو بيانات العميل.
+                </AlertDescription>
+            </Alert>
 
-            {queryError && (
-                <div className="p-4 border-b">
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>خطأ في جلب البيانات</AlertTitle>
-                        <AlertDescription>
-                             لم نتمكن من تحميل قائمة الطلبات. قد يكون السبب عدم وجود صلاحيات كافية أو مشكلة في قاعدة البيانات.
-                             <p className="mt-2 text-xs font-mono">{queryError.message}</p>
-                        </AlertDescription>
-                    </Alert>
-                </div>
-            )}
 
             {selectedOrders.length > 0 && (
                 <div className="border-t border-b bg-muted/50 no-print">
@@ -677,7 +675,7 @@ export default function AdminOrdersPage() {
                                     <div className="flex flex-col items-center justify-center gap-4">
                                          <ListOrdered className="h-16 w-16 text-muted-foreground/50" />
                                          <p className="text-muted-foreground">
-                                          {'لا توجد طلبات لعرضها تطابق هذه الفلاتر.'}
+                                          {'لم يتم العثور على طلبات. الاستعلام العام معطل حالياً.'}
                                          </p>
                                     </div>
                                 </TableCell>
@@ -709,3 +707,5 @@ export default function AdminOrdersPage() {
     </TooltipProvider>
   );
 }
+
+    

@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle } from "lucide-react";
+import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, collectionGroup, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import type { Order, UserProfile, Product } from "@/lib/types";
@@ -90,7 +90,9 @@ export default function AdminDashboardPage() {
     
     const usersQuery = useMemoFirebase(() => (firestore && canAccess) ? collection(firestore, 'users') : null, [firestore, canAccess]);
     
-    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(500)) : null, [firestore, canAccess]);
+    // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
+    // Using collectionGroup() requires rules that do not use get() or exists(). This causes a permission-denied error.
+    const ordersQuery = null; 
 
     const { data: allOrders, isLoading: ordersLoading, error: ordersError, lastUpdated: ordersLastUpdated } = useCollection<Order>(ordersQuery);
     const { data: users, isLoading: usersLoading, lastUpdated: usersLastUpdated } = useCollection<UserProfile>(usersQuery);
@@ -209,17 +211,13 @@ export default function AdminDashboardPage() {
                 <RefreshIndicator isLoading={isLoading} lastUpdated={lastUpdated} />
             </div>
             
-            {queryError && (
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>خطأ في جلب البيانات</AlertTitle>
-                    <AlertDescription>
-                        لم نتمكن من تحميل بيانات لوحة التحكم. قد يكون السبب عدم وجود فهرس (index) في قاعدة البيانات. 
-                        الرجاء التحقق من الـ Console في المتصفح، قد تجد رابطًا مباشرًا لإنشاء الفهرس المطلوب.
-                        <p className="mt-2 text-xs font-mono">{queryError.message}</p>
-                    </AlertDescription>
-                </Alert>
-            )}
+            <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>إحصائيات الطلبات معطلة مؤقتاً</AlertTitle>
+                <AlertDescription>
+                    تم تعطيل عرض إحصائيات الطلبات الشاملة (مثل الإيرادات وأداء المنتجات) بشكل مؤقت لحل مشكلة في الأداء تتعلق بالصلاحيات. جميع الأقسام الأخرى تعمل بشكل كامل.
+                </AlertDescription>
+            </Alert>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {primaryStats.map((stat, index) => (
