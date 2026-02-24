@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, collectionGroup, query, where, Timestamp, orderBy, documentId } from "firebase/firestore";
+import { collection, collectionGroup, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import type { Order, UserProfile, Product } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { useMemo, useState, useEffect } from "react";
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
     
     const usersQuery = useMemoFirebase(() => (firestore && canAccess) ? collection(firestore, 'users') : null, [firestore, canAccess]);
     
-    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collectionGroup(firestore, 'orders'), orderBy(documentId())) : null, [firestore, canAccess]);
+    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(500)) : null, [firestore, canAccess]);
 
     const { data: allOrders, isLoading: ordersLoading, error: ordersError, lastUpdated: ordersLastUpdated } = useCollection<Order>(ordersQuery);
     const { data: users, isLoading: usersLoading, lastUpdated: usersLastUpdated } = useCollection<UserProfile>(usersQuery);

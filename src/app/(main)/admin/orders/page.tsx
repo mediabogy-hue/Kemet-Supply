@@ -21,7 +21,7 @@ import {
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { useFirebase, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, serverTimestamp, collectionGroup, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, documentId } from "firebase/firestore";
+import { collection, doc, serverTimestamp, collectionGroup, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
 
   const canAccess = isAdmin || isOrdersManager;
   
-  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy(documentId())), [firestore, canAccess, isRoleLoading]);
+  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100)), [firestore, canAccess, isRoleLoading]);
   const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
   
   const shipmentsQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collection(firestore, 'shipments')), [firestore, canAccess, isRoleLoading]);
@@ -415,7 +415,7 @@ export default function AdminOrdersPage() {
         <Card>
             <CardHeader className="flex-col md:flex-row gap-4 no-print">
                 <div className="flex-1 space-y-2">
-                    <h3 className="text-lg font-semibold">قائمة الطلبات</h3>
+                    <h3 className="text-lg font-semibold">قائمة الطلبات (آخر 100 طلب)</h3>
                      <div className="relative">
                         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input 
@@ -734,4 +734,3 @@ export default function AdminOrdersPage() {
     </TooltipProvider>
   );
 }
-

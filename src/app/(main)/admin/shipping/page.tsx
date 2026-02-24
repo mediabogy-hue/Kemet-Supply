@@ -41,7 +41,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, Timestamp, where, collectionGroup, documentId } from 'firebase/firestore';
+import { collection, query, orderBy, Timestamp, where, collectionGroup } from 'firebase/firestore';
 import type { Shipment, ShipmentEvent, Order } from '@/lib/types';
 import { useSession } from '@/auth/SessionProvider';
 import { Skeleton, RefreshIndicator } from '@/components/ui/skeleton';
@@ -110,15 +110,9 @@ export default function ShippingManagementPage() {
      // Fetch confirmed orders (robustly)
     const allOrdersQuery = useMemoFirebase(() => {
         if (!firestore || !canAccess) return null;
-        // Fetch all orders and filter client-side to avoid index requirement
-        return query(collectionGroup(firestore, 'orders'), orderBy(documentId()));
+        return query(collectionGroup(firestore, 'orders'), where('status', '==', 'Confirmed'), orderBy('createdAt', 'desc'));
     }, [firestore, canAccess]);
-    const { data: allOrders, isLoading: ordersLoading } = useCollection<Order>(allOrdersQuery);
-
-    const confirmedOrders = useMemo(() => {
-        if (!allOrders) return [];
-        return allOrders.filter(order => order.status === 'Confirmed');
-    }, [allOrders]);
+    const { data: confirmedOrders, isLoading: ordersLoading } = useCollection<Order>(allOrdersQuery);
     
     const isLoading = isRoleLoading || shipmentsLoading || ordersLoading;
 
@@ -290,5 +284,3 @@ export default function ShippingManagementPage() {
         </>
     );
 }
-
-    
