@@ -274,7 +274,7 @@ export default function AdminPaymentsPage() {
         </DialogContent>
       </Dialog>
        <DeletePaymentAlert
-        payment={paymentToDelete}
+        order={paymentToDelete}
         isOpen={!!paymentToDelete}
         onOpenChange={(isOpen) => !isOpen && setPaymentToDelete(null)}
         onConfirm={handleDeletePayment}

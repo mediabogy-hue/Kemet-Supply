@@ -10,17 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Payment } from "@/lib/types";
+import type { Order } from "@/lib/types";
 
 interface DeletePaymentAlertProps {
-    payment: Payment | null;
+    order: Order | null;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
     onConfirm: () => void;
 }
 
-export function DeletePaymentAlert({ payment, isOpen, onOpenChange, onConfirm }: DeletePaymentAlertProps) {
-  if (!payment) return null;
+export function DeletePaymentAlert({ order, isOpen, onOpenChange, onConfirm }: DeletePaymentAlertProps) {
+  if (!order) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
@@ -28,7 +28,7 @@ export function DeletePaymentAlert({ payment, isOpen, onOpenChange, onConfirm }:
         <AlertDialogHeader>
           <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
           <AlertDialogDescription>
-            سيؤدي هذا الإجراء إلى حذف سجل الدفعة رقم ({payment.id.substring(0,7).toUpperCase()}) المرتبط بالطلب #{payment.orderId.substring(0,7).toUpperCase()} بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.
+            سيؤدي هذا الإجراء إلى حذف إثبات الدفع للطلب رقم ({order.id.substring(0,7).toUpperCase()}). سيعود الطلب إلى حالة "في انتظار الدفع". لا يمكن التراجع عن هذا الإجراء.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

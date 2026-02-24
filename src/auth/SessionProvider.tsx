@@ -1,17 +1,17 @@
 'use client';
 
 import React, { createContext, useState, useEffect, useMemo, useCallback, useContext } from 'react';
-import { useUser, useFirestore, useAuth } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import type { UserRole } from './permissions';
-import { User, signOut } from 'firebase/auth';
+import { User } from 'firebase/auth';
 
 export interface SessionState {
   user: User | null;
   profile: UserProfile | null;
   role: UserRole | null;
-  isLoading: boolean;
+  isLoading: boolean; // True if either auth or profile is loading
   error: string | null;
   isAdmin: boolean;
   isOrdersManager: boolean;
@@ -24,21 +24,23 @@ export interface SessionState {
 
 export const SessionContext = createContext<SessionState | undefined>(undefined);
 
-
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user: authUser, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
-  const auth = useAuth();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (user: User) => {
-    if (!firestore || !auth) return;
-
-    setIsLoading(true);
+    if (!firestore) {
+        setError("Firestore service is not available.");
+        setProfileLoading(false);
+        return;
+    };
+    
+    // Start loading profile
+    setProfileLoading(true);
     setError(null);
 
     try {
@@ -53,35 +55,38 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
         
         setProfile(userProfile);
-        setRole(userProfile.role);
       } else {
-        throw new Error("لم يتم العثور على ملفك الشخصي في قاعدة البيانات.");
+        // This is a critical error state: user exists in Auth but not in Firestore.
+        throw new Error("Your user profile could not be found in the database. Please contact support.");
       }
     } catch (e: any) {
-      console.error("SessionProvider Error:", e.message);
-      setError(e.message);
+      console.error("SessionProvider Error (fetchProfile):", e);
+      if (e.code === 'permission-denied') {
+        setError("You don't have permission to access your user profile. Please check security rules.");
+      } else {
+        setError(e.message || "An unknown error occurred while fetching your profile.");
+      }
+      setProfile(null);
     } finally {
-      setIsLoading(false);
+      setProfileLoading(false);
     }
-  }, [firestore, auth]);
+  }, [firestore]);
 
   useEffect(() => {
-    // If auth is still resolving, we are in a loading state.
+    // If auth state is still loading, we wait.
     if (isAuthLoading) {
-      setIsLoading(true);
       return;
     }
 
-    // If no user is authenticated, session is resolved, not loading, and empty.
+    // If no user is authenticated, reset the session state.
     if (!authUser) {
       setProfile(null);
-      setRole(null);
+      setProfileLoading(false);
       setError(null);
-      setIsLoading(false);
       return;
     }
 
-    // If we have an authenticated user, fetch their profile.
+    // If we have a user, fetch their profile.
     fetchProfile(authUser);
 
   }, [authUser, isAuthLoading, fetchProfile]);
@@ -92,8 +97,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authUser, fetchProfile]);
 
-
   const sessionValue = useMemo(() => {
+    const role = profile?.role || null;
     const isAdmin = role === 'Admin';
     const isOrdersManager = role === 'OrdersManager';
     const isFinanceManager = role === 'FinanceManager';
@@ -103,7 +108,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       user: authUser,
       profile,
       role,
-      isLoading,
+      isLoading: isAuthLoading || profileLoading, // Session is loading if auth OR profile is loading
       error,
       isAdmin,
       isOrdersManager,
@@ -113,7 +118,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       isDropshipper: role === 'Dropshipper',
       refreshSession,
     };
-  }, [authUser, profile, role, isLoading, error, refreshSession]);
+  }, [authUser, profile, isAuthLoading, profileLoading, error, refreshSession]);
 
   return (
     <SessionContext.Provider value={sessionValue}>
