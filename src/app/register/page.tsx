@@ -95,7 +95,7 @@ export default function RegisterPage() {
   }, [searchParams, firestore, toast]);
 
   const handleRegister = async () => {
-    if (!auth) {
+    if (!auth || !firestore) {
       toast({ variant: 'destructive', title: 'خطأ', description: 'خدمات Firebase غير متاحة.' });
       return;
     }
@@ -109,34 +109,66 @@ export default function RegisterPage() {
     }
 
     setIsSubmitting(true);
+    let newUserCredential;
     try {
-      // The SessionProvider will automatically handle creating the user profile document in Firestore
-      // on the first successful authentication. We only need to handle the auth creation here.
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, {
-        displayName: `${firstName} ${lastName}`,
-      });
+        newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = newUserCredential.user;
 
-      // The rest of profile creation, including setting the referrerId if it exists,
-      // should ideally be handled by a Cloud Function triggered on user creation for robustness,
-      // or by the client-side SessionProvider's ensureUserProfile logic.
-      // For this implementation, we will rely on the SessionProvider to create the basic profile.
-      // The logic for updating the referrer's count would be more secure in a Cloud Function.
+        await updateProfile(user, {
+            displayName: `${firstName} ${lastName}`,
+        });
+        
+        const batch = writeBatch(firestore);
+        const userDocRef = doc(firestore, 'users', user.uid);
+        
+        const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+          id: user.uid,
+          email: user.email!,
+          role: 'Dropshipper',
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          isActive: true,
+          initialPasswordChangeRequired: true,
+          referralCode: user.uid.substring(0, 8), // Generate a simple referral code
+        };
 
-      toast({
-        title: 'تم إنشاء الحساب بنجاح!',
-        description: 'مرحباً بك. سيتم توجيهك الآن.',
-      });
-      // Redirection is handled by the main useEffect that watches the session state.
+        if (referrerId) {
+            newUserProfile.referrerId = referrerId;
+            const referrerDocRef = doc(firestore, 'users', referrerId);
+            batch.update(referrerDocRef, { referredUsersCount: increment(1) });
+        }
+
+        batch.set(userDocRef, {
+            ...newUserProfile,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+        
+        await batch.commit();
+
+        toast({
+            title: 'تم إنشاء الحساب بنجاح!',
+            description: 'مرحباً بك. سيتم توجيهك الآن.',
+        });
 
     } catch (error: any) {
       console.error('Registration Error:', error);
       let description = 'حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.';
+      const userId = newUserCredential?.user?.uid;
 
       if (error.code === 'auth/email-already-in-use') {
         description = 'هذا البريد الإلكتروني مستخدم بالفعل.';
       } else if (error.code === 'auth/weak-password') {
         description = 'كلمة المرور ضعيفة جدا. يجب أن تكون 6 أحرف على الأقل.';
+      } else if (userId) {
+          // This is a Firestore error after user creation.
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `batch write for user ${userId}`,
+            operation: 'write',
+            requestResourceData: { email, firstName, referrerId }
+        }));
+         description = 'فشل حفظ بيانات الملف الشخصي. قد تكون هناك مشكلة في صلاحيات قاعدة البيانات.';
       }
 
       toast({
