@@ -38,6 +38,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { BostaManualShipmentDialog } from './_components/bosta-manual-shipment-dialog';
 import { ShipmentDetailsDrawer } from '@/components/shared/shipment-details-drawer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ClientRelativeTime } from '@/components/shared/client-relative-time';
 
 
 const statusColorClass: { [key: string]: string } = {
@@ -94,32 +95,6 @@ const StatCard = ({ title, value, icon, isLoading }: { title: string, value: str
         </CardContent>
     </Card>
 );
-
-const ClientRelativeTime = ({ date }: { date?: Date }) => {
-    const [timeAgo, setTimeAgo] = useState<string>('');
-
-    useEffect(() => {
-        if (!date) return;
-
-        const update = () => {
-            const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-            if (seconds < 5) setTimeAgo('الآن');
-            else if (seconds < 60) setTimeAgo(`منذ ${Math.floor(seconds)} ث`);
-            else if (seconds < 3600) setTimeAgo(`منذ ${Math.floor(seconds / 60)} د`);
-            else if (seconds < 86400) setTimeAgo(`منذ ${Math.floor(seconds / 3600)} س`);
-            else setTimeAgo(`منذ ${Math.floor(seconds / 86400)} ي`);
-        };
-        
-        update();
-        const intervalId = setInterval(update, 60000); // Update every minute
-        return () => clearInterval(intervalId);
-    }, [date]);
-
-    if (!date) return null;
-    if (!timeAgo) return <Skeleton className="h-4 w-16 mt-1" />; // Placeholder during calculation
-    
-    return <>{timeAgo}</>;
-};
 
 export default function AdminOrdersPage() {
   const { user, firestore } = useFirebase();

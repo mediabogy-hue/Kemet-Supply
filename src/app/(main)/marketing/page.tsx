@@ -21,8 +21,6 @@ import { collection, query, doc, orderBy, setDoc, addDoc, updateDoc, deleteDoc, 
 import type { ReferredCustomer, MarketingCampaign, AutomationSettings, UserProfile } from '@/lib/types';
 import { useSession } from '@/auth/SessionProvider';
 import { Skeleton, RefreshIndicator } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -51,6 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
+import { ClientRelativeTime } from '@/components/shared/client-relative-time';
 
 
 const StatCard = ({ title, value, icon, isLoading }: { title: string; value: string | number; icon: React.ReactNode; isLoading: boolean }) => (
@@ -76,24 +75,6 @@ const consentStatusVariant: { [key: string]: "default" | "secondary" | "destruct
   pending: "secondary",
   denied: "destructive",
 };
-
-const ClientFormatDistance = ({ date }: { date?: Date }) => {
-    const [formatted, setFormatted] = useState<string | null>(null);
-    useEffect(() => {
-        if (date) {
-            const update = () => setFormatted(formatDistanceToNow(date, { addSuffix: true, locale: ar }));
-            update();
-            const interval = setInterval(update, 60000);
-            return () => clearInterval(interval);
-        }
-    }, [date]);
-
-    if (!formatted) {
-        return <Skeleton className="h-4 w-24" />;
-    }
-    return <>{formatted}</>;
-}
-
 
 function MarketingDashboardTab({ customers, isLoading }: { customers: ReferredCustomer[] | null, isLoading: boolean }) {
     const stats = useMemo(() => {
@@ -185,11 +166,7 @@ function CustomersTab({ customers, marketers, isLoading }: { customers: Referred
                                 <TableCell><Badge variant="outline">{customer.segment}</Badge></TableCell>
                                 <TableCell>{customer.channel}</TableCell>
                                 <TableCell>
-                                  {customer.lastInteractionAt ? (
-                                    <ClientFormatDistance date={customer.lastInteractionAt.toDate()} />
-                                  ) : (
-                                    'N/A'
-                                  )}
+                                  <ClientRelativeTime date={customer.lastInteractionAt?.toDate()} />
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant={consentStatusVariant[customer.consentStatus] || 'secondary'}>

@@ -36,7 +36,7 @@ import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, us
 import { collection, doc, deleteDoc, query, orderBy, updateDoc, serverTimestamp } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +52,7 @@ import { ProductAnalyticsDialog } from "./_components/product-analytics-dialog";
 import { ProductStatCard } from "./_components/product-stat-card";
 import { UpdateStockDialog } from "./_components/update-stock-dialog";
 import { QuickStockUpdateDialog } from "../inventory/_components/quick-stock-update-dialog";
+import { ClientRelativeTime } from '@/components/shared/client-relative-time';
 
 // Inventory-specific components
 import { exportToExcel } from "@/lib/export";
@@ -64,23 +65,6 @@ import { DeleteCategoryAlert as DeleteCategoryAlertCat } from "../categories/_co
 
 
 const MINIMUM_STOCK_LEVEL = 3;
-
-const ClientFormatDistance = ({ date }: { date?: Date }) => {
-    const [formatted, setFormatted] = useState<string | null>(null);
-    useEffect(() => {
-        if (date) {
-            const update = () => setFormatted(formatDistanceToNow(date, { addSuffix: true, locale: ar }));
-            update();
-            const interval = setInterval(update, 60000); // Update every minute
-            return () => clearInterval(interval);
-        }
-    }, [date]);
-
-    if (!formatted) {
-        return <Skeleton className="h-4 w-20" />;
-    }
-    return <>{formatted}</>;
-}
 
 function ProductManagementTab() {
     const firestore = useFirestore();
@@ -306,7 +290,7 @@ function ProductManagementTab() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-xs">
-                                            <ClientFormatDistance date={product.updatedAt?.toDate()} />
+                                            <ClientRelativeTime date={product.updatedAt?.toDate()} />
                                         </TableCell>
                                         <TableCell className="text-end">
                                              <DropdownMenu>
@@ -586,7 +570,7 @@ function InventoryTab() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-xs">
-                                            <ClientFormatDistance date={product.updatedAt?.toDate()} />
+                                            <ClientRelativeTime date={product.updatedAt?.toDate()} />
                                         </TableCell>
                                         <TableCell className="text-end">
                                              <DropdownMenu>
@@ -819,7 +803,7 @@ function CategoriesTab() {
                         <div className="mt-4 flex justify-between items-center">
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <CalendarClock className="h-3.5 w-3.5" />
-                                <ClientFormatDistance date={category.updatedAt?.toDate()} />
+                                <ClientRelativeTime date={category.updatedAt?.toDate()} />
                             </div>
                              <Badge variant={(category.isAvailable ?? true) ? 'default' : 'destructive'} className={cn("text-xs", (category.isAvailable ?? true) ? "bg-green-500/10 text-green-400 border-green-500/20" : "")}>
                                 {(category.isAvailable ?? true) ? 'مرئية' : 'مخفية'}
