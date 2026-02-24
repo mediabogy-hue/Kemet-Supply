@@ -16,21 +16,27 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Role checking functions using the robust 'exists' method.
+    // Helper function to get the user's role from their own document.
+    // This is more performant for collection group queries than multiple 'exists' calls.
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Role checking functions based on the 'role' field in the user's document.
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && getUserRole() == 'Admin';
     }
     function isOrdersManager() {
-        return isSignedIn() && exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
+      return isSignedIn() && getUserRole() == 'OrdersManager';
     }
     function isFinanceManager() {
-        return isSignedIn() && exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
+      return isSignedIn() && getUserRole() == 'FinanceManager';
     }
     function isProductManager() {
-        return isSignedIn() && exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
+      return isSignedIn() && getUserRole() == 'ProductManager';
     }
     function isStaff() {
-      return isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager();
+      return isSignedIn() && getUserRole() in ['Admin', 'OrdersManager', 'FinanceManager', 'ProductManager'];
     }
     
     // A function to check if a user is updating only the allowed fields in their own profile.

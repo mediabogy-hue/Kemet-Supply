@@ -123,9 +123,8 @@ export default function AdminOrdersPage() {
   const shipmentsQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collection(firestore, 'shipments')), [firestore, canAccess, isRoleLoading]);
   const { data: allShipments, isLoading: shipmentsLoading } = useCollection<Shipment>(shipmentsQuery);
 
-  // This query causes permission errors and is temporarily disabled to ensure app stability.
-  const ordersQuery = useMemoFirebase(() => null, []);
-  const { data: allRawOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(ordersQuery);
+  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy(documentId())), [firestore, canAccess, isRoleLoading]);
+  const { data: allRawOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
 
   const isLoading = isRoleLoading || usersLoading || ordersLoading || shipmentsLoading;
 
@@ -458,7 +457,8 @@ export default function AdminOrdersPage() {
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>خطأ في جلب البيانات</AlertTitle>
                         <AlertDescription>
-                            تم تعطيل جلب بيانات الطلبات مؤقتاً لحل مشكلة في الأداء والصلاحيات. سيتم إعادة تفعيلها قريباً.
+                             لم نتمكن من تحميل قائمة الطلبات. قد يكون السبب عدم وجود صلاحيات كافية أو مشكلة في قاعدة البيانات.
+                             <p className="mt-2 text-xs font-mono">{queryError.message}</p>
                         </AlertDescription>
                     </Alert>
                 </div>
