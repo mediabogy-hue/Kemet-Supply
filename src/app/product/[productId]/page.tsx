@@ -151,7 +151,7 @@ export default function PublicProductPage() {
         }
     }, [firestore, productId, dropshipperId]);
 
-    const productRef = useMemoFirebase(() => {
+    const productRef = useMemo(() => {
         if (!firestore || !productId) return null;
         return doc(firestore, 'products', productId);
     }, [firestore, productId]);
@@ -172,7 +172,7 @@ export default function PublicProductPage() {
         }
     }, [product]);
 
-    const { data: relatedProductsData, isLoading: relatedProductsLoading } = useCollection<Product>(useMemoFirebase(() => {
+    const relatedProductsQuery = useMemo(() => {
         if (!firestore || !product?.category) return null;
         return query(
           collection(firestore, "products"),
@@ -180,7 +180,9 @@ export default function PublicProductPage() {
           where("category", "==", product.category),
           limit(4) // Fetch 4 to ensure we get 3 others if the current product is included
         );
-    }, [firestore, product]));
+    }, [firestore, product]);
+
+    const { data: relatedProductsData, isLoading: relatedProductsLoading } = useCollection<Product>(relatedProductsQuery);
 
     const relatedProducts = useMemo(() => {
         if (!relatedProductsData || !product) return [];

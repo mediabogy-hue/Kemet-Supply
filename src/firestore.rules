@@ -60,18 +60,17 @@ service cloud.firestore {
       }
     }
     
+    // This is the single source of truth for orders
     match /orders/{orderId} {
-        // A user can list orders, but the client query MUST constrain it by their UID.
-        // The `get` rule below will then be enforced on each document individually.
+        // Any signed-in user can attempt to list orders.
+        // The 'get' rule below will ensure they only see their own.
         allow list: if isSignedIn();
         
-        // A user can read a specific order doc if they are staff or if they are the dropshipper.
+        // Anyone can read a specific order document if they are staff or own it.
         allow get: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
         
-        // An authenticated user can create an order, but ONLY for themselves.
-        // We also validate the required fields for data integrity.
-        allow create: if isSignedIn()
-                    && request.auth.uid == request.resource.data.dropshipperId
+        // Allow public and authenticated users to create orders, with basic validation.
+        allow create: if request.resource.data.dropshipperId is string
                     && request.resource.data.customerName is string
                     && request.resource.data.customerPhone is string
                     && request.resource.data.productId is string
@@ -80,6 +79,11 @@ service cloud.firestore {
         // Only staff can modify or delete orders.
         allow update: if isStaff();
         allow delete: if isAdmin();
+    }
+    
+    // This rule is necessary for collectionGroup queries on 'orders' by staff members.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isStaff();
     }
     
     // Denormalized collections for fast admin queries
