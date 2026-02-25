@@ -58,7 +58,7 @@ function ReportsContent() {
     const deliveredOrdersQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
         return query(
-            collection(firestore, `orders`), 
+            collection(firestore, 'orders'), 
             where('dropshipperId', '==', user.uid),
             where('status', '==', 'Delivered')
         );
