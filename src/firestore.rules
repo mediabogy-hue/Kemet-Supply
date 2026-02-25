@@ -45,10 +45,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       // Rules for subcollections inside a user document
-      match /orders/{orderId} {
-        // A user can do anything with their own orders.
-        allow read, write, list: if isOwner(userId);
-      }
       match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();
       }
@@ -64,10 +60,23 @@ service cloud.firestore {
       }
     }
     
-    // Denormalized collections for fast admin queries
-    match /adminOrders/{orderId} {
-      allow read, list, write, delete: if isStaff();
+    // This is the single source of truth for orders
+    match /orders/{orderId} {
+        // A dropshipper can only list orders if they are filtering by their own ID. Staff can list all orders.
+        allow list: if isStaff() || (isSignedIn() && request.query.where.dropshipperId == request.auth.uid);
+        
+        // Anyone can read a specific order document if they are staff or own it.
+        allow get: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
+        
+        // A dropshipper can create an order for themselves.
+        allow create: if isSignedIn() && request.resource.data.dropshipperId == request.auth.uid;
+        
+        // Only staff can modify or delete orders.
+        allow update: if isStaff();
+        allow delete: if isAdmin();
     }
+    
+    // Denormalized collections for fast admin queries
     match /adminWithdrawalRequests/{requestId} {
       allow read, list, write, delete: if isStaff();
     }
@@ -150,3 +159,5 @@ service cloud.firestore {
     match /automationSettings/{any} { allow read, write: if isStaff(); }
   }
 }
+
+    

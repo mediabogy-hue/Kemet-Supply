@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, serverTimestamp, doc, writeBatch } from "firebase/firestore";
+import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -70,18 +70,12 @@ export default function NewOrderPage() {
       return;
     }
     
-    const batch = writeBatch(firestore);
-    const orderId = doc(collection(firestore, 'id_generator')).id;
-
-    // Path for user's own subcollection
-    const userOrderRef = doc(firestore, `users/${user.uid}/orders/${orderId}`);
-    // Denormalized path for admin access
-    const adminOrderRef = doc(firestore, `adminOrders/${orderId}`);
+    const orderRef = doc(collection(firestore, 'orders'));
 
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
-      id: orderId,
+      id: orderRef.id,
       dropshipperId: user.uid,
       dropshipperName,
       customerName: data.customerName,
@@ -109,17 +103,13 @@ export default function NewOrderPage() {
       orderData.merchantInfo = selectedProduct.merchantInfo;
     }
 
-    // Write to both locations
-    batch.set(userOrderRef, orderData);
-    batch.set(adminOrderRef, orderData);
-
     try {
-        await batch.commit();
+        await setDoc(orderRef, orderData);
         toast({ title: "تم إنشاء الطلب بنجاح!" });
         router.push("/orders");
     } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `batch write for order ${orderId}`,
+          path: `orders/${orderRef.id}`,
           operation: 'create',
           requestResourceData: orderData
         }));
@@ -286,3 +276,5 @@ export default function NewOrderPage() {
       </div>
   );
 }
+
+    

@@ -10,11 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { File, Eye } from "lucide-react";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, where, collectionGroup } from "firebase/firestore";
+import { collection, query, orderBy, where } from "firebase/firestore";
 import type { Order } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { exportToExcel } from '@/lib/export';
 import { cn } from "@/lib/utils";
 
@@ -77,9 +77,9 @@ export default function OrdersPage() {
 
   const ordersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Read from the user's private subcollection
     return query(
-      collection(firestore, `users/${user.uid}/orders`),
+      collection(firestore, 'orders'),
+      where('dropshipperId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
   }, [firestore, user]);
@@ -249,3 +249,5 @@ export default function OrdersPage() {
     </>
   );
 }
+
+    

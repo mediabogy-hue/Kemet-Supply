@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useFirebase, useDoc, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -257,9 +257,7 @@ export default function PublicProductPage() {
             return;
         }
     
-        const orderId = doc(collection(firestore, 'id_generator')).id;
-        const userOrderRef = doc(firestore, `users/${dropshipperId}/orders/${orderId}`);
-        const adminOrderRef = doc(firestore, `adminOrders/${orderId}`);
+        const orderRef = doc(collection(firestore, 'orders'));
         
         let dropshipperName = 'مسوق';
         try {
@@ -273,7 +271,7 @@ export default function PublicProductPage() {
         }
 
         const orderData: Partial<Order> = {
-            id: orderId,
+            id: orderRef.id,
             dropshipperId,
             dropshipperName,
             customerName: data.customerName,
@@ -308,13 +306,7 @@ export default function PublicProductPage() {
         }
     
         try {
-            const batch = writeBatch(firestore);
-            
-            // Write to the user's subcollection
-            batch.set(userOrderRef, orderData);
-
-            // Write a denormalized copy for admin queries
-            batch.set(adminOrderRef, orderData);
+            await setDoc(orderRef, orderData);
 
             // Create a record for the referred customer
             if (dropshipperId) {
@@ -329,11 +321,9 @@ export default function PublicProductPage() {
                     lastInteractionAt: serverTimestamp() as any,
                     name: data.customerName,
                 };
-                 batch.set(customerRef, { ...customerData, createdAt: serverTimestamp() }, { merge: true });
+                 await setDoc(customerRef, { ...customerData, createdAt: serverTimestamp() }, { merge: true });
             }
             
-            await batch.commit();
-
             setOrderSuccess(true);
             toast({
                 title: 'تم استلام طلبك بنجاح!',
@@ -343,7 +333,7 @@ export default function PublicProductPage() {
         } catch (error) {
             console.error("Order submission error:", error);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-               path: `batch write for order ${orderId}`,
+               path: `orders/${orderRef.id}`,
                operation: 'create',
                requestResourceData: orderData
            }));
@@ -756,3 +746,5 @@ export default function PublicProductPage() {
         </div>
     );
 }
+
+    
