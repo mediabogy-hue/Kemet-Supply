@@ -77,9 +77,9 @@ export default function OrdersPage() {
 
   const ordersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // Read from the user's private subcollection
     return query(
-      collection(firestore, 'orders'),
-      where('dropshipperId', '==', user.uid),
+      collection(firestore, `users/${user.uid}/orders`),
       orderBy('createdAt', 'desc')
     );
   }, [firestore, user]);

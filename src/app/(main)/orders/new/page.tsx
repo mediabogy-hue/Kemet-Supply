@@ -72,11 +72,15 @@ export default function NewOrderPage() {
     
     const batch = writeBatch(firestore);
 
-    const mainOrderRef = doc(collection(firestore, "orders"));
+    // Path for user's own subcollection
+    const userOrderRef = doc(collection(firestore, `users/${user.uid}/orders`));
+    // Denormalized path for admin access
+    const adminOrderRef = doc(firestore, `adminOrders/${userOrderRef.id}`);
+
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
-      id: mainOrderRef.id,
+      id: userOrderRef.id,
       dropshipperId: user.uid,
       dropshipperName,
       customerName: data.customerName,
@@ -104,7 +108,9 @@ export default function NewOrderPage() {
       orderData.merchantInfo = selectedProduct.merchantInfo;
     }
 
-    batch.set(mainOrderRef, orderData);
+    // Write to both locations
+    batch.set(userOrderRef, orderData);
+    batch.set(adminOrderRef, orderData);
 
     try {
         await batch.commit();
@@ -112,7 +118,7 @@ export default function NewOrderPage() {
         router.push("/orders");
     } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `orders/${mainOrderRef.id}`,
+          path: `batch write for order ${userOrderRef.id}`,
           operation: 'create',
           requestResourceData: orderData
         }));

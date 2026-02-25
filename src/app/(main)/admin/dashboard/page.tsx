@@ -91,8 +91,9 @@ export default function AdminDashboardPage() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
+        // Admin and other staff query the denormalized admin collection
         const baseQuery = query(
-            collection(firestore, 'orders'),
+            collection(firestore, 'adminOrders'),
             where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)),
             orderBy('createdAt', 'desc')
         );
@@ -236,4 +237,5 @@ export default function AdminDashboardPage() {
     
 
     
+
 

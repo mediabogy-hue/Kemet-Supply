@@ -37,10 +37,19 @@ export async function POST(req: Request) {
     const userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || 'Unknown User';
 
     const adminDb = getAdminDb();
-    const withdrawalRef = adminDb.collection("withdrawalRequests").doc();
+    const batch = adminDb.batch();
 
-    await withdrawalRef.set({
-      id: withdrawalRef.id,
+    // Generate one ID to be used for both documents
+    const newId = adminDb.collection('id_generator').doc().id;
+
+    // 1. Create the request in the user's private subcollection
+    const userWithdrawalRef = adminDb.doc(`users/${userId}/withdrawalRequests/${newId}`);
+    
+    // 2. Create a denormalized copy for the admin panel
+    const adminWithdrawalRef = adminDb.doc(`adminWithdrawalRequests/${newId}`);
+
+    const withdrawalData = {
+      id: newId,
       userId: userId,
       userName: userName,
       amount: amount,
@@ -49,9 +58,14 @@ export async function POST(req: Request) {
       status: "Pending",
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-    });
+    };
 
-    return NextResponse.json({ success: true, id: withdrawalRef.id });
+    batch.set(userWithdrawalRef, withdrawalData);
+    batch.set(adminWithdrawalRef, withdrawalData);
+
+    await batch.commit();
+
+    return NextResponse.json({ success: true, id: newId });
   } catch (e: any) {
     console.error("Withdrawal API Error:", e);
     if (e.code === 'auth/id-token-expired' || e.code === 'auth/argument-error') {
