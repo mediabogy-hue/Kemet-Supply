@@ -64,7 +64,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     if (typeof window !== 'undefined' && !clientServices) {
         setClientServices(initializeFirebaseServices());
     }
-  }, []);
+  }, []); // FIX: Changed dependency from [clientServices] to [] to prevent re-initialization loop.
 
   return (
     <FirebaseProvider
