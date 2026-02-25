@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -21,10 +20,10 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
-import { useFirebase, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where, collectionGroup, getDocs } from "firebase/firestore";
+import { useFirebase, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, addDoc, writeBatch, orderBy, limit, where, getDocs, collectionGroup } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { exportToExcel } from '@/lib/export';
@@ -98,10 +97,10 @@ const StatCard = ({ title, value, icon, isLoading }: { title: string, value: str
 );
 
 export default function AdminOrdersPage() {
-  const { user, firestore } = useFirebase();
+  const { firestore } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
-  const { role, isAdmin, isOrdersManager, isProductManager, isLoading: isRoleLoading, profile } = useSession();
+  const { role, isAdmin, isOrdersManager, isProductManager, isLoading: isRoleLoading, profile, user } = useSession();
   
   const [orderToDelete, setOrderToDelete] = useState<OrderWithDropshipper | null>(null);
   const [orderForBosta, setOrderForBosta] = useState<Order | null>(null);
@@ -129,7 +128,7 @@ export default function AdminOrdersPage() {
     
     // ProductManagers (Merchants) see orders only for their products
     if (isProductManager) {
-        return query(collection(firestore, 'orders'), where('merchantId', '==', user.uid), orderBy('createdAt', 'desc'), limit(200));
+        return query(collectionGroup(firestore, 'orders'), where('merchantId', '==', user.uid), orderBy('createdAt', 'desc'), limit(200));
     }
     
     return null;
@@ -204,7 +203,9 @@ export default function AdminOrdersPage() {
     setAllOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     toast({ title: "جاري تحديث حالة الطلب..." });
 
-    const orderRef = doc(firestore, `orders`, order.id);
+    const batch = writeBatch(firestore);
+    const mainOrderRef = doc(firestore, `orders/${order.id}`);
+    const userOrderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
 
     try {
         if (newStatus === 'Confirmed') {
@@ -215,7 +216,7 @@ export default function AdminOrdersPage() {
             }
             await runTransaction(firestore, async (transaction) => {
                 const productRef = doc(firestore, 'products', order.productId);
-                const orderDoc = await transaction.get(orderRef); 
+                const orderDoc = await transaction.get(mainOrderRef); 
                 const productDoc = await transaction.get(productRef);
 
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
@@ -232,9 +233,8 @@ export default function AdminOrdersPage() {
                         message: `الكمية غير كافية للمنتج: ${productData.name}`,
                         item: { productId: productData.id, needed: orderData.quantity, available: productData.stockQuantity }
                     };
-                    
-                    transaction.update(orderRef, { stockError });
-                    
+                    transaction.update(mainOrderRef, { stockError });
+                    transaction.update(userOrderRef, { stockError });
                     throw new Error(stockError.message);
                 }
 
@@ -248,16 +248,18 @@ export default function AdminOrdersPage() {
                     actor: { userId: user.uid, role: role },
                 });
                 
-                transaction.update(orderRef, {
+                const updatePayload = {
                     status: 'Confirmed', confirmedAt: serverTimestamp(),
                     confirmedBy: { userId: user.uid, role: role },
                     stockApplied: true, stockAppliedAt: serverTimestamp(), stockError: null,
-                });
+                };
+                transaction.update(mainOrderRef, updatePayload);
+                transaction.update(userOrderRef, updatePayload);
             });
             toast({ title: "تم تأكيد الطلب وخصم المخزون بنجاح!" });
         } else if (newStatus === 'Canceled' || newStatus === 'Returned') {
             await runTransaction(firestore, async (transaction) => {
-                const orderDoc = await transaction.get(orderRef);
+                const orderDoc = await transaction.get(mainOrderRef);
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
                 
                 const orderData = orderDoc.data() as Order;
@@ -281,11 +283,14 @@ export default function AdminOrdersPage() {
                     statusAndStockUpdate.stockRestored = true;
                 }
                 
-                transaction.update(orderRef, statusAndStockUpdate);
+                transaction.update(mainOrderRef, statusAndStockUpdate);
+                transaction.update(userOrderRef, statusAndStockUpdate);
             });
             toast({ title: `تم تحديث حالة الطلب إلى "${statusText[newStatus]}"` });
         } else {
-            await updateDoc(orderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            batch.update(mainOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            batch.update(userOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            await batch.commit();
             toast({ title: "تم تحديث حالة الطلب بنجاح" });
         }
 
@@ -311,7 +316,7 @@ export default function AdminOrdersPage() {
     }
   }, [firestore, user, role, toast, setAllOrders, allOrders, profile]);
   
-  const handleDeleteOrder = () => {
+  const handleDeleteOrder = async () => {
     if (!orderToDelete || !firestore || !allOrders) return;
 
     const orderToDeleteCache = { ...orderToDelete };
@@ -320,20 +325,24 @@ export default function AdminOrdersPage() {
     setAllOrders(prev => (prev || []).filter(o => o.id !== orderToDeleteCache.id));
     setOrderToDelete(null); 
     
-    const orderRef = doc(firestore, 'orders', orderToDeleteCache.id);
+    const batch = writeBatch(firestore);
+    const mainOrderRef = doc(firestore, 'orders', orderToDeleteCache.id);
+    const userOrderRef = doc(firestore, `users/${orderToDeleteCache.dropshipperId}/orders/${orderToDeleteCache.id}`);
     
-    deleteDoc(orderRef)
-        .then(() => {
-            toast({ title: "تم حذف الطلب بنجاح" });
-        })
-        .catch(async (error) => {
-            setAllOrders(originalOrders);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: orderRef.path,
-                operation: 'delete',
-            }));
-            toast({ variant: "destructive", title: "فشل حذف الطلب", description: "قد لا تملك الصلاحيات الكافية." });
-        });
+    batch.delete(mainOrderRef);
+    batch.delete(userOrderRef);
+    
+    try {
+        await batch.commit();
+        toast({ title: "تم حذف الطلب بنجاح" });
+    } catch (error) {
+        setAllOrders(originalOrders);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `batch delete on orders/${orderToDeleteCache.id}`,
+            operation: 'delete',
+        }));
+        toast({ variant: "destructive", title: "فشل حذف الطلب", description: "قد لا تملك الصلاحيات الكافية." });
+    }
   };
 
   const handleShipmentCreated = () => {
@@ -603,20 +612,6 @@ export default function AdminOrdersPage() {
                                                   <span className={cn("h-2 w-2 rounded-full", paymentStatusColorClass[order.customerPaymentStatus || ''] || 'bg-gray-400')} />
                                                   <span>{paymentStatusText[order.customerPaymentStatus || ''] || order.customerPaymentStatus || 'N/A'}</span>
                                                 </Badge>
-                                                {order.customerPaymentProof && (
-                                                     <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <CheckCircle className="h-4 w-4 text-green-500"/>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <div className="space-y-1 p-1">
-                                                                <p className="font-bold">تم إرفاق إثبات دفع</p>
-                                                                <p>هاتف: {order.customerPaymentProof.senderPhoneNumber}</p>
-                                                                <p>مرجع: {order.customerPaymentProof.referenceNumber}</p>
-                                                            </div>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
                                             </div>
                                         )}
                                     </TableCell>

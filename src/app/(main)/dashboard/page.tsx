@@ -49,7 +49,7 @@ export default function DashboardPage() {
 
     const ordersQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return query(collectionGroup(firestore, 'orders'), where('dropshipperId', '==', user.uid));
+        return query(collection(firestore, 'orders'), where('dropshipperId', '==', user.uid));
     }, [firestore, user]);
     
     const { data: orders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);

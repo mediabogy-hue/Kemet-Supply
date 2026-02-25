@@ -78,7 +78,7 @@ export default function OrdersPage() {
   const ordersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collectionGroup(firestore, 'orders'),
+      collection(firestore, 'orders'),
       where('dropshipperId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
@@ -89,7 +89,6 @@ export default function OrdersPage() {
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
     
-    // No need to sort again, query already does it
     if (activeTab === "all") {
       return orders;
     }

@@ -12,10 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Link as LinkIcon, Loader2, ExternalLink, Copy, FileWarning } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSession } from '@/auth/SessionProvider';
 
 
 export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, onShipmentCreated }: { order: Order | null; link: string; isOpen: boolean; onOpenChange: (open: boolean) => void; onShipmentCreated?: () => void; }) {
-    const { firestore, user } = useFirebase();
+    const { firestore } = useFirebase();
+    const { user: authUser } = useSession();
     const { toast } = useToast();
     const [trackingNumber, setTrackingNumber] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,11 +50,14 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
     };
 
     const handleLinkShipment = async () => {
-        if (!firestore || !user || !order || !trackingNumber) {
+        if (!firestore || !authUser || !order || !trackingNumber) {
             toast({ variant: "destructive", title: "بيانات ناقصة", description: "الرجاء إدخال رقم التتبع." });
             return;
         }
         setIsSubmitting(true);
+        
+        const batch = writeBatch(firestore);
+        
         const shipmentRef = doc(collection(firestore, "shipments"));
         const newShipmentData = {
             id: shipmentRef.id,
@@ -66,14 +71,16 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
             labelUrl: '', // No label URL for manual entry
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            createdBy: user.uid,
+            createdBy: authUser.uid,
         };
+        batch.set(shipmentRef, newShipmentData);
 
         const orderRef = doc(firestore, `orders/${order.id}`);
-        
-        const batch = writeBatch(firestore);
-        batch.set(shipmentRef, newShipmentData);
         batch.update(orderRef, { status: 'Ready to Ship', updatedAt: serverTimestamp() });
+
+        // Update the user's order subcollection as well, if it exists.
+        const userOrderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
+        batch.update(userOrderRef, { status: 'Ready to Ship', updatedAt: serverTimestamp() });
         
         try {
             await batch.commit();
@@ -82,7 +89,7 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
             onOpenChange(false);
         } catch (e) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: shipmentRef.path,
+                path: `batch write for shipment ${shipmentRef.id}`,
                 operation: 'create',
                 requestResourceData: newShipmentData,
             }));
@@ -180,5 +187,3 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
         </Dialog>
     );
 }
-
-    

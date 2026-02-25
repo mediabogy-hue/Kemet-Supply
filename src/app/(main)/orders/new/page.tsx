@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, serverTimestamp, doc, writeBatch } from "firebase/firestore";
 import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -69,12 +69,14 @@ export default function NewOrderPage() {
       return;
     }
     
-    // Create order in the user's subcollection
-    const orderRef = doc(collection(firestore, `users/${user.uid}/orders`));
+    const batch = writeBatch(firestore);
+
+    const mainOrderRef = doc(collection(firestore, "orders"));
+    const userOrderRef = doc(collection(firestore, `users/${user.uid}/orders`));
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
-      id: orderRef.id,
+      id: mainOrderRef.id,
       dropshipperId: user.uid,
       dropshipperName,
       customerName: data.customerName,
@@ -102,19 +104,21 @@ export default function NewOrderPage() {
       orderData.merchantInfo = selectedProduct.merchantInfo;
     }
 
-    setDoc(orderRef, orderData)
-      .then(() => {
+    batch.set(mainOrderRef, orderData);
+    batch.set(userOrderRef, { ...orderData, id: userOrderRef.id }); // Use new ID for subcollection doc
+
+    try {
+        await batch.commit();
         toast({ title: "تم إنشاء الطلب بنجاح!" });
         router.push("/orders");
-      })
-      .catch(error => {
+    } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: orderRef.path,
+          path: `batch write for order`,
           operation: 'create',
           requestResourceData: orderData
         }));
         toast({ variant: "destructive", title: "حدث خطأ", description: "لم نتمكن من إنشاء الطلب. قد لا تملك الصلاحيات الكافية." });
-      });
+    }
   };
 
 
