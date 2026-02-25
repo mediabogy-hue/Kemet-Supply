@@ -32,6 +32,10 @@ service cloud.firestore {
     function isStaff() {
       return isSignedIn() && (isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager());
     }
+    
+    function isMerchant() {
+        return isProductManager();
+    }
 
     // --------------------------------
     // Collection Rules
@@ -44,6 +48,15 @@ service cloud.firestore {
       allow list: if isStaff();
       allow update: if isOwner(userId) || isStaff();
       allow delete: if isAdmin();
+      
+      // Dropshipper orders are nested under their user document
+      match /orders/{orderId} {
+          allow read, list: if isOwner(userId) || isStaff();
+          // Allow creation by the owner OR by a public page if the dropshipperId in the order matches the owner
+          allow create: if isOwner(userId) || (request.auth == null && request.resource.data.dropshipperId == userId);
+          allow update: if isStaff(); // Only staff can update orders from a user's subcollection
+          allow delete: if isAdmin();
+      }
       
        match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();
@@ -60,28 +73,38 @@ service cloud.firestore {
       }
     }
     
-    // --- GLOBAL COLLECTIONS ---
-    match /orders/{orderId} {
-      // Anyone can create an order (e.g., a customer on a public page)
-      allow create: if request.resource.data.dropshipperId != null;
-      // Only the dropshipper who owns it or staff can read it.
-      allow read: if isStaff() || resource.data.dropshipperId == request.auth.uid;
-      // Staff can list all orders, dropshippers cannot list any (they query with 'where').
-      allow list: if isStaff();
-      // Only staff can update or delete orders from the global collection.
-      allow update, delete: if isStaff();
-    }
+    // --- GLOBAL ADMIN COLLECTIONS ---
+    // These are denormalized copies for fast admin queries.
+    // They are written to via batch writes, and rules here are for direct access.
     
+    match /adminOrders/{orderId} {
+      // Allow creation by a logged-in user or a public page (auth is null)
+      allow create: if true; 
+      allow read, list, update, delete: if isStaff();
+    }
+
     match /adminWithdrawalRequests/{requestId} {
       allow read, list, write: if isStaff();
+      allow create: if isSignedIn(); // Users create their own, this is for the denormalized copy
     }
     match /adminPayments/{paymentId} {
       allow read, list, write: if isStaff();
+       allow create: if isSignedIn();
     }
+    
+    // This allows staff to query across all users' orders for specific analytics if needed,
+    // though primary admin views should use the /adminOrders collection.
+    match /{path=**}/orders/{orderId} {
+        allow list: if isStaff();
+    }
+    
+    // --- OTHER GLOBAL COLLECTIONS ---
     match /products/{productId} {
       allow read: if true;
       allow list: if isSignedIn();
-      allow create, update, delete: if isStaff();
+      allow create: if isStaff();
+      // Allow update/delete by admin, OR by a product manager if they are the merchantId
+      allow update, delete: if isAdmin() || (isProductManager() && resource.data.merchantId == request.auth.uid);
 
        match /clicks/{clickId} {
         allow create: if true; 
@@ -117,9 +140,11 @@ service cloud.firestore {
         allow read, list, create, update, delete: if isAdmin();
     }
      match /merchantInquiries/{inquiryId} {
+      // Anyone can create an inquiry
       allow create: if true;
       allow read, list, update, delete: if isStaff();
     }
+    
     match /conversations/{conversationId} {
       function isParticipant() {
         return request.auth.uid in resource.data.participantIds;
@@ -153,5 +178,3 @@ service cloud.firestore {
     match /automationSettings/{any} { allow read, write: if isStaff(); }
   }
 }
-
-    
