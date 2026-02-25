@@ -39,16 +39,12 @@ service cloud.firestore {
 
     // USERS & USER SUBCOLLECTIONS
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || request.auth == null; // Allow creation for new signups
       allow get: if isOwner(userId) || isStaff();
       allow list: if isStaff();
       allow update: if isOwner(userId) || isStaff();
       allow delete: if isAdmin();
       
-      // Owned by the user
-      match /orders/{orderId} {
-        allow read, write: if isOwner(userId) || isStaff();
-      }
        match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();
       }
@@ -64,18 +60,24 @@ service cloud.firestore {
       }
     }
     
-    // --- ADMIN-ONLY DENORMALIZED COLLECTIONS ---
-    match /adminOrders/{orderId} {
-      allow read, list, write: if isStaff();
+    // --- GLOBAL COLLECTIONS ---
+    match /orders/{orderId} {
+      // Anyone can create an order (e.g., a customer on a public page)
+      allow create: if request.resource.data.dropshipperId != null;
+      // Only the dropshipper who owns it or staff can read it.
+      allow read: if isStaff() || resource.data.dropshipperId == request.auth.uid;
+      // Staff can list all orders, dropshippers cannot list any (they query with 'where').
+      allow list: if isStaff();
+      // Only staff can update or delete orders from the global collection.
+      allow update, delete: if isStaff();
     }
+    
     match /adminWithdrawalRequests/{requestId} {
       allow read, list, write: if isStaff();
     }
     match /adminPayments/{paymentId} {
       allow read, list, write: if isStaff();
     }
-
-    // --- GLOBAL COLLECTIONS ---
     match /products/{productId} {
       allow read: if true;
       allow list: if isSignedIn();
@@ -151,3 +153,5 @@ service cloud.firestore {
     match /automationSettings/{any} { allow read, write: if isStaff(); }
   }
 }
+
+    

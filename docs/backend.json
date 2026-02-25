@@ -1164,13 +1164,11 @@
         }
       },
       {
-        "path": "/adminOrders/{orderId}",
+        "path": "/orders/{orderId}",
         "definition": {
           "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "Denormalized, global collection of all orders, for Admin use only.",
+          "schema": { "$ref": "#/backend/entities/Order" },
+          "description": "Global collection of all orders. Dropshippers can only access their own orders. Staff can access all orders.",
           "params": [
             { "name": "orderId", "description": "The unique identifier for the order." }
           ]
@@ -1506,20 +1504,6 @@
         }
       },
       {
-        "path": "/users/{userId}/orders/{orderId}",
-        "definition": {
-          "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "Order created by a specific user. Only accessible by the user and staff.",
-          "params": [
-            { "name": "userId", "description": "The user ID who owns the order." },
-            { "name": "orderId", "description": "The unique identifier for the order." }
-          ]
-        }
-      },
-      {
         "path": "/users/{userId}/withdrawalRequests/{requestId}",
         "definition": {
           "entityName": "WithdrawalRequest",
@@ -1580,3 +1564,5 @@
     ]
   }
 }
+
+    
