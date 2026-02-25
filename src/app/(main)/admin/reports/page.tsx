@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, collectionGroup, orderBy, documentId } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import type { Order, UserProfile, Product } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, DollarSign, ShoppingCart, Users, Package, TrendingUp } from "lucide-react";
@@ -70,7 +70,7 @@ export default function AdminReportsPage() {
     const canAccess = !isRoleLoading && isAdmin;
 
     const usersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collection(firestore, 'users')) : null, [firestore, canAccess]);
-    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collectionGroup(firestore, 'orders'), orderBy(documentId())) : null, [firestore, canAccess]);
+    const ordersQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collection(firestore, 'orders'), orderBy('createdAt', 'desc')) : null, [firestore, canAccess]);
     const productsQuery = useMemoFirebase(() => (firestore && canAccess) ? query(collection(firestore, 'products')) : null, [firestore, canAccess]);
     
     const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersQuery);

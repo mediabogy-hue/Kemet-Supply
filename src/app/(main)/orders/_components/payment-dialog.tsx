@@ -66,7 +66,7 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
     setIsSubmitting(true);
 
     const paymentId = doc(collection(firestore, 'id_generator')).id;
-    const paymentDocRef = doc(firestore, `users/${user.uid}/payments/${paymentId}`);
+    const paymentDocRef = doc(firestore, `payments/${paymentId}`);
     
     const amountToPay = order.totalAmount - (order.totalCommission || 0);
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || userProfile.email;
@@ -76,14 +76,14 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
         orderId: order.id,
         dropshipperId: user.uid,
         dropshipperName: dropshipperName,
-        paymentMethodId: 'bank_transfer', // Generic ID
+        paymentMethodId: order.customerPaymentMethod,
         amount: amountToPay,
         status: 'Pending',
         senderPhoneNumber: senderPhoneNumber,
         referenceNumber: referenceNumber,
     };
 
-    const orderDocRef = doc(firestore, `users/${user.uid}/orders/${order.id}`);
+    const orderDocRef = doc(firestore, `orders/${order.id}`);
     const batch = writeBatch(firestore);
     batch.set(paymentDocRef, { ...newPaymentData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     batch.update(orderDocRef, { customerPaymentStatus: 'Pending', updatedAt: serverTimestamp() });
@@ -96,7 +96,7 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
     } catch (firestoreError: any) {
         console.error("Firestore write error:", firestoreError);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${user.uid}/payments/${paymentId}`,
+            path: `payments/${paymentId}`,
             operation: 'create',
             requestResourceData: { orderId: order.id }
         }));
@@ -167,3 +167,5 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
     </Dialog>
   );
 }
+
+    

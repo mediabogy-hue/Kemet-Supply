@@ -15,20 +15,22 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    function getRole(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
-    
-    function isRole(role) {
-       return isSignedIn() && getRole(request.auth.uid) == role;
+
+    function isOrdersManager() {
+        return exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
+    }
+    function isFinanceManager() {
+        return exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
+    }
+    function isProductManager() {
+        return exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
     }
 
     function isStaff() {
-       return isSignedIn() && (getRole(request.auth.uid) in ['Admin', 'OrdersManager', 'FinanceManager', 'ProductManager']);
-    }
-    
-    function isAdmin() {
-       return isRole('Admin');
+      return isSignedIn() && (isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager());
     }
 
     // --------------------------------
@@ -37,13 +39,15 @@ service cloud.firestore {
 
     // USERS
     match /users/{userId} {
-      // Anyone can create their own user document during sign-up
+      // User can create their own doc, and read their own doc.
       allow create: if isSignedIn();
-      allow get: if isSignedIn();
+      allow get: if isOwner(userId);
+      // User can update their own doc, Admins can update any doc.
       allow update: if isOwner(userId) || isAdmin();
+      // Only Admins can list or delete users.
       allow list, delete: if isAdmin();
       
-      // USER SUBCOLLECTIONS (Owned by the user, only they and admins can access)
+      // USER SUBCOLLECTIONS (Owned by the user)
       match /bonuses/{bonusId} {
         allow read: if isOwner(userId) || isStaff();
         allow create, update, delete: if isStaff();
@@ -56,7 +60,7 @@ service cloud.firestore {
     // ORDERS (Global)
     match /orders/{orderId} {
       allow read: if isStaff() || isOwner(resource.data.dropshipperId);
-      allow create: if isOwner(request.resource.data.dropshipperId) || isStaff();
+      allow create: if isSignedIn(); // Anyone signed in can create an order.
       allow update: if isStaff() || isOwner(resource.data.dropshipperId);
       allow delete: if isAdmin();
     }
@@ -139,8 +143,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
-    // ROLES - Deprecated in favor of user document role checks. Kept for legacy compatibility if needed.
-    // Consider deleting if no longer used.
+    // Role collections are for role checks via exists() only. Only admins can manage them.
     match /roles_admin/{userId} { allow read, write: if isAdmin(); }
     match /roles_product_manager/{userId} { allow read, write: if isAdmin(); }
     match /roles_orders_manager/{userId} { allow read, write: if isAdmin(); }

@@ -41,7 +41,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, Timestamp, where, collectionGroup } from 'firebase/firestore';
+import { collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
 import type { Shipment, ShipmentEvent, Order } from '@/lib/types';
 import { useSession } from '@/auth/SessionProvider';
 import { Skeleton, RefreshIndicator } from '@/components/ui/skeleton';
@@ -107,12 +107,12 @@ export default function ShippingManagementPage() {
 
     const { data: shipments, isLoading: shipmentsLoading, error, lastUpdated } = useCollection<Shipment>(shipmentsQuery);
 
-     // Fetch confirmed orders (robustly)
-    const allOrdersQuery = useMemoFirebase(() => {
+     // Fetch confirmed orders
+    const confirmedOrdersQuery = useMemoFirebase(() => {
         if (!firestore || !canAccess) return null;
-        return query(collectionGroup(firestore, 'orders'), where('status', '==', 'Confirmed'), orderBy('createdAt', 'desc'));
+        return query(collection(firestore, 'orders'), where('status', '==', 'Confirmed'), orderBy('createdAt', 'desc'));
     }, [firestore, canAccess]);
-    const { data: confirmedOrders, isLoading: ordersLoading } = useCollection<Order>(allOrdersQuery);
+    const { data: confirmedOrders, isLoading: ordersLoading } = useCollection<Order>(confirmedOrdersQuery);
     
     const isLoading = isRoleLoading || shipmentsLoading || ordersLoading;
 
@@ -284,3 +284,5 @@ export default function ShippingManagementPage() {
         </>
     );
 }
+
+    

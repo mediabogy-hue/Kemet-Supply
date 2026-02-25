@@ -1154,11 +1154,27 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. The `userId` in the path must match `request.auth.uid` for a user to access their own data. The `role` field exists in the document for display/application logic, but security rules must use the various roles collections for actual privilege checks.",
+          "description": "Stores user profile information. The `userId` in the path must match `request.auth.uid` for a user to access their own data.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user, typically matching Firebase Authentication's UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Globally available products. Admins and Product Managers have write access. Dropshippers have read access.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for a product."
             }
           ]
         }
@@ -1177,6 +1193,33 @@
               "description": "The unique identifier for a product category."
             }
           ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+            "entityName": "Order",
+            "schema": { "$ref": "#/backend/entities/Order" },
+            "description": "Global collection of all orders. Access is controlled by security rules based on user role and the `dropshipperId` field within the document.",
+            "params": [{ "name": "orderId", "description": "The unique ID for the order." }]
+        }
+      },
+      {
+        "path": "/payments/{paymentId}",
+        "definition": {
+            "entityName": "Payment",
+            "schema": { "$ref": "#/backend/entities/Payment" },
+            "description": "Global collection of all payment proofs submitted by users. Access is controlled by security rules.",
+            "params": [{ "name": "paymentId", "description": "The unique ID for the payment transaction." }]
+        }
+      },
+      {
+        "path": "/withdrawalRequests/{requestId}",
+        "definition": {
+            "entityName": "WithdrawalRequest",
+            "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
+            "description": "Global collection of all withdrawal requests. Access is controlled by security rules.",
+            "params": [{ "name": "requestId", "description": "The unique ID for the withdrawal request." }]
         }
       },
       {
@@ -1243,22 +1286,6 @@
           ]
         }
       },
-      {
-        "path": "/products/{productId}",
-        "definition": {
-          "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "Globally available products. Admins and Product Managers have write access. Dropshippers have read access.",
-          "params": [
-            {
-              "name": "productId",
-              "description": "The unique identifier for a product."
-            }
-          ]
-        }
-      },
        {
         "path": "/stockLedger/{ledgerId}",
         "definition": {
@@ -1271,50 +1298,6 @@
             {
               "name": "ledgerId",
               "description": "The unique identifier for a stock ledger entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{dropshipperId}/orders/{orderId}",
-        "definition": {
-          "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "The primary order document, stored under the dropshipper's user record for their access.",
-          "params": [
-            {
-              "name": "dropshipperId",
-              "description": "The unique identifier of the dropshipper who owns this order."
-            },
-            {
-              "name": "orderId",
-              "description": "The unique identifier for the order."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{dropshipperId}/orders/{orderId}/orderItems/{orderItemId}",
-        "definition": {
-          "entityName": "OrderItem",
-          "schema": {
-            "$ref": "#/backend/entities/OrderItem"
-          },
-          "description": "Individual items within a specific order. The `dropshipperId` and `orderId` in the path ensure direct ownership and hierarchical context. `dropshipperId` and `orderId` should be explicitly denormalized within each `OrderItem` document for authorization independence.",
-          "params": [
-            {
-              "name": "dropshipperId",
-              "description": "The unique identifier of the dropshipper who owns the parent order."
-            },
-            {
-              "name": "orderId",
-              "description": "The unique identifier for the parent order."
-            },
-            {
-              "name": "orderItemId",
-              "description": "The unique identifier for the specific item within the order."
             }
           ]
         }
@@ -1336,51 +1319,11 @@
         }
       },
       {
-        "path": "/users/{dropshipperId}/payments/{paymentId}",
-        "definition": {
-          "entityName": "Payment",
-          "schema": {
-            "$ref": "#/backend/entities/Payment"
-          },
-          "description": "Payment transactions made by a specific dropshipper. The `dropshipperId` in the path ensures path-based ownership. `dropshipperId` and `orderId` fields are also denormalized within the document for robust authorization.",
-          "params": [
-            {
-              "name": "dropshipperId",
-              "description": "The unique identifier of the dropshipper who made this payment."
-            },
-            {
-              "name": "paymentId",
-              "description": "The unique identifier for the payment transaction."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/withdrawalRequests/{requestId}",
-        "definition": {
-          "entityName": "WithdrawalRequest",
-          "schema": {
-            "$ref": "#/backend/entities/WithdrawalRequest"
-          },
-          "description": "Withdrawal requests made by a specific user. The `userId` in the path ensures ownership. Admins can access via collection group queries.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (dropshipper) making the request."
-            },
-            {
-              "name": "requestId",
-              "description": "The unique identifier for the withdrawal request."
-            }
-          ]
-        }
-      },
-      {
         "path": "/users/{userId}/bonuses/{bonusId}",
         "definition": {
             "entityName": "Bonus",
             "schema": { "$ref": "#/backend/entities/Bonus" },
-            "description": "A record of a manual bonus or deduction applied to a user's account by an admin.",
+            "description": "A record of a manual bonus or deduction applied to a user's account by an admin. Nested under the user for ownership.",
             "params": [
                 { "name": "userId", "description": "The user receiving the bonus." },
                 { "name": "bonusId", "description": "The unique ID for the bonus transaction." }
@@ -1447,42 +1390,6 @@
             {
               "name": "auditLogId",
               "description": "The unique identifier for an audit log entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{dropshipperId}/reports/{reportId}",
-        "definition": {
-          "entityName": "Report",
-          "schema": {
-            "$ref": "#/backend/entities/Report"
-          },
-          "description": "Analytical reports generated for and owned by a specific dropshipper. The `dropshipperId` in the path ensures ownership. `dropshipperId` and `adminId` fields are also denormalized within the document to indicate who the report is for/by.",
-          "params": [
-            {
-              "name": "dropshipperId",
-              "description": "The unique identifier of the dropshipper this report is associated with."
-            },
-            {
-              "name": "reportId",
-              "description": "The unique identifier for the report."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/adminReports/{reportId}",
-        "definition": {
-          "entityName": "Report",
-          "schema": {
-            "$ref": "#/backend/entities/Report"
-          },
-          "description": "Global or cross-dropshipper reports generated by Admins. Accessible only by Admins. `adminId` and `dropshipperId` (if the report is about a specific dropshipper) fields are denormalized within the document.",
-          "params": [
-            {
-              "name": "reportId",
-              "description": "The admin-generated report."
             }
           ]
         }
@@ -1622,7 +1529,8 @@
           "params": []
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Clarity of Intent, DBAC (Database Access Control), and QAPs (Queries Are Not Filters) to ensure security, scalability, and debuggability. \n\n1.  **Authorization Independence (Denormalization):** This is critically achieved by denormalizing authorization-relevant fields. User-specific data (Orders, Payments, Reports, Withdrawals) is stored in subcollections under the user's path (`/users/{userId}/...`), enabling direct path-based ownership rules (`request.auth.uid == userId`).\n\n2.  **QAPs (Queries Are Not Filters):** The structure inherently supports secure `list` operations. Dropshippers can only list data from under their own user path. This ensures queries are pre-filtered by path, preventing any possibility of data leakage that could occur if relying on query-based filtering in rules. For global data like `products`, a top-level collection is used with rules that allow public reads but restrict writes to authorized staff.\n\n3.  **DBAC (Database Access Control):** User roles (Admin and other staff) are managed via dedicated collections (`/roles_admin/{userId}`, etc.). The *existence* of a document in these collections grants the role, allowing for simple, efficient `exists()` checks in security rules. This is more secure and performant than checking a role field on a user document, as it avoids extra `get()` calls.\n\n4.  **Structural Segregation & Access Modeling:** Data is organized into collections based on its security posture:\n    *   **Private User Data:** `/users/{userId}/...` for data owned by a specific user.\n    *   **Global Public/Shared Data:** `/products` and `/paymentMethods` for data accessible to multiple roles.\n    *   **Admin-Only Data:** `/systemSettings`, `/auditLogs`, `/stockLedger`, `/marketingCampaigns`, `/automationSettings` etc., are segregated for exclusive admin access.\n\n5.  **Data Clarity:** Naming conventions are consistent and descriptive."
+    ]
   }
 }
+
+    
