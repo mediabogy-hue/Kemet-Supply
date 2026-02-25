@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || 'Unknown User';
 
     const adminDb = getAdminDb();
-    const withdrawalRef = adminDb.collection("withdrawalRequests").doc();
+    const withdrawalRef = adminDb.collection("users").doc(userId).collection("withdrawalRequests").doc();
 
     await withdrawalRef.set({
       id: withdrawalRef.id,
@@ -63,5 +63,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-    

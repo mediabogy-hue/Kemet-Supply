@@ -20,13 +20,13 @@ service cloud.firestore {
     }
 
     function isOrdersManager() {
-        return exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
     }
     function isFinanceManager() {
-        return exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
     }
     function isProductManager() {
-        return exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
     }
 
     function isStaff() {
@@ -39,15 +39,19 @@ service cloud.firestore {
 
     // USERS
     match /users/{userId} {
-      // User can create their own doc, and read their own doc.
-      allow create: if isSignedIn();
-      allow get: if isOwner(userId);
-      // User can update their own doc, Admins can update any doc.
-      allow update: if isOwner(userId) || isAdmin();
-      // Only Admins can list or delete users.
-      allow list, delete: if isAdmin();
+      allow create: if true;
+      allow get: if isOwner(userId) || isStaff();
+      allow list: if isStaff();
+      allow update: if isOwner(userId) || isStaff();
+      allow delete: if isAdmin();
       
-      // USER SUBCOLLECTIONS (Owned by the user)
+      // USER SUBCOLLECTIONS
+      match /orders/{orderId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /withdrawalRequests/{requestId} {
+         allow read, write: if isOwner(userId);
+      }
       match /bonuses/{bonusId} {
         allow read: if isOwner(userId) || isStaff();
         allow create, update, delete: if isStaff();
@@ -57,31 +61,28 @@ service cloud.firestore {
       }
     }
     
-    // ORDERS (Global)
-    match /orders/{orderId} {
-      allow read: if isStaff() || isOwner(resource.data.dropshipperId);
-      allow create: if isSignedIn(); // Anyone signed in can create an order.
-      allow update: if isStaff() || isOwner(resource.data.dropshipperId);
+    // ADMIN-ONLY: COLLECTION GROUP QUERIES
+    // These allow staff to list data across all users.
+    match /{path=**}/orders/{orderId} {
+      allow get, list, update: if isStaff();
       allow delete: if isAdmin();
     }
-    
-    // WITHDRAWAL REQUESTS (Global)
-    match /withdrawalRequests/{requestId} {
-       allow read: if isStaff() || isOwner(resource.data.userId);
-       allow create: if isOwner(request.resource.data.userId);
-       allow list, update, delete: if isStaff();
+    match /{path=**}/withdrawalRequests/{requestId} {
+       allow get, list, update: if isStaff();
+       allow delete: if isAdmin();
     }
     
-    // PAYMENTS (Global)
+    // GLOBAL COLLECTIONS
     match /payments/{paymentId} {
       allow read: if isStaff() || isOwner(resource.data.dropshipperId);
+      allow list: if isStaff();
       allow create: if isOwner(request.resource.data.dropshipperId);
-      allow list, update, delete: if isStaff();
+      allow update, delete: if isStaff();
     }
     
-    // PRODUCTS
     match /products/{productId} {
       allow read: if isSignedIn();
+      allow list: if isSignedIn();
       allow create, update, delete: if isStaff();
 
        match /clicks/{clickId} {
@@ -90,22 +91,21 @@ service cloud.firestore {
       }
     }
 
-    // PUBLIC & ADMIN-ONLY COLLECTIONS
     match /productCategories/{categoryId} {
-      allow read: if isSignedIn();
+      allow read, list: if isSignedIn();
       allow write: if isStaff();
     }
     match /shipments/{shipmentId} {
-        allow read, write: if isStaff();
+        allow read, list, write: if isStaff();
         match /events/{eventId} {
-            allow read, write: if isStaff();
+            allow read, list, write: if isStaff();
         }
     }
     match /stockLedger/{ledgerId} {
-      allow read, write: if isStaff();
+      allow read, list, create, update, delete: if isStaff();
     }
     match /paymentMethods/{methodId} {
-        allow read: if isSignedIn();
+        allow read, list: if isSignedIn();
         allow write: if isStaff();
     }
     match /publicSettings/data {
@@ -116,7 +116,7 @@ service cloud.firestore {
         allow read, write: if isAdmin();
     }
     match /auditLogs/{logId} {
-        allow read, write: if isAdmin();
+        allow read, list, create, update, delete: if isAdmin();
     }
      match /merchantInquiries/{inquiryId} {
       allow create: if true;
@@ -126,19 +126,17 @@ service cloud.firestore {
       function isParticipant() {
         return request.auth.uid in resource.data.participantIds;
       }
-      allow read, update: if isParticipant();
+      allow read, update, list: if isParticipant();
       allow create: if request.auth.uid in request.resource.data.participantIds;
     }
     match /conversations/{conversationId}/messages/{messageId} {
       function isParentConversationParticipant() {
         return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
       }
-      allow read, create: if isParentConversationParticipant();
+      allow read, list, create: if isParentConversationParticipant();
       allow update, delete: if false;
     }
     
-    // This collection is used only to generate unique IDs client-side.
-    // No one should be able to read or write to it directly.
     match /id_generator/{any} {
       allow read, write: if false;
     }
@@ -148,8 +146,8 @@ service cloud.firestore {
     match /roles_product_manager/{userId} { allow read, write: if isAdmin(); }
     match /roles_orders_manager/{userId} { allow read, write: if isAdmin(); }
     match /roles_finance_manager/{userId} { allow read, write: if isAdmin(); }
-
+    match /marketingCustomers/{any} { allow read, write: if isStaff(); }
+    match /marketingCampaigns/{any} { allow read, write: if isStaff(); }
+    match /automationSettings/{any} { allow read, write: if isStaff(); }
   }
 }
-
-    

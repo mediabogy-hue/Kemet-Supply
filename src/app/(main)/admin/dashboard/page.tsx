@@ -1,3 +1,4 @@
+
 'use client';
 import dynamic from 'next/dynamic';
 import {
@@ -7,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, TrendingUp, TrendingDown, BarChart, ShieldAlert, DatabaseZap, CheckCircle } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, TrendingDown, BarChart, ShieldAlert, DatabaseZap, CheckCircle, ListOrdered } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, Timestamp, orderBy, limit, collectionGroup } from "firebase/firestore";
 import type { Order } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { useMemo, useState, useEffect } from "react";
@@ -88,17 +89,16 @@ export default function AdminDashboardPage() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         return query(
-            collection(firestore, 'orders'),
+            collectionGroup(firestore, 'orders'),
             where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)),
             orderBy('createdAt', 'desc'),
             limit(1000)
         );
     }, [firestore, canAccess]);
 
-    const { data: allOrders, isLoading: ordersLoading, error: ordersError, lastUpdated } = useCollection<Order>(ordersQuery);
+    const { data: allOrders, isLoading: ordersLoading, error: queryError, lastUpdated } = useCollection<Order>(ordersQuery);
 
     const isLoading = !isClient || isSessionLoading || ordersLoading;
-    const queryError = ordersError;
     
     const dataIsEmpty = !isLoading && !queryError && (!allOrders || allOrders.length === 0);
 

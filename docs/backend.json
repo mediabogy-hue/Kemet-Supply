@@ -1164,6 +1164,34 @@
         }
       },
       {
+        "path": "/users/{userId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Orders placed by a specific user. Nested for ownership.",
+          "params": [
+            { "name": "userId", "description": "The owner of the order." },
+            { "name": "orderId", "description": "The unique identifier for the order." }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": {
+            "$ref": "#/backend/entities/WithdrawalRequest"
+          },
+          "description": "Withdrawal requests made by a specific user. Nested for ownership.",
+          "params": [
+            { "name": "userId", "description": "The user making the request." },
+            { "name": "requestId", "description": "The unique ID for the withdrawal request." }
+          ]
+        }
+      },
+      {
         "path": "/products/{productId}",
         "definition": {
           "entityName": "Product",
@@ -1196,30 +1224,12 @@
         }
       },
       {
-        "path": "/orders/{orderId}",
-        "definition": {
-            "entityName": "Order",
-            "schema": { "$ref": "#/backend/entities/Order" },
-            "description": "Global collection of all orders. Access is controlled by security rules based on user role and the `dropshipperId` field within the document.",
-            "params": [{ "name": "orderId", "description": "The unique ID for the order." }]
-        }
-      },
-      {
         "path": "/payments/{paymentId}",
         "definition": {
             "entityName": "Payment",
             "schema": { "$ref": "#/backend/entities/Payment" },
             "description": "Global collection of all payment proofs submitted by users. Access is controlled by security rules.",
             "params": [{ "name": "paymentId", "description": "The unique ID for the payment transaction." }]
-        }
-      },
-      {
-        "path": "/withdrawalRequests/{requestId}",
-        "definition": {
-            "entityName": "WithdrawalRequest",
-            "schema": { "$ref": "#/backend/entities/WithdrawalRequest" },
-            "description": "Global collection of all withdrawal requests. Access is controlled by security rules.",
-            "params": [{ "name": "requestId", "description": "The unique ID for the withdrawal request." }]
         }
       },
       {
@@ -1532,5 +1542,3 @@
     ]
   }
 }
-
-    

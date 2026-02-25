@@ -21,7 +21,7 @@ import {
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { useFirebase, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where } from "firebase/firestore";
+import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where, collectionGroup } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
@@ -120,7 +120,7 @@ export default function AdminOrdersPage() {
   
   const allOrdersQuery = useMemoFirebase(() => {
     if (!firestore || !canAccess) return null;
-    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    return query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100));
   }, [firestore, canAccess]);
   
   const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
@@ -192,7 +192,7 @@ export default function AdminOrdersPage() {
     setOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     toast({ title: "جاري تحديث حالة الطلب..." });
 
-    const orderRef = doc(firestore, `orders/${order.id}`);
+    const orderRef = doc(firestore, 'users', order.dropshipperId, 'orders', order.id);
 
     try {
         if (newStatus === 'Confirmed') {
@@ -306,7 +306,7 @@ export default function AdminOrdersPage() {
     setOrderToDelete(null); 
     toast({ title: "تم حذف الطلب بنجاح" });
 
-    const orderRef = doc(firestore, `orders/${orderToDeleteCache.id}`);
+    const orderRef = doc(firestore, 'users', orderToDeleteCache.dropshipperId, 'orders', orderToDeleteCache.id);
     
     deleteDoc(orderRef)
         .catch(async (error) => {

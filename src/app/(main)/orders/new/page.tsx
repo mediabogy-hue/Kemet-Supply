@@ -70,7 +70,7 @@ export default function NewOrderPage() {
     }
 
     const orderId = doc(collection(firestore, 'id_generator')).id;
-    const orderRef = doc(firestore, 'orders', orderId);
+    const orderRef = doc(firestore, 'users', user.uid, 'orders', orderId);
     const dropshipperName = (userProfile && `${userProfile.firstName} ${userProfile.lastName}`.trim()) || (user && user.displayName) || '';
 
     const orderData: any = {
@@ -274,5 +274,3 @@ export default function NewOrderPage() {
       </div>
   );
 }
-
-    

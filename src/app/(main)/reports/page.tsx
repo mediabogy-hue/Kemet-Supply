@@ -58,15 +58,14 @@ function ReportsContent() {
 
     const allOrdersQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
-        return query(collection(firestore, 'orders'), where('dropshipperId', '==', user.uid));
+        return query(collection(firestore, 'users', user.uid, 'orders'));
     }, [user, firestore, isDropshipper]);
     const { data: allUserOrders, isLoading: ordersLoading, error: ordersError } = useCollection<Order>(allOrdersQuery);
     
     const withdrawalRequestsQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
         return query(
-            collection(firestore, "withdrawalRequests"),
-            where("userId", "==", user.uid),
+            collection(firestore, 'users', user.uid, 'withdrawalRequests'),
             orderBy("createdAt", "desc")
         );
     }, [user, firestore, isDropshipper]);
