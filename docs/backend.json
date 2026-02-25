@@ -1164,29 +1164,38 @@
         }
       },
       {
-        "path": "/orders/{orderId}",
+        "path": "/adminOrders/{orderId}",
         "definition": {
           "entityName": "Order",
           "schema": {
             "$ref": "#/backend/entities/Order"
           },
-          "description": "Global collection of all orders. Accessible by staff, and by dropshippers for their own orders.",
+          "description": "Denormalized, global collection of all orders, for Admin use only.",
           "params": [
             { "name": "orderId", "description": "The unique identifier for the order." }
           ]
         }
       },
       {
-        "path": "/withdrawalRequests/{requestId}",
+        "path": "/adminWithdrawalRequests/{requestId}",
         "definition": {
           "entityName": "WithdrawalRequest",
           "schema": {
             "$ref": "#/backend/entities/WithdrawalRequest"
           },
-          "description": "Global collection of all withdrawal requests. Accessible by staff, and by users for their own requests.",
+          "description": "Denormalized, global collection of all withdrawal requests, for Admin use only.",
           "params": [
             { "name": "requestId", "description": "The unique ID for the withdrawal request." }
           ]
+        }
+      },
+       {
+        "path": "/adminPayments/{paymentId}",
+        "definition": {
+            "entityName": "Payment",
+            "schema": { "$ref": "#/backend/entities/Payment" },
+            "description": "Denormalized, global collection of all payment proofs, for Admin use only.",
+            "params": [{ "name": "paymentId", "description": "The unique ID for the payment transaction." }]
         }
       },
       {
@@ -1219,15 +1228,6 @@
               "description": "The unique identifier for a product category."
             }
           ]
-        }
-      },
-      {
-        "path": "/payments/{paymentId}",
-        "definition": {
-            "entityName": "Payment",
-            "schema": { "$ref": "#/backend/entities/Payment" },
-            "description": "Global collection of all payment proofs submitted by users. Access is controlled by security rules.",
-            "params": [{ "name": "paymentId", "description": "The unique ID for the payment transaction." }]
         }
       },
       {
@@ -1324,18 +1324,6 @@
               "description": "The unique identifier for a payment method."
             }
           ]
-        }
-      },
-      {
-        "path": "/users/{userId}/bonuses/{bonusId}",
-        "definition": {
-            "entityName": "Bonus",
-            "schema": { "$ref": "#/backend/entities/Bonus" },
-            "description": "A record of a manual bonus or deduction applied to a user's account by an admin. Nested under the user for ownership.",
-            "params": [
-                { "name": "userId", "description": "The user receiving the bonus." },
-                { "name": "bonusId", "description": "The unique ID for the bonus transaction." }
-            ]
         }
       },
       {
@@ -1439,26 +1427,6 @@
         }
       },
       {
-        "path": "/users/{userId}/workSessions/{sessionId}",
-        "definition": {
-          "entityName": "WorkSession",
-          "schema": {
-            "$ref": "#/backend/entities/WorkSession"
-          },
-          "description": "Stores work session records for a staff member. A user can only access their own sessions, while admins can list all sessions.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The user ID of the staff member."
-            },
-            {
-              "name": "sessionId",
-              "description": "The unique identifier for the work session."
-            }
-          ]
-        }
-      },
-      {
         "path": "/products/{productId}/clicks/{clickId}",
         "definition": {
           "entityName": "ProductClick",
@@ -1535,6 +1503,78 @@
           },
           "description": "A single document containing all marketing automation settings. Admin only.",
           "params": []
+        }
+      },
+      {
+        "path": "/users/{userId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Order created by a specific user. Only accessible by the user and staff.",
+          "params": [
+            { "name": "userId", "description": "The user ID who owns the order." },
+            { "name": "orderId", "description": "The unique identifier for the order." }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": {
+            "$ref": "#/backend/entities/WithdrawalRequest"
+          },
+          "description": "Withdrawal request created by a specific user. Only accessible by the user and staff.",
+          "params": [
+            { "name": "userId", "description": "The user ID who owns the request." },
+            { "name": "requestId", "description": "The unique identifier for the request." }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/payments/{paymentId}",
+        "definition": {
+            "entityName": "Payment",
+            "schema": { "$ref": "#/backend/entities/Payment" },
+            "description": "Payment proof submitted by a specific user. Only accessible by the user and staff.",
+            "params": [
+              { "name": "userId", "description": "The user ID who submitted the payment." },
+              { "name": "paymentId", "description": "The unique identifier for the payment." }
+            ]
+        }
+      },
+      {
+        "path": "/users/{userId}/bonuses/{bonusId}",
+        "definition": {
+            "entityName": "Bonus",
+            "schema": { "$ref": "#/backend/entities/Bonus" },
+            "description": "A record of a manual bonus or deduction applied to a user's account by an admin. Nested under the user for ownership.",
+            "params": [
+                { "name": "userId", "description": "The user receiving the bonus." },
+                { "name": "bonusId", "description": "The unique ID for the bonus transaction." }
+            ]
+        }
+      },
+      {
+        "path": "/users/{userId}/workSessions/{sessionId}",
+        "definition": {
+          "entityName": "WorkSession",
+          "schema": {
+            "$ref": "#/backend/entities/WorkSession"
+          },
+          "description": "Stores work session records for a staff member. A user can only access their own sessions, while admins can list all sessions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user ID of the staff member."
+            },
+            {
+              "name": "sessionId",
+              "description": "The unique identifier for the work session."
+            }
+          ]
         }
       }
     ]

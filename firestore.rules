@@ -37,7 +37,7 @@ service cloud.firestore {
     // Collection Rules
     // --------------------------------
 
-    // USERS
+    // USERS & USER SUBCOLLECTIONS
     match /users/{userId} {
       allow create: if isOwner(userId);
       allow get: if isOwner(userId) || isStaff();
@@ -45,7 +45,16 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isStaff();
       allow delete: if isAdmin();
       
-      // USER SUBCOLLECTIONS (Owned by the user)
+      // Owned by the user
+      match /orders/{orderId} {
+        allow read, write: if isOwner(userId) || isStaff();
+      }
+       match /withdrawalRequests/{requestId} {
+        allow read, write: if isOwner(userId) || isStaff();
+      }
+       match /payments/{paymentId} {
+        allow read, write: if isOwner(userId) || isStaff();
+      }
       match /bonuses/{bonusId} {
         allow read: if isOwner(userId) || isStaff();
         allow create, update, delete: if isStaff();
@@ -55,31 +64,18 @@ service cloud.firestore {
       }
     }
     
-    // GLOBAL COLLECTIONS
-    match /orders/{orderId} {
-        // Allow anyone to create an order (for public product page)
-        // as long as the data is valid.
-        allow create: if request.resource.data.dropshipperId != null;
-        allow get: if isStaff() || isOwner(resource.data.dropshipperId);
-        allow list: if isStaff();
-        allow update: if isStaff() || isOwner(resource.data.dropshipperId);
-        allow delete: if isAdmin();
+    // --- ADMIN-ONLY DENORMALIZED COLLECTIONS ---
+    match /adminOrders/{orderId} {
+      allow read, list, write: if isStaff();
+    }
+    match /adminWithdrawalRequests/{requestId} {
+      allow read, list, write: if isStaff();
+    }
+    match /adminPayments/{paymentId} {
+      allow read, list, write: if isStaff();
     }
 
-    match /withdrawalRequests/{requestId} {
-       allow get: if isStaff() || isOwner(resource.data.userId);
-       allow list: if isStaff();
-       allow create: if isOwner(request.resource.data.userId);
-       allow update, delete: if isStaff();
-    }
-
-    match /payments/{paymentId} {
-      allow get: if isStaff() || isOwner(resource.data.dropshipperId);
-      allow list: if isStaff();
-      allow create: if isOwner(request.resource.data.dropshipperId);
-      allow update, delete: if isStaff();
-    }
-    
+    // --- GLOBAL COLLECTIONS ---
     match /products/{productId} {
       allow read: if true;
       allow list: if isSignedIn();

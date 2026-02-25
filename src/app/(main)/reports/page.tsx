@@ -56,11 +56,11 @@ function ReportsContent() {
     const firestore = useFirestore();
     const { isDropshipper, profile: userProfile, isLoading: profileLoading } = useSession();
 
-    const allOrdersQuery = useMemoFirebase(() => {
+    const allUserOrdersQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
-        return query(collection(firestore, 'users', user.uid, 'orders'));
+        return query(collection(firestore, 'users', user.uid, 'orders'), where('status', '==', 'Delivered'));
     }, [user, firestore, isDropshipper]);
-    const { data: allUserOrders, isLoading: ordersLoading, error: ordersError } = useCollection<Order>(allOrdersQuery);
+    const { data: allUserOrders, isLoading: ordersLoading, error: ordersError } = useCollection<Order>(allUserOrdersQuery);
     
     const withdrawalRequestsQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
@@ -97,7 +97,7 @@ function ReportsContent() {
             return isNaN(num) ? 0 : num;
         };
 
-        const deliveredOrders = (allUserOrders || []).filter(order => order.status === 'Delivered');
+        const deliveredOrders = allUserOrders || [];
 
         const totalProfitFromSales = deliveredOrders.reduce((sum, order) => {
             const commission = order.totalCommission ?? ((order.unitCommission ?? 0) * (order.quantity ?? 0));

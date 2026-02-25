@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         return query(
-            collection(firestore, 'orders'),
+            collection(firestore, 'adminOrders'),
             where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)),
             orderBy('createdAt', 'desc'),
             limit(1000)
