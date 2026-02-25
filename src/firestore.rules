@@ -1,0 +1,154 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    function isOrdersManager() {
+        return exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid));
+    }
+    function isFinanceManager() {
+        return exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
+    }
+    function isProductManager() {
+        return exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
+    }
+
+    function isStaff() {
+      return isSignedIn() && (isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager());
+    }
+
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
+
+    // USERS
+    match /users/{userId} {
+      allow create: if isSignedIn();
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+      
+      // USER SUBCOLLECTIONS (Owned by the user)
+      match /bonuses/{bonusId} {
+        allow read: if isOwner(userId) || isStaff();
+        allow create, update, delete: if isStaff();
+      }
+      match /workSessions/{sessionId} {
+        allow read, write: if isOwner(userId) || isStaff();
+      }
+    }
+    
+    // ORDERS (Global)
+    match /orders/{orderId} {
+      allow get: if isStaff() || isOwner(resource.data.dropshipperId);
+      allow list: if isStaff(); // Admins/Staff can list all orders
+      allow create: if isSignedIn(); // Anyone signed in can create an order.
+      allow update: if isStaff() || isOwner(resource.data.dropshipperId);
+      allow delete: if isAdmin();
+    }
+    
+    // WITHDRAWAL REQUESTS (Global)
+    match /withdrawalRequests/{requestId} {
+       allow get: if isStaff() || isOwner(resource.data.userId);
+       allow list: if isStaff();
+       allow create: if isOwner(request.resource.data.userId);
+       allow update, delete: if isStaff();
+    }
+    
+    // PAYMENTS (Global)
+    match /payments/{paymentId} {
+      allow get: if isStaff() || isOwner(resource.data.dropshipperId);
+      allow list: if isStaff();
+      allow create: if isOwner(request.resource.data.dropshipperId);
+      allow update, delete: if isStaff();
+    }
+    
+    // PRODUCTS
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isStaff();
+
+       match /clicks/{clickId} {
+        allow create: if true; 
+        allow read, list, write: if isStaff();
+      }
+    }
+
+    // PUBLIC & ADMIN-ONLY COLLECTIONS
+    match /productCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+    match /shipments/{shipmentId} {
+        allow read, write: if isStaff();
+        match /events/{eventId} {
+            allow read, write: if isStaff();
+        }
+    }
+    match /stockLedger/{ledgerId} {
+      allow read, write: if isStaff();
+    }
+    match /paymentMethods/{methodId} {
+        allow read: if isSignedIn();
+        allow write: if isStaff();
+    }
+    match /publicSettings/data {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+    match /systemSettings/{settingId} {
+        allow read, write: if isAdmin();
+    }
+    match /auditLogs/{logId} {
+        allow read, write: if isAdmin();
+    }
+     match /merchantInquiries/{inquiryId} {
+      allow create: if true;
+      allow read, list, update, delete: if isStaff();
+    }
+    match /conversations/{conversationId} {
+      function isParticipant() {
+        return request.auth.uid in resource.data.participantIds;
+      }
+      allow read, update: if isParticipant();
+      allow create: if request.auth.uid in request.resource.data.participantIds;
+    }
+    match /conversations/{conversationId}/messages/{messageId} {
+      function isParentConversationParticipant() {
+        return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+      }
+      allow read, create: if isParentConversationParticipant();
+      allow update, delete: if false;
+    }
+    
+    // This collection is used only to generate unique IDs client-side.
+    // No one should be able to read or write to it directly.
+    match /id_generator/{any} {
+      allow read, write: if false;
+    }
+    
+    // Role collections are for role checks via exists() only. Only admins can manage them.
+    match /roles_admin/{userId} { allow read, write: if isAdmin(); }
+    match /roles_product_manager/{userId} { allow read, write: if isAdmin(); }
+    match /roles_orders_manager/{userId} { allow read, write: if isAdmin(); }
+    match /roles_finance_manager/{userId} { allow read, write: if isAdmin(); }
+
+  }
+}

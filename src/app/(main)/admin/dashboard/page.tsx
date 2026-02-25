@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle, ShieldAlert } from "lucide-react";
+import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle, ShieldAlert, DatabaseZap } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import type { Order, UserProfile, Product } from "@/lib/types";
@@ -17,6 +17,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSession } from '@/auth/SessionProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SeedDatabaseButton } from './_components/seed-database-button';
 
 
 const RecentSales = dynamic(() => import("../../dashboard/_components/recent-sales").then(mod => mod.RecentSales), {
@@ -108,6 +109,8 @@ export default function AdminDashboardPage() {
 
     const isLoading = !isClient || isSessionLoading || usersLoading || ordersLoading || productsLoading;
     const queryError = ordersError;
+    
+    const dataIsEmpty = !isLoading && !queryError && (!allOrders || allOrders.length === 0) && (!users || users.length <= 1);
 
     const lastUpdated = useMemo(() => {
         const timestamps = [usersLastUpdated, productsLastUpdated].filter(Boolean) as Date[];
@@ -225,6 +228,19 @@ export default function AdminDashboardPage() {
                 </Alert>
             )}
 
+            {dataIsEmpty && (
+                <Alert>
+                    <DatabaseZap className="h-4 w-4" />
+                    <AlertTitle>مرحباً بك في لوحة التحكم!</AlertTitle>
+                    <AlertDescription>
+                       يبدو أن قاعدة بياناتك فارغة. لبدء استكشاف لوحة التحكم، يمكنك ملء النظام ببيانات تجريبية.
+                        <div className="mt-4">
+                            <SeedDatabaseButton />
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {primaryStats.map((stat, index) => (
                    <StatCard 
@@ -278,7 +294,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
-
-    
