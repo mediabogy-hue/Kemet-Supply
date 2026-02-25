@@ -81,11 +81,6 @@ export function GrantBonusDialog({ user, isOpen, onOpenChange }: GrantBonusDialo
         onOpenChange(false);
       })
       .catch((error: any) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: bonusCollectionRef.path,
-          operation: 'create',
-          requestResourceData: newBonusData,
-        }));
         toast({
           variant: "destructive",
           title: "فشل منح المكافأة",

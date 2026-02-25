@@ -76,11 +76,6 @@ export function AddCategoryDialog() {
         toast({ title: "تم إضافة الفئة بنجاح!" });
       })
       .catch(async (error: any) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: categoryDocRef.path,
-          operation: 'create',
-          requestResourceData: newCategoryData
-        }));
         toast({
           variant: "destructive",
           title: "فشل إضافة الفئة",

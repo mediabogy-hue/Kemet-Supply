@@ -121,7 +121,6 @@ export default function AdminUsersPage() {
         })
         .catch(async (e) => {
             setAllUsers(allUsers);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userDocRef.path, operation: 'update', requestResourceData: { isActive: newStatus }}));
             toast({ variant: "destructive", title: "حدث خطأ", description: "قد لا تملك الصلاحيات الكافية." });
         });
   };
@@ -155,7 +154,6 @@ export default function AdminUsersPage() {
     batch.commit()
         .catch(async (e) => {
             setAllUsers(allUsers);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `batch delete for user ${userToDeleteCache.id}`, operation: 'delete' }));
             toast({ variant: "destructive", title: "حدث خطأ أثناء الحذف" });
         });
   };

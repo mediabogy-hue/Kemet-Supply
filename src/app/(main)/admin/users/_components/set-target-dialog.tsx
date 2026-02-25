@@ -108,11 +108,6 @@ export function SetTargetDialog({ user, isOpen, onOpenChange }: SetTargetDialogP
             onOpenChange(false);
         })
         .catch(async (error) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            }));
             toast({
                 variant: "destructive",
                 title: "فشل تحديث الهدف",

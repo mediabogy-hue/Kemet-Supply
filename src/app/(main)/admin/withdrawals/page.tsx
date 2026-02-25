@@ -89,11 +89,6 @@ export default function AdminWithdrawalsPage() {
         batch.commit()
             .catch(async (e: any) => {
                 setRequests(originalRequests); // Revert
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `batch update for withdrawal ${request.id}`,
-                    operation: 'update',
-                    requestResourceData: updatedData,
-                }));
                 toast({ variant: "destructive", title: "فشل تحديث الحالة", description: "قد لا تملك الصلاحيات الكافية." });
             });
     };
@@ -115,10 +110,6 @@ export default function AdminWithdrawalsPage() {
         batch.commit()
             .catch(async (e) => {
                 setRequests(originalRequests); // Revert
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `batch delete for withdrawal ${request.id}`,
-                    operation: 'delete',
-                }));
                 toast({ variant: "destructive", title: "فشل حذف الطلب", description: "قد لا تملك الصلاحيات الكافية." });
             });
     };

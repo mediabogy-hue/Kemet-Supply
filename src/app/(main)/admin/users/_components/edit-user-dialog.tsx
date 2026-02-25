@@ -116,11 +116,6 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
             // No need to call onUserUpdate, parent will update via onSnapshot
         })
         .catch(async (error: any) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `batch update for user ${user.id}`,
-                operation: 'update',
-                requestResourceData: { role: newRole },
-            }));
             toast({
                 variant: "destructive",
                 title: "فشل تحديث البيانات",

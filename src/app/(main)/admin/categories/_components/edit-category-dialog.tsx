@@ -73,11 +73,6 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
             toast({ title: "تم تحديث الفئة بنجاح!" });
         })
         .catch(async (error: any) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: categoryDocRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            }));
             toast({
                 variant: "destructive",
                 title: "فشل تحديث الفئة",

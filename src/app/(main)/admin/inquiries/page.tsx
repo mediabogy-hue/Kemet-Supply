@@ -65,11 +65,6 @@ export default function AdminInquiriesPage() {
         if (!prev) return [];
         return prev.map(i => i.id === inquiry.id ? { ...i, status: inquiry.status } : i);
       });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: inquiryRef.path,
-        operation: 'update',
-        requestResourceData: updatedData,
-      }));
       toast({ variant: "destructive", title: "فشل تحديث الحالة", description: "قد لا تملك الصلاحيات الكافية." });
     });
   };

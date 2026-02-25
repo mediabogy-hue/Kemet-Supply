@@ -88,11 +88,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
             onShipmentCreated?.();
             onOpenChange(false);
         } catch (e) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `batch write for shipment ${shipmentRef.id}`,
-                operation: 'create',
-                requestResourceData: newShipmentData,
-            }));
             toast({ variant: "destructive", title: "فشل ربط الشحنة" });
         } finally {
             setIsSubmitting(false);

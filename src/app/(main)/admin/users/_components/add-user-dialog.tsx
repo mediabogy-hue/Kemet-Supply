@@ -140,11 +140,6 @@ export function AddUserDialog() {
       } else if (error.code === 'auth/weak-password') {
         description = "كلمة المرور ضعيفة جداً (6 أحرف على الأقل).";
       } else if (newUserUid) {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${newUserUid} or roles document`,
-            operation: 'create',
-            requestResourceData: {email, firstName, lastName, role},
-          }));
            description = "فشل إنشاء ملف المستخدم في قاعدة البيانات. قد تكون هناك مشكلة في الصلاحيات. تم إنشاء حساب الدخول ولكن البيانات غير مكتملة."
       }
       toast({

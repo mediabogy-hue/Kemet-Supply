@@ -82,19 +82,6 @@ export function MerchantInquiryDialog() {
 
     } catch (error) {
         console.error("Inquiry submission failed:", error);
-        const requestData = {
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            companyName: data.companyName || "",
-            message: data.message,
-            status: "New",
-        };
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: inquiryRef.path, // The path for a create is the collection path.
-            operation: 'create',
-            requestResourceData: requestData,
-        }));
         toast({ variant: "destructive", title: "فشل إرسال الطلب", description: "حدث خطأ أثناء إرسال طلبك. الرجاء المحاولة مرة أخرى." });
     }
   };

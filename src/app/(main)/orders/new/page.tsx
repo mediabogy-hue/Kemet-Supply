@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -106,11 +107,6 @@ export default function NewOrderPage() {
         toast({ title: "تم إنشاء الطلب بنجاح!" });
         router.push("/orders");
     } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `orders/${orderRef.id}`,
-          operation: 'create',
-          requestResourceData: orderData
-        }));
         toast({ variant: "destructive", title: "حدث خطأ", description: "لم نتمكن من إنشاء الطلب. قد لا تملك الصلاحيات الكافية." });
     }
   };

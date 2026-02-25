@@ -168,11 +168,6 @@ export function QuickStockUpdateDialog({ triggerButton }: QuickStockUpdateDialog
 
     } catch (e: any) {
         console.error("Stock update failed: ", e);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: productRef.path,
-            operation: 'update',
-            requestResourceData: { operation, quantityValue },
-        }));
         toast({
             variant: "destructive",
             title: "فشل تحديث المخزون",

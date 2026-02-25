@@ -156,7 +156,6 @@ export default function ProfilePage() {
                 toast({ title: "تم تحديث بيانات الحساب بنجاح" });
             })
             .catch((error: any) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfileRef.path, operation: 'update', requestResourceData: updatedData }));
                 toast({ variant: "destructive", title: "فشل حفظ البيانات", description: "قد لا تملك الصلاحيات الكافية." });
             })
             .finally(() => {
@@ -174,7 +173,6 @@ export default function ProfilePage() {
                 toast({ title: "تم تحديث بيانات الدفع بنجاح" });
             })
             .catch((error: any) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfileRef.path, operation: 'update', requestResourceData: updatedData }));
                 toast({ variant: "destructive", title: "فشل حفظ بيانات الدفع", description: "قد لا تملك الصلاحيات الكافية." });
             })
             .finally(() => {

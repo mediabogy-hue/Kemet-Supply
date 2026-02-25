@@ -96,11 +96,6 @@ export default function AdminPaymentsPage() {
             if (!prev) return null;
             return prev.map(o => o.id === order.id ? order : o); // Revert to original order
         });
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: orderRef.path,
-            operation: 'update',
-            requestResourceData: updatedData,
-        }));
         toast({ variant: "destructive", title: "فشل تحديث الحالة", description: "قد لا تملك الصلاحيات الكافية." });
     });
   };
@@ -281,5 +276,3 @@ export default function AdminPaymentsPage() {
     </>
   );
 }
-
-    

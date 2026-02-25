@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -69,11 +70,7 @@ export default function DashboardPage() {
                 });
             })
             .catch(error => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: { referralCode: newReferralCode }
-                }));
+                // No need to emit here, just a silent failure is fine for this non-critical feature.
             });
         }
     }, [userProfile, firestore, user, toast]);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -162,12 +163,6 @@ export default function RegisterPage() {
       } else if (error.code === 'auth/weak-password') {
         description = 'كلمة المرور ضعيفة جدا. يجب أن تكون 6 أحرف على الأقل.';
       } else if (userId) {
-          // This is a Firestore error after user creation.
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `batch write for user ${userId}`,
-            operation: 'write',
-            requestResourceData: { email, firstName, referrerId }
-        }));
          description = 'فشل حفظ بيانات الملف الشخصي. قد تكون هناك مشكلة في صلاحيات قاعدة البيانات.';
       }
 

@@ -82,11 +82,6 @@ export function EditableStockCell({ product }: EditableStockCellProps) {
       setIsEditing(false);
     } catch (e: any) {
       console.error("Stock update failed: ", e);
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: productRef.path,
-            operation: 'update',
-            requestResourceData: { stockQuantity: newQuantity },
-        }));
       toast({
         variant: 'destructive',
         title: 'فشل تحديث المخزون',
