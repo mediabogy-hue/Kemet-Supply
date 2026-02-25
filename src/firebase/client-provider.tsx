@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, type ReactNode } from 'react';
@@ -7,7 +6,7 @@ import { FirebaseProvider } from '@/firebase/provider';
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 interface FirebaseClientProviderProps {
@@ -34,20 +33,14 @@ function initializeFirebaseServices(): FirebaseServices {
     firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     
     const auth = getAuth(firebaseApp);
-    const firestore = getFirestore(firebaseApp);
+    // New initialization method for Firestore with persistence
+    const firestore = initializeFirestore(firebaseApp, {
+        localCache: persistentLocalCache()
+    });
     const storage = getStorage(firebaseApp);
-
-    try {
-        enableIndexedDbPersistence(firestore).catch((err) => {
-            if (err.code === 'failed-precondition') {
-                console.warn('Firebase persistence failed: Multiple tabs open.');
-            } else if (err.code === 'unimplemented') {
-                console.warn('Firebase persistence failed: Browser does not support it.');
-            }
-        });
-    } catch(e) {
-        console.error("Error enabling Firestore persistence:", e);
-    }
+    
+    // The old try/catch block for enableIndexedDbPersistence is now replaced by the above.
+    // Firebase will handle logging any persistence errors (like multi-tab issues) automatically.
 
     services = { firebaseApp, auth, firestore, storage };
     return services;
