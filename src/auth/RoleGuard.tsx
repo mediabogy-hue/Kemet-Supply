@@ -51,49 +51,37 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // This effect handles all navigation side-effects based on auth state.
   useEffect(() => {
     if (isLoading) {
-      return; // Wait until session is loaded
+      return; // Wait for session data to be fully loaded
     }
 
-    // If no user is logged in, redirect to login page
     if (!user) {
+      // If not logged in, redirect to the login page
       router.replace('/');
-      return;
+    } else if (role && !hasPermission(role, pathname)) {
+      // If logged in but lacks permission for the current path, redirect to their default page
+      router.replace(getDefaultPath(role));
     }
-
-    // If user has a role, check for permissions
-    if (role) {
-      if (!hasPermission(role, pathname)) {
-        // If user doesn't have permission, redirect to their default page
-        const defaultPath = getDefaultPath(role);
-        router.replace(defaultPath);
-      }
-    }
-    // If user is logged in but role is still loading, the isLoading flag will handle the loader
-    
   }, [isLoading, user, role, pathname, router]);
 
+  // Render a loader while session data is being fetched.
   if (isLoading) {
-    return <FullPageLoader message="جاري التحقق من الصلاحيات..." />;
+    return <FullPageLoader message="جاري تحميل بيانات الحساب..." />;
   }
-  
+
+  // Render an error message if the session failed to load.
   if (error) {
     return <AuthErrorState error={error} />;
   }
-
-  // If after loading there is still no user, it means the redirect is in progress.
-  // Render loader to avoid flashing content.
-  if (!user) {
-    return <FullPageLoader message="جاري التوجيه..." />;
+  
+  // After loading, if the user has the correct role and permission, render the page.
+  if (user && role && hasPermission(role, pathname)) {
+    return <>{children}</>;
   }
 
-  // If user is logged in but role is not yet determined OR user lacks permission and redirect is pending,
-  // show loader.
-  if (!role || !hasPermission(role, pathname)) {
-     return <FullPageLoader message="جاري التحقق من الصلاحيات..." />;
-  }
-
-  // If all checks pass, render the protected children components
-  return <>{children}</>;
+  // In all other cases (e.g., no user, or waiting for redirect), show a generic loader.
+  // This prevents flashing unauthorized content while the redirect initiated by the useEffect is in progress.
+  return <FullPageLoader message="جاري التوجيه..." />;
 }
