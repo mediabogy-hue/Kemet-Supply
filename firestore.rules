@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -73,6 +74,11 @@ service cloud.firestore {
         // Only staff can modify or delete orders.
         allow update: if isStaff();
         allow delete: if isAdmin();
+    }
+    
+    // This rule is necessary for collectionGroup queries on 'orders' by staff members.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isStaff();
     }
     
     // Denormalized collections for fast admin queries
