@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const PAGE_SIZE = 8;
 
@@ -310,43 +311,34 @@ export default function ProductsPage() {
         )}
       </div>
 
-       <Dialog open={!!linkToCopy} onOpenChange={(open) => !open && setLinkToCopy(null)}>
+      <Dialog open={!!linkToCopy} onOpenChange={(open) => !open && setLinkToCopy(null)}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-            <DialogTitle>انسخ رابط التسويق</DialogTitle>
-            <DialogDescription>
-                لم نتمكن من نسخ الرابط تلقائيًا. الرجاء نسخه يدويًا من الحقل أدناه.
-            </DialogDescription>
+              <DialogTitle>انسخ رابط التسويق</DialogTitle>
+              <DialogDescription>
+                لم نتمكن من النسخ تلقائياً بسبب قيود المتصفح. الرجاء نسخ الرابط يدوياً من الحقل أدناه.
+              </DialogDescription>
             </DialogHeader>
-            <div className="flex items-center space-x-2 gap-2" dir="ltr">
-            <Input
-                defaultValue={linkToCopy || ''}
-                readOnly
-                onFocus={(e) => e.target.select()}
-                className="text-left"
-            />
-            <Button variant="outline" size="icon" className="shrink-0" onClick={() => {
-                if(linkToCopy) {
-                    navigator.clipboard.writeText(linkToCopy).then(() => {
-                        toast({ title: "تم النسخ بنجاح!" });
-                    }).catch(() => {
-                        toast({ variant: 'destructive', title: "فشل النسخ" });
-                    })
-                }
-            }}>
-                <Copy className="h-4 w-4" />
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="fallback-link" className="sr-only">Link</Label>
+              <Input
+                  id="fallback-link"
+                  defaultValue={linkToCopy || ''}
+                  readOnly
+                  onFocus={(e) => e.target.select()}
+                  className="text-left"
+                  dir="ltr"
+              />
             </div>
             <DialogFooter className="sm:justify-start mt-4">
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                إغلاق
-                </Button>
-            </DialogClose>
+              <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                  إغلاق
+                  </Button>
+              </DialogClose>
             </DialogFooter>
         </DialogContent>
-        </Dialog>
-
+      </Dialog>
     </div>
   );
 }
