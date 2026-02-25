@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, serverTimestamp, doc, setDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -69,8 +68,9 @@ export default function NewOrderPage() {
       toast({ variant: "destructive", title: "خطأ", description: "لا يمكن إنشاء الطلب. بيانات المنتج أو المستخدم غير مكتملة." });
       return;
     }
-
-    const orderRef = doc(collection(firestore, "orders"));
+    
+    // Create order in the user's subcollection
+    const orderRef = doc(collection(firestore, `users/${user.uid}/orders`));
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {

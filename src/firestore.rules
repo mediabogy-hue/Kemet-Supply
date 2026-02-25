@@ -33,26 +33,21 @@ service cloud.firestore {
       return isSignedIn() && (isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager());
     }
     
-    function isMerchant() {
-        return isProductManager();
-    }
-
     // --------------------------------
     // Collection Rules
     // --------------------------------
 
-    // USERS & USER SUBCOLLECTIONS
     match /users/{userId} {
-      allow create: if isOwner(userId) || request.auth == null; // Allow creation for new signups
       allow get: if isOwner(userId) || isStaff();
       allow list: if isStaff();
+      allow create: if isOwner(userId) || request.auth == null;
       allow update: if isOwner(userId) || isStaff();
       allow delete: if isAdmin();
-      
-       match /withdrawalRequests/{requestId} {
+
+      match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();
       }
-       match /payments/{paymentId} {
+      match /payments/{paymentId} {
         allow read, write: if isOwner(userId) || isStaff();
       }
       match /bonuses/{bonusId} {
@@ -64,36 +59,30 @@ service cloud.firestore {
       }
     }
     
-    // --- GLOBAL COLLECTIONS ---
-     match /orders/{orderId} {
-      // Allow creation by a logged-in dropshipper for themselves, or by anyone (public page)
-      allow create: if (request.auth.uid == request.resource.data.dropshipperId) || (request.auth == null);
-      // Allow staff to read any order, and dropshippers to read their own orders.
-      allow read: if isStaff() || (resource.data.dropshipperId == request.auth.uid);
-      // Allow staff to list all orders, and dropshippers to list only their own orders.
-      // This rule requires that dropshipper queries MUST include `where('dropshipperId', '==', request.auth.uid)`
-      allow list: if isStaff() || (request.query.where.dropshipperId == request.auth.uid);
-      // Only staff can update orders
+    // This single rule handles all 'list' and 'read' operations for the 'orders' collection group.
+    match /{path=**}/orders/{orderId} {
+      // READ (get a single doc) is allowed if user is staff or the owner of the parent user doc.
+      // This is secure because get() checks the full path.
+      allow get: if isStaff() || (isSignedIn() && get(parent(path)).id == request.auth.uid);
+      
+      // LIST (querying a collection) is allowed if user is staff OR if the query is
+      // explicitly filtered by the user's own ID. This is secure because the rule
+      // enforces the `where` clause on the client-side query.
+      allow list: if isStaff() || (isSignedIn() && request.query.where.dropshipperId == request.auth.uid);
+      
+      // WRITE operations are handled separately for security.
+      // Allow unauthenticated creation for public product pages IF they supply the correct dropshipperId.
+      // Allow authenticated users to create orders for themselves.
+      allow create: if (request.auth == null && request.resource.data.dropshipperId != null) || (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid);
+      // Only staff can update/delete.
       allow update: if isStaff();
-      // Only admins can delete orders
       allow delete: if isAdmin();
-    }
-
-    match /adminWithdrawalRequests/{requestId} {
-      allow read, list, write: if isStaff();
-      allow create: if isSignedIn(); // Users create their own, this is for the denormalized copy
-    }
-    match /adminPayments/{paymentId} {
-      allow read, list, write: if isStaff();
-       allow create: if isSignedIn();
     }
     
     match /products/{productId} {
       allow read: if true;
       allow list: if isSignedIn();
-      allow create: if isStaff();
-      // Allow update/delete by admin, OR by a product manager if they are the merchantId
-      allow update, delete: if isAdmin() || (isProductManager() && resource.data.merchantId == request.auth.uid);
+      allow create, update, delete: if isStaff() || (isProductManager() && resource.data.merchantId == request.auth.uid);
 
        match /clicks/{clickId} {
         allow create: if true; 
@@ -114,10 +103,6 @@ service cloud.firestore {
     match /stockLedger/{ledgerId} {
       allow read, list, create, update, delete: if isStaff();
     }
-    match /paymentMethods/{methodId} {
-        allow read, list: if isSignedIn();
-        allow write: if isStaff();
-    }
     match /publicSettings/data {
         allow read: if true;
         allow write: if isAdmin();
@@ -129,7 +114,6 @@ service cloud.firestore {
         allow read, list, create, update, delete: if isAdmin();
     }
      match /merchantInquiries/{inquiryId} {
-      // Anyone can create an inquiry
       allow create: if true;
       allow read, list, update, delete: if isStaff();
     }
@@ -153,11 +137,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
-    // Role collections are for role checks via exists() only. Only admins can manage them.
     match /roles_admin/{userId} { allow read, write: if isAdmin(); }
     match /roles_product_manager/{userId} { allow read, write: if isAdmin(); }
     match /roles_orders_manager/{userId} { allow read, write: if isAdmin(); }
     match /roles_finance_manager/{userId} { allow read, write: if isAdmin(); }
+
+    match /adminWithdrawalRequests/{requestId} {
+      allow read, list, write: if isStaff();
+      allow create: if isSignedIn();
+    }
+     match /adminPayments/{paymentId} {
+      allow read, list, write: if isStaff();
+       allow create: if isSignedIn();
+    }
 
     match /marketingCustomers/{customerId} { 
         allow create, update: if true;

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, CheckCircle, XCircle, Users, Copy, Trophy, Gift } from "lucide-react";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, doc, updateDoc, where } from "firebase/firestore";
+import { collection, query, doc, updateDoc, where, collectionGroup } from "firebase/firestore";
 import type { Order, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -50,7 +49,7 @@ export default function DashboardPage() {
 
     const ordersQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return query(collection(firestore, 'orders'), where('dropshipperId', '==', user.uid));
+        return query(collectionGroup(firestore, 'orders'), where('dropshipperId', '==', user.uid));
     }, [firestore, user]);
     
     const { data: orders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);

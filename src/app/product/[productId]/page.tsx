@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -257,7 +256,7 @@ export default function PublicProductPage() {
             return;
         }
     
-        const orderRef = doc(collection(firestore, 'orders'));
+        const orderRef = doc(collection(firestore, `users/${dropshipperId}/orders`));
         
         let dropshipperName = 'مسوق';
         try {
@@ -306,7 +305,14 @@ export default function PublicProductPage() {
         }
     
         try {
-            await setDoc(orderRef, orderData);
+            const batch = writeBatch(firestore);
+            
+            // Write to the user's subcollection
+            batch.set(orderRef, orderData);
+
+            // Write a denormalized copy for admin queries
+            const adminOrderRef = doc(firestore, `adminOrders/${orderRef.id}`);
+            batch.set(adminOrderRef, orderData);
 
             // Create a record for the referred customer
             if (dropshipperId) {
@@ -321,9 +327,11 @@ export default function PublicProductPage() {
                     lastInteractionAt: serverTimestamp() as any,
                     name: data.customerName,
                 };
-                 await setDoc(customerRef, { ...customerData, createdAt: serverTimestamp() }, { merge: true });
+                 batch.set(customerRef, { ...customerData, createdAt: serverTimestamp() }, { merge: true });
             }
             
+            await batch.commit();
+
             setOrderSuccess(true);
             toast({
                 title: 'تم استلام طلبك بنجاح!',
@@ -746,6 +754,3 @@ export default function PublicProductPage() {
         </div>
     );
 }
-    
-
-    
