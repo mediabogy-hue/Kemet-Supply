@@ -133,46 +133,6 @@ export default function PublicProductPage() {
     const [paymentSettings, setPaymentSettings] = useState<Record<string, any> | null>(null);
     const [publicSettingsLoading, setPublicSettingsLoading] = useState(false);
 
-    const handleCopy = (text: string | null | undefined) => {
-        if (!text) return;
-        
-        const copyToClipboard = (textToCopy: string) => {
-            if (navigator.clipboard && window.isSecureContext) {
-                return navigator.clipboard.writeText(textToCopy);
-            } else {
-                // Fallback
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                return new Promise<void>((res, rej) => {
-                    try {
-                        document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
-                    } catch (err) {
-                        rej(err);
-                    } finally {
-                        document.body.removeChild(textArea);
-                    }
-                });
-            }
-        };
-
-        copyToClipboard(text).then(() => {
-            toast({ title: "تم نسخ بيانات الدفع!" });
-        }).catch(err => {
-            console.error("Failed to copy payment details:", err);
-            toast({
-                variant: "destructive",
-                title: "فشل النسخ",
-                description: "لم نتمكن من نسخ البيانات تلقائياً. الرجاء نسخها يدوياً.",
-            });
-        });
-    };
-
-
     useEffect(() => {
         if (firestore && productId && dropshipperId && !hasTrackedClick.current) {
             hasTrackedClick.current = true;
@@ -627,35 +587,23 @@ export default function PublicProductPage() {
                                                 ) : (
                                                     <div className="flex flex-col items-center justify-center gap-2 pt-2">
                                                         {paymentMethod === 'Vodafone Cash' && paymentSettings?.payment_vodafone_cash_enabled && (
-                                                            <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-between">
+                                                            <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-center">
                                                                 <span className="font-mono text-lg font-semibold">{paymentSettings.payment_vodafone_cash_number}</span>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopy(paymentSettings.payment_vodafone_cash_number)}>
-                                                                    <Copy className="h-4 w-4"/>
-                                                                </Button>
                                                             </div>
                                                         )}
                                                         {paymentMethod === 'InstaPay' && paymentSettings?.payment_instapay_enabled && (
-                                                            <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-between">
+                                                            <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-center">
                                                                 <span className="font-mono text-lg font-semibold">{paymentSettings.payment_instapay_handle}</span>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopy(paymentSettings.payment_instapay_handle)}>
-                                                                    <Copy className="h-4 w-4"/>
-                                                                </Button>
                                                             </div>
                                                         )}
                                                         {paymentMethod === 'Telda' && paymentSettings?.payment_telda_enabled && (
-                                                             <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-between">
+                                                             <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-center">
                                                                 <span className="font-mono text-lg font-semibold">{paymentSettings.payment_telda_handle}</span>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopy(paymentSettings.payment_telda_handle)}>
-                                                                    <Copy className="h-4 w-4"/>
-                                                                </Button>
                                                             </div>
                                                         )}
                                                         {paymentMethod === 'Bank Transfer' && paymentSettings?.payment_bank_transfer_enabled && (
-                                                             <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-between">
-                                                                <span className="font-mono text-sm font-semibold">{paymentSettings.payment_bank_transfer_details}</span>
-                                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopy(paymentSettings.payment_bank_transfer_details)}>
-                                                                    <Copy className="h-4 w-4"/>
-                                                                </Button>
+                                                             <div className="flex items-center gap-2 p-2 rounded-md border bg-muted w-full justify-center">
+                                                                <span className="font-mono text-sm font-semibold text-center">{paymentSettings.payment_bank_transfer_details}</span>
                                                             </div>
                                                         )}
                                                         {((paymentMethod === 'Vodafone Cash' && !paymentSettings?.payment_vodafone_cash_enabled) ||
