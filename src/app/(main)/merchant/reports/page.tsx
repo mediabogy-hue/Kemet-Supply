@@ -1,20 +1,20 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function MerchantReportsPage() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>المدفوعات</CardTitle>
-                <CardDescription>تم تعطيل هذه الميزة مؤقتاً.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>تم إيقاف نظام التجار في الوقت الحالي للتركيز على تحسين تجربة المسوقين بالعمولة.</p>
-            </CardContent>
-        </Card>
-    );
+// This page now redirects to the profile page, as financial reports are there.
+export default function MerchantReportsRedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/profile');
+  }, [router]);
+
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <p>جاري التوجيه إلى الملف الشخصي...</p>
+    </div>
+  );
 }
-
-    

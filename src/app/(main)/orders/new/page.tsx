@@ -70,7 +70,7 @@ export default function NewOrderPage() {
     }
 
     const newOrderRef = doc(collection(firestore, `users/${user.uid}/orders`));
-    const adminOrderRef = doc(collection(firestore, 'adminOrders', newOrderRef.id));
+    const adminOrderRef = doc(collection(firestore, 'adminOrders'), newOrderRef.id);
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
@@ -94,12 +94,9 @@ export default function NewOrderPage() {
       status: "Pending",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      merchantId: selectedProduct.merchantId || null,
     };
 
-    if (selectedProduct.merchantInfo) {
-      orderData.merchantInfo = selectedProduct.merchantInfo;
-    }
-    
     const batch = writeBatch(firestore);
     batch.set(newOrderRef, orderData);
     batch.set(adminOrderRef, { ...orderData, _originalPath: newOrderRef.path });

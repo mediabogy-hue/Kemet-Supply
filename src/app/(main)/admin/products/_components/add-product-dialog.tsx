@@ -18,17 +18,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Loader2, PlusCircle, Briefcase } from "lucide-react";
 import { scrapeProductFromUrl } from "@/ai/flows/scrape-product-flow";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSession } from "@/auth/SessionProvider";
 
 
 export function AddProductDialog() {
-  const firestore = useFirestore();
-  const { user } = useUser();
+  const { firestore, user, profile } = useSession();
   const { toast } = useToast();
 
   const categoriesQuery = useMemoFirebase(() => (firestore && user) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore, user]);
@@ -45,11 +45,6 @@ export function AddProductDialog() {
   const [videoUrl, setVideoUrl] = useState("");
   const [purchaseUrl, setPurchaseUrl] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
-
-  // Merchant fields
-  const [merchantName, setMerchantName] = useState("");
-  const [merchantPhone, setMerchantPhone] = useState("");
-  const [merchantWhatsapp, setMerchantWhatsapp] = useState("");
   
   // Control state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,9 +65,6 @@ export function AddProductDialog() {
       setPurchaseUrl("");
       setIsAvailable(true);
       setImportUrl("");
-      setMerchantName("");
-      setMerchantPhone("");
-      setMerchantWhatsapp("");
   };
 
   const handleImportFromUrl = async () => {
@@ -139,7 +131,7 @@ export function AddProductDialog() {
         return;
     }
 
-    if (!firestore) {
+    if (!firestore || !user || !profile) {
         toast({ variant: "destructive", title: "خطأ", description: "خدمات Firebase غير متاحة." });
         return;
     }
@@ -187,12 +179,9 @@ export function AddProductDialog() {
           updatedAt: serverTimestamp(),
         };
 
-        if (merchantName && merchantPhone) {
-            newProductData.merchantInfo = {
-                name: merchantName,
-                phone: merchantPhone,
-                whatsapp: merchantWhatsapp || merchantPhone,
-            };
+        if (profile.role === 'ProductManager') {
+            newProductData.merchantId = user.uid;
+            newProductData.merchantName = `${profile.firstName} ${profile.lastName}`.trim();
         }
         
         batch.set(productDocRef, newProductData);
@@ -326,33 +315,6 @@ export function AddProductDialog() {
                 </div>
               </div>
             </div>
-
-            <Accordion type="single" collapsible>
-                <AccordionItem value="merchant-info">
-                    <AccordionTrigger>
-                        <div className="flex items-center gap-2">
-                            <Briefcase/>
-                            <span>معلومات التاجر الخارجي (اختياري)</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-4 pt-2">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="merchant-name" className="text-right">اسم التاجر</Label>
-                                <Input id="merchant-name" value={merchantName} onChange={(e) => setMerchantName(e.target.value)} className="col-span-3" />
-                            </div>
-                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="merchant-phone" className="text-right">هاتف التاجر</Label>
-                                <Input id="merchant-phone" type="tel" value={merchantPhone} onChange={(e) => setMerchantPhone(e.target.value)} className="col-span-3" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="merchant-whatsapp" className="text-right">واتساب التاجر</Label>
-                                <Input id="merchant-whatsapp" type="tel" value={merchantWhatsapp} onChange={(e) => setMerchantWhatsapp(e.target.value)} className="col-span-3" />
-                            </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
         </div>
 
         <DialogFooter>

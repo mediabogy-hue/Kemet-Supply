@@ -1,20 +1,20 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function MerchantDashboardPage() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>حساب التاجر</CardTitle>
-                <CardDescription>تم تعطيل هذه الميزة مؤقتاً.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>تم إيقاف نظام التجار في الوقت الحالي للتركيز على تحسين تجربة المسوقين بالعمولة.</p>
-            </CardContent>
-        </Card>
-    );
+// This page now redirects to the main admin dashboard for Product Managers (Merchants).
+export default function MerchantDashboardRedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/admin/dashboard');
+  }, [router]);
+
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <p>جاري التوجيه إلى لوحة التحكم...</p>
+    </div>
+  );
 }
-
-    

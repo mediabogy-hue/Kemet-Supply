@@ -32,6 +32,10 @@ service cloud.firestore {
     function isStaff() {
       return isSignedIn() && (isAdmin() || isOrdersManager() || isFinanceManager() || isProductManager());
     }
+    
+    function isMerchant() {
+        return isProductManager();
+    }
 
     // --------------------------------
     // Collection Rules
@@ -47,15 +51,10 @@ service cloud.firestore {
       
       // Dropshipper orders are nested under their user document
       match /orders/{orderId} {
-          // Allow dropshipper to read their own orders, and staff to read any order.
           allow read: if isOwner(userId) || isStaff();
           allow list: if isOwner(userId) || isStaff();
-          // Allow dropshipper to create their own orders (New Order Page)
-          // OR allow an unauthenticated user to create an order if it contains the correct dropshipperId (Public Product Page)
           allow create: if isOwner(userId) || request.resource.data.dropshipperId == userId;
-           // Only staff can update orders (e.g. change status)
           allow update: if isStaff();
-          // Only admin can delete orders.
           allow delete: if isAdmin();
       }
       
@@ -75,16 +74,23 @@ service cloud.firestore {
     }
 
     // --- Special Collection Group Rules ---
-    // This allows admins to query across all users' orders
+    // This allows staff to query across all users' orders
     match /{path=**}/orders/{orderId} {
         allow list: if isStaff();
     }
     
     // --- GLOBAL COLLECTIONS ---
+    match /adminOrders/{orderId} {
+      allow create: if true; // Anyone can create an order (public pages)
+      allow read, list, update, delete: if isStaff();
+    }
+
     match /products/{productId} {
       allow read: if true;
       allow list: if isSignedIn();
-      allow create, update, delete: if isStaff();
+      allow create: if isStaff();
+      allow update: if isAdmin() || (isProductManager() && resource.data.merchantId == request.auth.uid);
+      allow delete: if isAdmin() || (isProductManager() && resource.data.merchantId == request.auth.uid);
 
        match /clicks/{clickId} {
         allow create: if true; 
@@ -123,6 +129,17 @@ service cloud.firestore {
       allow create: if true;
       allow read, list, update, delete: if isStaff();
     }
+     match /adminWithdrawalRequests/{requestId} {
+      allow read, list, write: if isStaff();
+    }
+    match /adminPayments/{paymentId} {
+      allow read, list, write: if isStaff();
+    }
+    match /withdrawalRequests/{reqId} {
+      allow read, list, write: if isStaff();
+      allow create: if isSignedIn();
+    }
+    
     match /conversations/{conversationId} {
       function isParticipant() {
         return request.auth.uid in resource.data.participantIds;
@@ -156,4 +173,3 @@ service cloud.firestore {
     match /automationSettings/{any} { allow read, write: if isStaff(); }
   }
 }
-    

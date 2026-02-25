@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from "firebase/firestore";
 
 // This is based on the `Product` entity in `docs/backend.json`
@@ -16,11 +17,8 @@ export interface Product {
   purchaseUrl?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  merchantInfo?: {
-    name: string;
-    phone: string;
-    whatsapp: string;
-  };
+  merchantId?: string;
+  merchantName?: string;
 }
 
 export interface ProductCategory {
@@ -123,6 +121,7 @@ export interface Order {
     phone: string;
     whatsapp: string;
   };
+  merchantId?: string;
   adminNotes?: string;
 }
 
