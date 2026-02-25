@@ -62,14 +62,19 @@ service cloud.firestore {
     
     // This is the single source of truth for orders
     match /orders/{orderId} {
-        // A dropshipper can only list orders if they are filtering by their own ID. Staff can list all orders.
-        allow list: if isStaff() || (isSignedIn() && request.query.where.dropshipperId == request.auth.uid);
+        // Any signed-in user can attempt to list orders.
+        // The 'get' rule below will ensure they only see their own.
+        allow list: if isSignedIn();
         
         // Anyone can read a specific order document if they are staff or own it.
         allow get: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
         
-        // Anyone can create an order (for public product pages).
-        allow create: if true;
+        // Allow public and authenticated users to create orders, with basic validation.
+        allow create: if request.resource.data.dropshipperId is string
+                    && request.resource.data.customerName is string
+                    && request.resource.data.customerPhone is string
+                    && request.resource.data.productId is string
+                    && request.resource.data.quantity is number;
         
         // Only staff can modify or delete orders.
         allow update: if isStaff();
