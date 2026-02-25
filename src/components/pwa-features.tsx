@@ -13,13 +13,11 @@ function OfflineBanner() {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
+    // Initial check on mount
+    setIsOffline(!navigator.onLine);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    // Initial check
-    if (typeof navigator.onLine !== 'undefined') {
-      setIsOffline(!navigator.onLine);
-    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -42,8 +40,12 @@ function OfflineBanner() {
 // PWA Install Button
 function InstallPwaButton() {
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [isStandalone, setIsStandalone] = useState(true); // Default to true (don't show) to prevent flash
 
   useEffect(() => {
+    // This runs only on the client
+    setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
+    
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event);
@@ -69,12 +71,7 @@ function InstallPwaButton() {
     });
   };
   
-  // Hide button if already installed or prompt not available
-   if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
-    return null;
-  }
-
-  if (!installPrompt) {
+  if (isStandalone || !installPrompt) {
     return null;
   }
 
