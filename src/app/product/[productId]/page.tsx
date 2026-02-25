@@ -257,7 +257,7 @@ export default function PublicProductPage() {
             return;
         }
     
-        const newOrderRef = doc(collection(firestore, 'orders'));
+        const newOrderRef = doc(collection(firestore, `users/${dropshipperId}/orders`));
         
         let dropshipperName = 'مسوق';
         try {
@@ -750,5 +750,4 @@ export default function PublicProductPage() {
         </div>
     );
 }
-
     

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -21,7 +22,7 @@ import {
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { useFirebase, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where } from "firebase/firestore";
+import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where, collectionGroup, getDocs } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
@@ -111,6 +112,10 @@ export default function AdminOrdersPage() {
   const [marketerFilter, setMarketerFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [isClient, setIsClient] = useState(false);
+  const [allOrders, setAllOrders] = useState<Order[] | null>(null);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [queryError, setQueryError] = useState<Error | null>(null);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -118,12 +123,32 @@ export default function AdminOrdersPage() {
 
   const canAccess = isAdmin || isOrdersManager;
   
-  const allOrdersQuery = useMemoFirebase(() => {
-    if (!firestore || !canAccess) return null;
-    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+  useEffect(() => {
+    if (!firestore || !canAccess) {
+        setOrdersLoading(false);
+        return;
+    };
+    
+    setOrdersLoading(true);
+
+    // Using collectionGroup to fetch all orders across all users.
+    // This requires a specific firestore rule: `match /{path=**}/orders/{orderId} { allow list: if isStaff(); }`
+    const ordersQuery = query(collectionGroup(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(200));
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+        const ordersData = snapshot.docs.map(doc => doc.data() as Order);
+        setAllOrders(ordersData);
+        setQueryError(null);
+        setOrdersLoading(false);
+    }, (error) => {
+        console.error("Failed to fetch all orders:", error);
+        setQueryError(error);
+        setAllOrders(null);
+        setOrdersLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [firestore, canAccess]);
-  
-  const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
   
   const shipmentsQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collection(firestore, 'shipments')), [firestore, canAccess, isRoleLoading]);
   const { data: allShipments, isLoading: shipmentsLoading } = useCollection<Shipment>(shipmentsQuery);
@@ -189,15 +214,15 @@ export default function AdminOrdersPage() {
     if (!firestore || !user || !role || !profile || !allOrders) return;
     
     const originalOrders = [...allOrders];
-    setOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+    setAllOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     toast({ title: "جاري تحديث حالة الطلب..." });
 
-    const orderRef = doc(firestore, 'orders', order.id);
+    const orderRef = doc(firestore, `users/${order.dropshipperId}/orders`, order.id);
 
     try {
         if (newStatus === 'Confirmed') {
             if (order.status !== 'Pending') {
-                setOrders(originalOrders);
+                setAllOrders(originalOrders);
                 toast({ variant: "destructive", title: "لا يمكن تأكيد الطلب", description: `هذا الطلب في حالة "${statusText[order.status] || order.status}" بالفعل.` });
                 return;
             }
@@ -287,14 +312,14 @@ export default function AdminOrdersPage() {
         }).catch(err => console.error("Failed to write audit log:", err));
 
     } catch (error: any) {
-        setOrders(originalOrders); // Revert UI
+        setAllOrders(originalOrders); // Revert UI
         toast({ 
             variant: "destructive", 
             title: "فشل تحديث الحالة", 
             description: error.message || "حدث خطأ غير متوقع." 
         });
     }
-  }, [firestore, user, role, toast, setOrders, allOrders, profile]);
+  }, [firestore, user, role, toast, setAllOrders, allOrders, profile]);
   
   const handleDeleteOrder = () => {
     if (!orderToDelete || !firestore || !allOrders) return;
@@ -302,15 +327,15 @@ export default function AdminOrdersPage() {
     const orderToDeleteCache = { ...orderToDelete };
     const originalOrders = [...allOrders];
 
-    setOrders(prev => (prev || []).filter(o => o.id !== orderToDeleteCache.id));
+    setAllOrders(prev => (prev || []).filter(o => o.id !== orderToDeleteCache.id));
     setOrderToDelete(null); 
     toast({ title: "تم حذف الطلب بنجاح" });
 
-    const orderRef = doc(firestore, 'orders', orderToDeleteCache.id);
+    const orderRef = doc(firestore, `users/${orderToDeleteCache.dropshipperId}/orders`, orderToDeleteCache.id);
     
     deleteDoc(orderRef)
         .catch(async (error) => {
-            setOrders(originalOrders);
+            setAllOrders(originalOrders);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: orderRef.path,
                 operation: 'delete',
@@ -710,3 +735,4 @@ export default function AdminOrdersPage() {
     </TooltipProvider>
   );
 }
+    
