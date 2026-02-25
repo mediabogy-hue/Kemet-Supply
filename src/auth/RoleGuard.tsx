@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,15 +11,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useEffect } from 'react';
-
-const ContentLoader = ({ message }: { message: string }) => (
-  <div className="flex h-[calc(100vh_-_15rem)] w-full flex-col items-center justify-center">
-    <div className="flex flex-col items-center gap-4 text-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-lg font-semibold">{message}</p>
-    </div>
-  </div>
-);
 
 const AuthErrorState = ({ error }: { error: string }) => {
     const auth = useAuth();
@@ -78,7 +70,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, role, pathname, router, isPublicPath]);
 
   if (isLoading) {
-    return <ContentLoader message="جاري التحقق من الصلاحيات..." />;
+    return null;
   }
   
   if (error) {
@@ -86,13 +78,13 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user && !isPublicPath) {
-     return <ContentLoader message="جاري التوجيه لتسجيل الدخول..." />;
+     return null;
   }
   if (user && role && isPublicPath && !pathname.startsWith('/product')) {
-     return <ContentLoader message="جاري التوجيه للوحة التحكم..." />;
+     return null;
   }
    if (user && role && !hasPermission(role, pathname)) {
-     return <ContentLoader message="غير مصرح بالدخول، جاري التوجيه..." />;
+     return null;
   }
 
   return <>{children}</>;

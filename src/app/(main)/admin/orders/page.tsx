@@ -121,6 +121,7 @@ export default function AdminOrdersPage() {
   // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
   // Using collectionGroup() requires rules that do not use get() or exists(). This causes a permission-denied error.
   const allOrdersQuery = null; 
+  
   const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
   
   const shipmentsQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collection(firestore, 'shipments')), [firestore, canAccess, isRoleLoading]);

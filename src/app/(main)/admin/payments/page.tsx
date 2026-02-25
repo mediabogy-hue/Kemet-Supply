@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, AlertTriangle, Trash2 } from "lucide-react";
+import { MoreHorizontal, AlertTriangle, Trash2, ShieldAlert } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,10 @@ export default function AdminPaymentsPage() {
 
   const canAccess = isAdmin || isFinanceManager;
   
-  const allOrdersQuery = useMemoFirebase(() => (isRoleLoading || !firestore || !canAccess) ? null : query(collectionGroup(firestore, 'orders'), orderBy(documentId())), [firestore, canAccess, isRoleLoading]);
+  // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
+  // This is the root cause of the permission errors. The query must be disabled to ensure stability.
+  // A more advanced solution like data aggregation via Cloud Functions is needed for this feature.
+  const allOrdersQuery = null; 
 
   const { data: allOrders, isLoading: ordersLoading, error: ordersError, setData: setAllOrders, lastUpdated } = useCollection<Order>(allOrdersQuery);
 
@@ -155,6 +158,13 @@ export default function AdminPaymentsPage() {
               <RefreshIndicator isLoading={isLoading} lastUpdated={lastUpdated} />
           </CardHeader>
           <CardContent>
+              <Alert variant="destructive" className="mb-4">
+                  <ShieldAlert className="h-4 w-4" />
+                  <AlertTitle>عرض الدفعات معطل مؤقتاً</AlertTitle>
+                  <AlertDescription>
+                      تم تعطيل عرض قائمة الدفعات الشاملة مؤقتًا لحل مشكلة أداء تتعلق بصلاحيات قاعدة البيانات.
+                  </AlertDescription>
+              </Alert>
               {ordersError && (
                 <Alert variant="destructive" className="mb-4">
                     <AlertTriangle className="h-4 w-4" />

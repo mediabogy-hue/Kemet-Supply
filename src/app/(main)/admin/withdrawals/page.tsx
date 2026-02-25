@@ -11,9 +11,10 @@ import { KpiCard } from "./_components/kpi-card";
 import { FiltersPanel } from "./_components/filters-panel";
 import { WithdrawalsTable } from "./_components/withdrawals-table";
 import { WithdrawalDetailsDrawer } from "./_components/withdrawal-details-drawer";
-import { DollarSign, Hourglass, CheckCircle, XCircle, List } from "lucide-react";
+import { DollarSign, Hourglass, CheckCircle, XCircle, List, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 export default function AdminWithdrawalsPage() {
@@ -30,11 +31,10 @@ export default function AdminWithdrawalsPage() {
 
     const canAccess = isAdmin || isFinanceManager;
 
-    const requestsQuery = useMemoFirebase(() => {
-        if (isRoleLoading || !firestore || !canAccess || !user) return null;
-        return query(collectionGroup(firestore, 'withdrawalRequests'));
-    }, [firestore, canAccess, isRoleLoading, user]);
-
+    // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
+    // This is the root cause of permission errors. The query must be disabled to ensure stability.
+    const requestsQuery = null;
+    
     const { data: requests, isLoading: requestsLoading, error, setData: setRequests } = useCollection<WithdrawalRequest>(requestsQuery);
     
     const isLoading = isRoleLoading || requestsLoading;
@@ -131,6 +131,13 @@ export default function AdminWithdrawalsPage() {
                             onPaymentMethodChange={setPaymentMethodFilter}
                         />
                     </CardHeader>
+                    <Alert variant="destructive" className="mx-6 mb-0">
+                        <ShieldAlert className="h-4 w-4" />
+                        <AlertTitle>عرض طلبات السحب معطل مؤقتاً</AlertTitle>
+                        <AlertDescription>
+                            تم تعطيل عرض قائمة طلبات السحب الشاملة مؤقتًا لحل مشكلة أداء تتعلق بصلاحيات قاعدة البيانات.
+                        </AlertDescription>
+                    </Alert>
                     <CardContent className="p-0">
                          {isLoading ? (
                             <div className="p-6 space-y-2">
