@@ -82,10 +82,44 @@ export default function DashboardPage() {
     }, [userProfile?.referralCode]);
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(referralLink);
-        toast({
-            title: "تم نسخ رابط الإحالة!",
-            description: "يمكنك الآن مشاركته مع أصدقائك.",
+        if (!referralLink) return;
+
+        const copyToClipboard = (text: string) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                return new Promise<void>((res, rej) => {
+                    try {
+                        document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+                    } catch (err) {
+                        rej(err);
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                });
+            }
+        };
+
+        copyToClipboard(referralLink).then(() => {
+            toast({
+                title: "تم نسخ رابط الإحالة!",
+                description: "يمكنك الآن مشاركته مع أصدقائك.",
+            });
+        }).catch(err => {
+            console.error("Failed to copy referral link:", err);
+            toast({
+                variant: "destructive",
+                title: "فشل النسخ",
+                description: "لم نتمكن من نسخ الرابط تلقائياً. الرجاء نسخه يدوياً.",
+            });
         });
     };
 

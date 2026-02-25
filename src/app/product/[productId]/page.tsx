@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -134,8 +135,41 @@ export default function PublicProductPage() {
 
     const handleCopy = (text: string | null | undefined) => {
         if (!text) return;
-        navigator.clipboard.writeText(text);
-        toast({ title: "تم نسخ بيانات الدفع!" });
+        
+        const copyToClipboard = (textToCopy: string) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(textToCopy);
+            } else {
+                // Fallback
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                return new Promise<void>((res, rej) => {
+                    try {
+                        document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+                    } catch (err) {
+                        rej(err);
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                });
+            }
+        };
+
+        copyToClipboard(text).then(() => {
+            toast({ title: "تم نسخ بيانات الدفع!" });
+        }).catch(err => {
+            console.error("Failed to copy payment details:", err);
+            toast({
+                variant: "destructive",
+                title: "فشل النسخ",
+                description: "لم نتمكن من نسخ البيانات تلقائياً. الرجاء نسخها يدوياً.",
+            });
+        });
     };
 
 

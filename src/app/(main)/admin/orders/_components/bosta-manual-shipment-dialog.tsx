@@ -45,8 +45,41 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
 
     const handleCopyLink = () => {
         if (!link) return;
-        navigator.clipboard.writeText(link);
-        toast({ title: "تم نسخ الرابط بنجاح!" });
+
+        const copyToClipboard = (text: string) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                return new Promise<void>((res, rej) => {
+                    try {
+                        document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+                    } catch (err) {
+                        rej(err);
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                });
+            }
+        };
+
+        copyToClipboard(link).then(() => {
+            toast({ title: "تم نسخ الرابط بنجاح!" });
+        }).catch(err => {
+            console.error("Failed to copy Bosta link:", err);
+            toast({
+                variant: "destructive",
+                title: "فشل النسخ",
+                description: "لم نتمكن من نسخ الرابط تلقائياً. الرجاء نسخه يدوياً.",
+            });
+        });
     };
 
     const handleLinkShipment = async () => {
@@ -77,10 +110,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
 
         const orderRef = doc(firestore, `orders/${order.id}`);
         batch.update(orderRef, { status: 'Ready to Ship', updatedAt: serverTimestamp() });
-
-        // Update the user's order subcollection as well, if it exists.
-        const userOrderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
-        batch.update(userOrderRef, { status: 'Ready to Ship', updatedAt: serverTimestamp() });
         
         try {
             await batch.commit();

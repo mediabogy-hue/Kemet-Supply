@@ -50,19 +50,44 @@ function CopyLinkDialog({
 
   const handleCopy = () => {
     if (!link) return;
-    navigator.clipboard.writeText(link).then(() => {
-      toast({
-        title: "تم نسخ الرابط بنجاح!",
-        description: "يمكنك الآن مشاركة الرابط مع عملائك.",
-      });
-      onOpenChange(false); // Close dialog on successful copy
+
+    const copyToClipboard = (text: string) => {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            return new Promise<void>((res, rej) => {
+                try {
+                    document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+                } catch (err) {
+                    rej(err);
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            });
+        }
+    };
+    
+    copyToClipboard(link).then(() => {
+        toast({
+            title: "تم نسخ الرابط بنجاح!",
+            description: "يمكنك الآن مشاركة الرابط مع عملائك.",
+        });
+        onOpenChange(false);
     }).catch(err => {
-      console.error("Failed to copy inside dialog:", err);
-      toast({
-        variant: "destructive",
-        title: "فشل النسخ",
-        description: "لم نتمكن من النسخ تلقائياً. الرجاء نسخ الرابط يدوياً.",
-      });
+        console.error("Failed to copy link:", err);
+        toast({
+            variant: "destructive",
+            title: "فشل النسخ",
+            description: "لم نتمكن من نسخ الرابط. يرجى نسخه يدويًا.",
+        });
     });
   };
 
