@@ -58,7 +58,7 @@ function ReportsContent() {
 
     const allUserOrdersQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
-        return query(collection(firestore, 'orders'), where('dropshipperId', '==', user.uid), where('status', '==', 'Delivered'));
+        return query(collection(firestore, 'users', user.uid, 'orders'), where('status', '==', 'Delivered'));
     }, [user, firestore, isDropshipper]);
     const { data: allUserOrders, isLoading: ordersLoading, error: ordersError } = useCollection<Order>(allUserOrdersQuery);
     
@@ -338,5 +338,3 @@ export default function ReportsPage() {
     
     return <ReportsContent />;
 }
-
-    

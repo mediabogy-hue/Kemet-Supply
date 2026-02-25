@@ -50,8 +50,7 @@ export default function DashboardPage() {
     const ordersQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
         return query(
-          collection(firestore, 'orders'),
-          where('dropshipperId', '==', user.uid)
+          collection(firestore, 'users', user.uid, 'orders')
         );
       }, [firestore, user]);
     
@@ -270,5 +269,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
