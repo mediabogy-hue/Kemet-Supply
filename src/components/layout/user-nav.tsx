@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,32 +14,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CreditCard, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/auth/SessionProvider";
 
 
 export function UserNav() {
-  const { user, isUserLoading } = useUser();
+  const { user, profile, isLoading } = useSession();
   const auth = useAuth();
   const router = useRouter();
 
   const handleSignOut = () => {
     if (!auth) return;
     signOut(auth).then(() => {
-      router.push('/register');
+      router.push('/');
     });
   }
 
-  if (isUserLoading) {
+  if (isLoading) {
+    return null; // Or a skeleton
+  }
+
+  if(!user || !profile) {
     return null;
   }
 
-  if(!user) {
-    return null;
-  }
-
-  const userDisplayName = user.displayName || `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || 'User';
+  const userDisplayName = `${profile.firstName} ${profile.lastName}`.trim() || profile.email;
 
 
   return (
@@ -46,8 +48,8 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            {user.photoURL && <AvatarImage src={user.photoURL} alt="@user" />}
-            <AvatarFallback>{user.email?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
+            {profile.photoURL && <AvatarImage src={profile.photoURL} alt={userDisplayName} />}
+            <AvatarFallback>{profile.firstName?.[0] || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -56,7 +58,7 @@ export function UserNav() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{userDisplayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {profile.email}
             </p>
           </div>
         </DropdownMenuLabel>

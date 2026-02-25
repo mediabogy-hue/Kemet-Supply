@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Rocket } from "lucide-react";
 import { useAuth } from "@/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background">
         <div className="flex items-center gap-2 text-muted-foreground">
-           {/* You can use a more specific icon if you want */}
+          <Rocket className="h-5 w-5 animate-pulse text-primary" />
           <span>جاري التحميل...</span>
         </div>
       </div>

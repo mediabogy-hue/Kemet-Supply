@@ -1,5 +1,4 @@
 
-
 import type { UserProfile } from '@/lib/types';
 
 // Define a type for roles for clarity
