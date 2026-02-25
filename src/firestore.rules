@@ -46,9 +46,8 @@ service cloud.firestore {
 
       // Rules for subcollections inside a user document
       match /orders/{orderId} {
-        // A user can do anything with their own orders. Staff can also read them for consistency checks.
+        // A user can do anything with their own orders.
         allow read, write: if isOwner(userId);
-        allow list: if isOwner(userId) || isStaff();
       }
       match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();

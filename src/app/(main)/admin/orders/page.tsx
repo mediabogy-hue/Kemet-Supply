@@ -121,7 +121,7 @@ export default function AdminOrdersPage() {
   const allOrdersQuery = useMemoFirebase(() => {
     if (!firestore || !canAccess || !user) return null;
     
-    const baseQuery = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(200));
+    const baseQuery = query(collection(firestore, 'adminOrders'), orderBy('createdAt', 'desc'), limit(200));
 
     if (isProductManager) {
         return query(baseQuery, where('merchantId', '==', user.uid));
