@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, serverTimestamp, doc, setDoc, writeBatch } from "firebase/firestore";
 import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -64,17 +64,17 @@ export default function NewOrderPage() {
   const totalCommission = selectedProduct ? (selectedProduct.commission || 0) * quantity : 0;
 
   const onSubmit = async (data: OrderFormData) => {
-    if (!user || !firestore || !selectedProduct) {
-      toast({ variant: "destructive", title: "خطأ", description: "لا يمكن إنشاء الطلب. بيانات المنتج غير مكتملة." });
+    if (!user || !firestore || !selectedProduct || !userProfile) {
+      toast({ variant: "destructive", title: "خطأ", description: "لا يمكن إنشاء الطلب. بيانات المنتج أو المستخدم غير مكتملة." });
       return;
     }
 
-    const orderId = doc(collection(firestore, 'id_generator')).id;
-    const orderRef = doc(firestore, 'orders', orderId);
-    const dropshipperName = (userProfile && `${userProfile.firstName} ${userProfile.lastName}`.trim()) || (user && user.displayName) || '';
+    const newOrderRef = doc(collection(firestore, `users/${user.uid}/orders`));
+    const adminOrderRef = doc(collection(firestore, 'adminOrders', newOrderRef.id));
+    const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
-      id: orderId,
+      id: newOrderRef.id,
       dropshipperId: user.uid,
       dropshipperName,
       customerName: data.customerName,
@@ -99,15 +99,19 @@ export default function NewOrderPage() {
     if (selectedProduct.merchantInfo) {
       orderData.merchantInfo = selectedProduct.merchantInfo;
     }
+    
+    const batch = writeBatch(firestore);
+    batch.set(newOrderRef, orderData);
+    batch.set(adminOrderRef, { ...orderData, _originalPath: newOrderRef.path });
 
-    setDoc(orderRef, orderData)
+    batch.commit()
       .then(() => {
         toast({ title: "تم إنشاء الطلب بنجاح!" });
         router.push("/orders");
       })
       .catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: orderRef.path,
+          path: newOrderRef.path,
           operation: 'create',
           requestResourceData: orderData
         }));
