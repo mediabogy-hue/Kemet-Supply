@@ -1,15 +1,37 @@
 
 'use client';
-import { Sidebar, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar";
 import { Header } from "@/components/layout/header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useSession } from "@/auth/SessionProvider";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Rocket } from "lucide-react";
+import { RoleGuard } from "@/auth/RoleGuard";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
+  const { user, isLoading } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Rocket className="h-5 w-5 animate-pulse text-primary" />
+            <span>جاري التحميل...</span>
+          </div>
+      </div>
+    );
+  }
 
   return (
-    <SidebarProvider>
+    <RoleGuard>
       <div className="flex h-screen">
         <Sidebar>
           <SidebarNav />
@@ -21,6 +43,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </main>
         </div>
       </div>
-    </SidebarProvider>
+    </RoleGuard>
   );
 }

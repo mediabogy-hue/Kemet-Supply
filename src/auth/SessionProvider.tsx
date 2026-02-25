@@ -8,8 +8,6 @@ import { useFirebase } from '@/firebase/provider';
 import { UserProfile } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
 import { getDefaultPath, hasPermission } from './permissions';
-import { RoleGuard } from './RoleGuard';
-
 
 type SessionContextType = {
   user: User | null;
@@ -80,12 +78,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (!loadedProfile) {
             setError("User profile not found in database.");
         }
+        
+        // Redirect logic after session is loaded
+        const isPublicPage = ['/', '/register', '/forgot-password'].includes(pathname) || pathname.startsWith('/product/');
+        const defaultPath = getDefaultPath(loadedRole);
+        
+        if (!isPublicPage && !hasPermission(loadedRole, pathname)) {
+            router.replace(defaultPath);
+        } else if (isPublicPage) {
+            router.replace(defaultPath);
+        }
+
       } else {
         setUser(null);
         setProfile(null);
         setRole(null);
-        // Redirect to login if not on a public page
-        if (pathname !== '/' && pathname !== '/register' && pathname !== '/forgot-password' && !pathname.startsWith('/product/')) {
+        const isPublicPage = ['/', '/register', '/forgot-password'].includes(pathname) || pathname.startsWith('/product/');
+        if (!isPublicPage) {
             router.replace('/');
         }
       }
@@ -113,9 +122,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionContext.Provider value={contextValue}>
-        <RoleGuard>
-          {children}
-        </RoleGuard>
+      {children}
     </SessionContext.Provider>
   );
 }

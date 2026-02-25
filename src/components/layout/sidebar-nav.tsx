@@ -1,18 +1,39 @@
+
 'use client';
 
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { LayoutDashboard } from "lucide-react";
+import { useSession } from "@/auth/SessionProvider";
+import { navLinks } from "@/auth/nav";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-// This component has been reset to show only a single, static link.
 export function SidebarNav() {
+  const { role } = useSession();
+  const pathname = usePathname();
+
+  if (!role) {
+    return null;
+  }
+  
+  const accessibleLinks = navLinks.filter(link => {
+    if (role === 'Admin') return link.roles.includes('Admin');
+    if (role === 'Dropshipper') return link.roles.includes('Dropshipper');
+    // Add other roles here if needed
+    return false;
+  });
+
   return (
     <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton tooltip="Dashboard">
-            <LayoutDashboard />
-            <span className="truncate">Dashboard</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {accessibleLinks.map((link) => (
+          <SidebarMenuItem key={link.href}>
+             <Link href={link.href} passHref legacyBehavior>
+                <SidebarMenuButton tooltip={link.label} isActive={pathname.startsWith(link.href)}>
+                  {link.icon}
+                  <span className="truncate">{link.label}</span>
+                </SidebarMenuButton>
+             </Link>
+          </SidebarMenuItem>
+        ))}
     </SidebarMenu>
   );
 }

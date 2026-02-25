@@ -12,16 +12,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut, Settings, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/auth/SessionProvider";
+import { Skeleton } from "../ui/skeleton";
 
 
 export function UserNav() {
-  const { user, profile, isLoading } = useSession();
+  const { profile, isLoading } = useSession();
   const auth = useAuth();
   const router = useRouter();
 
@@ -32,15 +33,12 @@ export function UserNav() {
     });
   }
 
-  if (isLoading) {
-    return null; // Or a skeleton
-  }
-
-  if(!user || !profile) {
-    return null;
+  if (isLoading || !profile) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
   const userDisplayName = `${profile.firstName} ${profile.lastName}`.trim() || profile.email;
+  const userInitials = `${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}`.toUpperCase();
 
 
   return (
@@ -49,7 +47,7 @@ export function UserNav() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             {profile.photoURL && <AvatarImage src={profile.photoURL} alt={userDisplayName} />}
-            <AvatarFallback>{profile.firstName?.[0] || 'U'}</AvatarFallback>
+            <AvatarFallback>{userInitials || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -68,18 +66,6 @@ export function UserNav() {
             <Link href="/profile">
               <User className="me-2 h-4 w-4" />
               <span>الملف الشخصي</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-             <Link href="/reports">
-              <CreditCard className="me-2 h-4 w-4" />
-              <span>الفواتير</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/profile">
-              <Settings className="me-2 h-4 w-4" />
-              <span>الإعدادات</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
