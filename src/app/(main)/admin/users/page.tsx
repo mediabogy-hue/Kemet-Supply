@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -16,7 +16,7 @@ import { EditUserDialog } from "./_components/edit-user-dialog";
 import { DeleteUserAlert } from "./_components/delete-user-alert";
 import { SetTargetDialog } from "./_components/set-target-dialog";
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, doc, updateDoc, deleteDoc, writeBatch, Timestamp } from "firebase/firestore";
+import { collection, query, doc, updateDoc, deleteDoc, writeBatch, Timestamp, limit, orderBy } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
 
   const canAccess = !isRoleLoading && isAdmin;
 
-  const usersQuery = useMemoFirebase(() => (canAccess && firestore && user) ? query(collection(firestore, "users")) : null, [firestore, canAccess, user]);
+  const usersQuery = useMemoFirebase(() => (canAccess && firestore && user) ? query(collection(firestore, "users"), orderBy('createdAt', 'desc'), limit(100)) : null, [firestore, canAccess, user]);
 
   const { data: allUsers, isLoading: usersLoading, setData: setAllUsers } = useCollection<UserProfile>(usersQuery);
 

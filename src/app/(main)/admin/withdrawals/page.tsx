@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, doc, updateDoc, serverTimestamp, deleteDoc, orderBy } from "firebase/firestore";
+import { collection, query, doc, updateDoc, serverTimestamp, deleteDoc, orderBy, limit } from "firebase/firestore";
 import type { WithdrawalRequest } from "@/lib/types";
 import { useMemo, useState } from "react";
 import { useSession } from "@/auth/SessionProvider";
@@ -33,7 +33,7 @@ export default function AdminWithdrawalsPage() {
 
     const requestsQuery = useMemoFirebase(() => {
         if (!firestore || !canAccess) return null;
-        return query(collection(firestore, 'withdrawalRequests'), orderBy('createdAt', 'desc'));
+        return query(collection(firestore, 'withdrawalRequests'), orderBy('createdAt', 'desc'), limit(100));
     }, [firestore, canAccess]);
     
     const { data: requests, isLoading: requestsLoading, error, setData: setRequests } = useCollection<WithdrawalRequest>(requestsQuery);

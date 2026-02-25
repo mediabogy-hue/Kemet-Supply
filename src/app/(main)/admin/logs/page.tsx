@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, FirestoreError } from 'firebase/firestore';
+import { collection, query, orderBy, FirestoreError, limit } from 'firebase/firestore';
 import type { AuditLog, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -93,7 +93,7 @@ export default function AdminLogsPage() {
 
   const auditLogsQuery = useMemoFirebase(() => {
     if (isRoleLoading || !firestore || !isAdmin) return null;
-    return query(collection(firestore, 'auditLogs'));
+    return query(collection(firestore, 'auditLogs'), orderBy('createdAt', 'desc'), limit(100));
   }, [firestore, isAdmin, isRoleLoading]);
   
   const usersQuery = useMemoFirebase(() => {

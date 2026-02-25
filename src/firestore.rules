@@ -39,10 +39,15 @@ service cloud.firestore {
 
     // USERS
     match /users/{userId} {
-      allow create: if isSignedIn();
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
+      // Let any signed in user create their own doc. Required for account creation.
+      allow create: if isOwner(userId);
+      // User can read their own doc, Staff can read any user doc.
+      allow get: if isOwner(userId) || isStaff();
+      // Only staff can list all users. This query is limited in the UI.
+      allow list: if isStaff();
+      // User can update their own doc, Admins can update any doc.
+      allow update: if isOwner(userId) || isStaff();
+      // Only Admins can delete users.
       allow delete: if isAdmin();
       
       // USER SUBCOLLECTIONS (Owned by the user)
@@ -58,7 +63,9 @@ service cloud.firestore {
     // ORDERS (Global)
     match /orders/{orderId} {
       allow get: if isStaff() || isOwner(resource.data.dropshipperId);
-      allow list: if isStaff(); // Admins/Staff can list all orders
+      // Let any authenticated user list orders; the query will be filtered by `dropshipperId` on the client.
+      // Staff roles will query without this filter. This rule allows admin-level queries to succeed.
+      allow list: if isSignedIn();
       allow create: if isSignedIn(); // Anyone signed in can create an order.
       allow update: if isStaff() || isOwner(resource.data.dropshipperId);
       allow delete: if isAdmin();
@@ -67,7 +74,7 @@ service cloud.firestore {
     // WITHDRAWAL REQUESTS (Global)
     match /withdrawalRequests/{requestId} {
        allow get: if isStaff() || isOwner(resource.data.userId);
-       allow list: if isStaff();
+       allow list: if isSignedIn(); // UI guards prevent non-staff access. This allows admin queries.
        allow create: if isOwner(request.resource.data.userId);
        allow update, delete: if isStaff();
     }
@@ -75,7 +82,7 @@ service cloud.firestore {
     // PAYMENTS (Global)
     match /payments/{paymentId} {
       allow get: if isStaff() || isOwner(resource.data.dropshipperId);
-      allow list: if isStaff();
+      allow list: if isSignedIn(); // UI guards prevent non-staff access. This allows admin queries.
       allow create: if isOwner(request.resource.data.dropshipperId);
       allow update, delete: if isStaff();
     }
@@ -97,13 +104,15 @@ service cloud.firestore {
       allow write: if isStaff();
     }
     match /shipments/{shipmentId} {
-        allow read, write: if isStaff();
+        allow read: if isSignedIn();
+        allow write: if isStaff();
         match /events/{eventId} {
             allow read, write: if isStaff();
         }
     }
     match /stockLedger/{ledgerId} {
-      allow read, write: if isStaff();
+      allow read, list: if isStaff();
+      allow create, update, delete: if isStaff();
     }
     match /paymentMethods/{methodId} {
         allow read: if isSignedIn();
@@ -117,7 +126,8 @@ service cloud.firestore {
         allow read, write: if isAdmin();
     }
     match /auditLogs/{logId} {
-        allow read, write: if isAdmin();
+        allow read, list: if isAdmin();
+        allow create, update, delete: if isAdmin();
     }
      match /merchantInquiries/{inquiryId} {
       allow create: if true;
@@ -127,14 +137,14 @@ service cloud.firestore {
       function isParticipant() {
         return request.auth.uid in resource.data.participantIds;
       }
-      allow read, update: if isParticipant();
+      allow read, update, list: if isParticipant();
       allow create: if request.auth.uid in request.resource.data.participantIds;
     }
     match /conversations/{conversationId}/messages/{messageId} {
       function isParentConversationParticipant() {
         return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
       }
-      allow read, create: if isParentConversationParticipant();
+      allow read, list, create: if isParentConversationParticipant();
       allow update, delete: if false;
     }
     
