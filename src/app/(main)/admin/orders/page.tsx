@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -21,7 +22,7 @@ import {
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { useFirebase, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, addDoc, writeBatch, orderBy, limit, where, getDocs, collectionGroup } from "firebase/firestore";
+import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, addDoc, writeBatch, orderBy, limit, where } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
@@ -199,7 +200,9 @@ export default function AdminOrdersPage() {
     setAllOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     toast({ title: "جاري تحديث حالة الطلب..." });
 
-    const mainOrderRef = doc(firestore, `orders/${order.id}`);
+    const batch = writeBatch(firestore);
+    const adminOrderRef = doc(firestore, `adminOrders/${order.id}`);
+    const userOrderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
 
     try {
         if (newStatus === 'Confirmed') {
@@ -210,7 +213,7 @@ export default function AdminOrdersPage() {
             }
             await runTransaction(firestore, async (transaction) => {
                 const productRef = doc(firestore, 'products', order.productId);
-                const orderDoc = await transaction.get(mainOrderRef); 
+                const orderDoc = await transaction.get(adminOrderRef);
                 const productDoc = await transaction.get(productRef);
 
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
@@ -227,7 +230,8 @@ export default function AdminOrdersPage() {
                         message: `الكمية غير كافية للمنتج: ${productData.name}`,
                         item: { productId: productData.id, needed: orderData.quantity, available: productData.stockQuantity }
                     };
-                    transaction.update(mainOrderRef, { stockError });
+                    transaction.update(adminOrderRef, { stockError });
+                    transaction.update(userOrderRef, { stockError });
                     throw new Error(stockError.message);
                 }
 
@@ -246,12 +250,13 @@ export default function AdminOrdersPage() {
                     confirmedBy: { userId: user.uid, role: role },
                     stockApplied: true, stockAppliedAt: serverTimestamp(), stockError: null,
                 };
-                transaction.update(mainOrderRef, updatePayload);
+                transaction.update(adminOrderRef, updatePayload);
+                transaction.update(userOrderRef, updatePayload);
             });
             toast({ title: "تم تأكيد الطلب وخصم المخزون بنجاح!" });
         } else if (newStatus === 'Canceled' || newStatus === 'Returned') {
             await runTransaction(firestore, async (transaction) => {
-                const orderDoc = await transaction.get(mainOrderRef);
+                const orderDoc = await transaction.get(adminOrderRef);
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
                 
                 const orderData = orderDoc.data() as Order;
@@ -275,11 +280,14 @@ export default function AdminOrdersPage() {
                     statusAndStockUpdate.stockRestored = true;
                 }
                 
-                transaction.update(mainOrderRef, statusAndStockUpdate);
+                transaction.update(adminOrderRef, statusAndStockUpdate);
+                transaction.update(userOrderRef, statusAndStockUpdate);
             });
             toast({ title: `تم تحديث حالة الطلب إلى "${statusText[newStatus]}"` });
         } else {
-            await updateDoc(mainOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            batch.update(adminOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            batch.update(userOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            await batch.commit();
             toast({ title: "تم تحديث حالة الطلب بنجاح" });
         }
 
@@ -314,15 +322,17 @@ export default function AdminOrdersPage() {
     setAllOrders(prev => (prev || []).filter(o => o.id !== orderToDeleteCache.id));
     setOrderToDelete(null); 
     
-    const mainOrderRef = doc(firestore, 'orders', orderToDeleteCache.id);
+    const batch = writeBatch(firestore);
+    batch.delete(doc(firestore, 'adminOrders', orderToDeleteCache.id));
+    batch.delete(doc(firestore, `users/${orderToDeleteCache.dropshipperId}/orders/${orderToDeleteCache.id}`));
     
     try {
-        await deleteDoc(mainOrderRef);
+        await batch.commit();
         toast({ title: "تم حذف الطلب بنجاح" });
     } catch (error) {
         setAllOrders(originalOrders);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: mainOrderRef.path,
+            path: `batch delete for order ${orderToDeleteCache.id}`,
             operation: 'delete',
         }));
         toast({ variant: "destructive", title: "فشل حذف الطلب", description: "قد لا تملك الصلاحيات الكافية." });

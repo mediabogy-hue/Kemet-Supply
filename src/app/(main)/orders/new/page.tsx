@@ -71,16 +71,17 @@ export default function NewOrderPage() {
     }
     
     const batch = writeBatch(firestore);
+    const orderId = doc(collection(firestore, 'id_generator')).id;
 
     // Path for user's own subcollection
-    const userOrderRef = doc(collection(firestore, `users/${user.uid}/orders`));
+    const userOrderRef = doc(firestore, `users/${user.uid}/orders/${orderId}`);
     // Denormalized path for admin access
-    const adminOrderRef = doc(firestore, `adminOrders/${userOrderRef.id}`);
+    const adminOrderRef = doc(firestore, `adminOrders/${orderId}`);
 
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || user.displayName || 'مسوق';
 
     const orderData: any = {
-      id: userOrderRef.id,
+      id: orderId,
       dropshipperId: user.uid,
       dropshipperName,
       customerName: data.customerName,
@@ -118,7 +119,7 @@ export default function NewOrderPage() {
         router.push("/orders");
     } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `batch write for order ${userOrderRef.id}`,
+          path: `batch write for order ${orderId}`,
           operation: 'create',
           requestResourceData: orderData
         }));

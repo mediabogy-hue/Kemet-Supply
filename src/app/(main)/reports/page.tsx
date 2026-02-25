@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Wallet, TrendingUp, CircleDollarSign, Hourglass } from "lucide-react";
 import { useFirestore, useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
-import { collection, query, orderBy, Timestamp, doc, where, collectionGroup } from "firebase/firestore";
+import { collection, query, orderBy, Timestamp, doc, where } from "firebase/firestore";
 import type { Order, WithdrawalRequest, UserProfile, Bonus } from "@/lib/types";
 import { format } from 'date-fns';
 import { WithdrawalDialog } from './_components/withdrawal-dialog';
@@ -60,7 +60,7 @@ function ReportsContent() {
     const deliveredOrdersQuery = useMemoFirebase(() => {
         if (!user || !firestore || !isDropshipper) return null;
         return query(
-            collection(firestore, `users/${user.uid}/orders`),
+            collection(firestore, `users/${user.uid}/orders`), 
             where('status', '==', 'Delivered')
         );
     }, [user, firestore, isDropshipper]);

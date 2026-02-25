@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -256,7 +257,9 @@ export default function PublicProductPage() {
             return;
         }
     
-        const orderRef = doc(collection(firestore, `users/${dropshipperId}/orders`));
+        const orderId = doc(collection(firestore, 'id_generator')).id;
+        const userOrderRef = doc(firestore, `users/${dropshipperId}/orders/${orderId}`);
+        const adminOrderRef = doc(firestore, `adminOrders/${orderId}`);
         
         let dropshipperName = 'مسوق';
         try {
@@ -270,7 +273,7 @@ export default function PublicProductPage() {
         }
 
         const orderData: Partial<Order> = {
-            id: orderRef.id,
+            id: orderId,
             dropshipperId,
             dropshipperName,
             customerName: data.customerName,
@@ -308,10 +311,9 @@ export default function PublicProductPage() {
             const batch = writeBatch(firestore);
             
             // Write to the user's subcollection
-            batch.set(orderRef, orderData);
+            batch.set(userOrderRef, orderData);
 
             // Write a denormalized copy for admin queries
-            const adminOrderRef = doc(firestore, `adminOrders/${orderRef.id}`);
             batch.set(adminOrderRef, orderData);
 
             // Create a record for the referred customer
@@ -341,7 +343,7 @@ export default function PublicProductPage() {
         } catch (error) {
             console.error("Order submission error:", error);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-               path: orderRef.path,
+               path: `batch write for order ${orderId}`,
                operation: 'create',
                requestResourceData: orderData
            }));

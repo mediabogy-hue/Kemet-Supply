@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, CheckCircle, XCircle, Users, Copy, Trophy, Gift } from "lucide-react";
 import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, doc, updateDoc, where, collectionGroup, orderBy } from "firebase/firestore";
+import { collection, query, doc, updateDoc, where, orderBy } from "firebase/firestore";
 import type { Order, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";

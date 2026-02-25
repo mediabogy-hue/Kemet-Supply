@@ -47,7 +47,7 @@ service cloud.firestore {
       // Rules for subcollections inside a user document
       match /orders/{orderId} {
         // A user can do anything with their own orders.
-        allow read, write: if isOwner(userId);
+        allow read, write, list: if isOwner(userId);
       }
       match /withdrawalRequests/{requestId} {
         allow read, write: if isOwner(userId) || isStaff();
@@ -64,19 +64,15 @@ service cloud.firestore {
       }
     }
     
-    // This is a denormalized, admin-only collection for fast queries.
+    // Denormalized collections for fast admin queries
     match /adminOrders/{orderId} {
-      allow read, list, write: if isStaff();
+      allow read, list, write, delete: if isStaff();
     }
-    
-    // This is a denormalized, admin-only collection for fast queries.
     match /adminWithdrawalRequests/{requestId} {
-      allow read, list, write: if isStaff();
+      allow read, list, write, delete: if isStaff();
     }
-
-    // Denormalized collection for payment proofs for admin review
     match /adminPayments/{paymentId} {
-      allow read, list, write: if isStaff();
+      allow read, list, write, delete: if isStaff();
     }
 
     // --- OTHER GLOBAL COLLECTIONS ---
