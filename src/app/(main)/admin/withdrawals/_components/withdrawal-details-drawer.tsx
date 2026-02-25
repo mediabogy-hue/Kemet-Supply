@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -33,8 +32,40 @@ export function WithdrawalDetailsDrawer({ request, isOpen, onOpenChange }: Withd
     const { toast } = useToast();
 
     const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({ title: "تم النسخ بنجاح!" });
+        const copyToClipboard = (textToCopy: string) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(textToCopy);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed";
+                textArea.style.top = "0";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                return new Promise<void>((res, rej) => {
+                    try {
+                        document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+                    } catch (err) {
+                        rej(err);
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                });
+            }
+        };
+
+        copyToClipboard(text).then(() => {
+            toast({ title: "تم النسخ بنجاح!" });
+        }).catch(err => {
+            console.error("Failed to copy:", err);
+            toast({
+                variant: "destructive",
+                title: "فشل النسخ",
+                description: "لم نتمكن من نسخ النص تلقائيًا. الرجاء نسخه يدويًا.",
+            });
+        });
     };
     
     if (!request) return null;
@@ -137,4 +168,3 @@ export function WithdrawalDetailsDrawer({ request, isOpen, onOpenChange }: Withd
         </Sheet>
     );
 }
-

@@ -66,9 +66,43 @@ export default function DevOpsPage() {
   const [copiedSteps, setCopiedSteps] = useState<Record<number, boolean>>({});
 
   const handleCopy = (command: string, step: number) => {
-    navigator.clipboard.writeText(command);
-    toast({ title: "تم نسخ الأمر!" });
-    setCopiedSteps((prev) => ({ ...prev, [step]: true }));
+    const copyToClipboard = (text: string) => {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.top = "0";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return new Promise<void>((res, rej) => {
+          try {
+            document.execCommand('copy') ? res() : rej(new Error('Copy command failed'));
+          } catch (err) {
+            rej(err);
+          } finally {
+            document.body.removeChild(textArea);
+          }
+        });
+      }
+    };
+
+    copyToClipboard(command)
+      .then(() => {
+        toast({ title: "تم نسخ الأمر!" });
+        setCopiedSteps((prev) => ({ ...prev, [step]: true }));
+      })
+      .catch((err) => {
+        console.error("Failed to copy command:", err);
+        toast({
+          variant: "destructive",
+          title: "فشل النسخ",
+          description: "لم نتمكن من نسخ الأمر تلقائيًا. الرجاء نسخه يدويًا.",
+        });
+      });
   };
   
   if (isLoading) {
