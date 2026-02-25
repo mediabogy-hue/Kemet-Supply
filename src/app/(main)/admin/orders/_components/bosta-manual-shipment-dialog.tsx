@@ -69,7 +69,7 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
             createdBy: user.uid,
         };
 
-        const orderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
+        const orderRef = doc(firestore, `orders/${order.id}`);
         
         const batch = writeBatch(firestore);
         batch.set(shipmentRef, newShipmentData);
@@ -180,3 +180,5 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
         </Dialog>
     );
 }
+
+    

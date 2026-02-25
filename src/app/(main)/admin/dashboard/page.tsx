@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown, Trophy, BarChart, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, collectionGroup, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import type { Order, UserProfile, Product } from "@/lib/types";
 import { Skeleton, RefreshIndicator } from "@/components/ui/skeleton";
 import { useMemo, useState, useEffect } from "react";
@@ -90,11 +90,18 @@ export default function AdminDashboardPage() {
     
     const usersQuery = useMemoFirebase(() => (firestore && canAccess) ? collection(firestore, 'users') : null, [firestore, canAccess]);
     
-    // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
-    // Using collectionGroup() requires rules that do not use get() or exists(). This causes a permission-denied error.
-    const ordersQuery = null; 
+    const ordersQuery = useMemoFirebase(() => {
+        if (!firestore || !canAccess) return null;
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return query(
+            collection(firestore, 'orders'),
+            where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)),
+            orderBy('createdAt', 'desc')
+        );
+    }, [firestore, canAccess]);
 
-    const { data: allOrders, isLoading: ordersLoading, error: ordersError, lastUpdated: ordersLastUpdated } = useCollection<Order>(ordersQuery);
+    const { data: allOrders, isLoading: ordersLoading, error: ordersError } = useCollection<Order>(ordersQuery);
     const { data: users, isLoading: usersLoading, lastUpdated: usersLastUpdated } = useCollection<UserProfile>(usersQuery);
     const { data: products, isLoading: productsLoading, lastUpdated: productsLastUpdated } = useCollection<Product>(collection(firestore, "products"));
 
@@ -102,10 +109,10 @@ export default function AdminDashboardPage() {
     const queryError = ordersError;
 
     const lastUpdated = useMemo(() => {
-        const timestamps = [usersLastUpdated, ordersLastUpdated, productsLastUpdated].filter(Boolean) as Date[];
+        const timestamps = [usersLastUpdated, productsLastUpdated].filter(Boolean) as Date[];
         if (timestamps.length === 0) return null;
         return new Date(Math.max(...timestamps.map(t => t.getTime())));
-    }, [usersLastUpdated, ordersLastUpdated, productsLastUpdated]);
+    }, [usersLastUpdated, productsLastUpdated]);
 
     const dashboardStats = useMemo(() => {
         const initialStats = {
@@ -123,12 +130,7 @@ export default function AdminDashboardPage() {
             return initialStats;
         }
 
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const recentOrders = allOrders.filter(o => o.createdAt && typeof o.createdAt.toDate === 'function' && o.createdAt.toDate() >= thirtyDaysAgo);
-
-        const deliveredOrders = recentOrders.filter(o => o.status === 'Delivered');
+        const deliveredOrders = allOrders.filter(o => o.status === 'Delivered');
         const revenue = deliveredOrders.reduce((sum, order) => sum + order.totalAmount, 0);
         const totalDeliveredOrdersCount = deliveredOrders.length;
         
@@ -145,7 +147,7 @@ export default function AdminDashboardPage() {
             salesByHour[hour].total += order.totalAmount;
         });
         
-        const productSales = recentOrders.reduce((acc, order) => {
+        const productSales = allOrders.reduce((acc, order) => {
             if (!acc[order.productId]) {
                 acc[order.productId] = { name: order.productName, quantity: 0 };
             }
@@ -211,13 +213,16 @@ export default function AdminDashboardPage() {
                 <RefreshIndicator isLoading={isLoading} lastUpdated={lastUpdated} />
             </div>
             
-            <Alert variant="destructive">
-                <ShieldAlert className="h-4 w-4" />
-                <AlertTitle>إحصائيات الطلبات معطلة مؤقتاً</AlertTitle>
-                <AlertDescription>
-                    تم تعطيل عرض إحصائيات الطلبات الشاملة (مثل الإيرادات وأداء المنتجات) بشكل مؤقت لحل مشكلة في الأداء تتعلق بالصلاحيات. جميع الأقسام الأخرى تعمل بشكل كامل.
-                </AlertDescription>
-            </Alert>
+            {queryError && (
+                <Alert variant="destructive">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>خطأ في جلب البيانات</AlertTitle>
+                    <AlertDescription>
+                        لم نتمكن من تحميل بيانات لوحة التحكم. قد يكون السبب عدم وجود فهرس (index) في قاعدة البيانات. الرجاء التحقق من الـ Console في المتصفح، قد تجد رابطًا مباشرًا لإنشاء الفهرس المطلوب.
+                         <p className="mt-2 text-xs font-mono">{queryError.message}</p>
+                    </AlertDescription>
+                </Alert>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {primaryStats.map((stat, index) => (
@@ -272,3 +277,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    

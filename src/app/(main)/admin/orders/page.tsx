@@ -21,7 +21,7 @@ import {
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu";
 import { useFirebase, useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, serverTimestamp, collectionGroup, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit } from "firebase/firestore";
+import { collection, doc, serverTimestamp, query, deleteDoc, updateDoc, runTransaction, getDoc, addDoc, writeBatch, orderBy, limit, where } from "firebase/firestore";
 import type { Order, UserProfile, Product, StockLedger, Shipment } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isToday } from "date-fns";
@@ -118,9 +118,10 @@ export default function AdminOrdersPage() {
 
   const canAccess = isAdmin || isOrdersManager;
   
-  // DISABLED: This query is incompatible with the current Firestore security rules which use exists().
-  // Using collectionGroup() requires rules that do not use get() or exists(). This causes a permission-denied error.
-  const allOrdersQuery = null; 
+  const allOrdersQuery = useMemoFirebase(() => {
+    if (!firestore || !canAccess) return null;
+    return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+  }, [firestore, canAccess]);
   
   const { data: allOrders, isLoading: ordersLoading, error: queryError, setData: setOrders } = useCollection<Order>(allOrdersQuery);
   
@@ -140,8 +141,6 @@ export default function AdminOrdersPage() {
 
 
   const dropshippers = useMemo(() => {
-    // This is a placeholder as fetching all users is too slow.
-    // A better approach would be a dedicated 'dropshippers' collection or a search function.
     if (!allOrders) return [];
     const uniqueDropshippers = new Map<string, { id: string, name: string }>();
     allOrders.forEach(order => {
@@ -169,7 +168,7 @@ export default function AdminOrdersPage() {
         const paymentMatch = paymentFilter === 'all' || order.customerPaymentMethod === paymentFilter;
 
         return searchMatch && statusMatch && marketerMatch && paymentMatch;
-    }).sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+    });
   }, [allOrders, searchTerm, statusFilter, marketerFilter, paymentFilter]);
 
   useEffect(() => {
@@ -193,7 +192,7 @@ export default function AdminOrdersPage() {
     setOrders(prevOrders => (prevOrders || []).map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     toast({ title: "جاري تحديث حالة الطلب..." });
 
-    const dropshipperOrderRef = doc(firestore, `users/${order.dropshipperId}/orders/${order.id}`);
+    const orderRef = doc(firestore, `orders/${order.id}`);
 
     try {
         if (newStatus === 'Confirmed') {
@@ -204,7 +203,7 @@ export default function AdminOrdersPage() {
             }
             await runTransaction(firestore, async (transaction) => {
                 const productRef = doc(firestore, 'products', order.productId);
-                const orderDoc = await transaction.get(dropshipperOrderRef);
+                const orderDoc = await transaction.get(orderRef);
                 const productDoc = await transaction.get(productRef);
 
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
@@ -221,7 +220,7 @@ export default function AdminOrdersPage() {
                         message: `الكمية غير كافية للمنتج: ${productData.name}`,
                         item: { productId: productData.id, needed: orderData.quantity, available: productData.stockQuantity }
                     };
-                    transaction.update(dropshipperOrderRef, { stockError });
+                    transaction.update(orderRef, { stockError });
                     throw new Error(stockError.message);
                 }
 
@@ -235,7 +234,7 @@ export default function AdminOrdersPage() {
                     actor: { userId: user.uid, role: role },
                 });
                 
-                transaction.update(dropshipperOrderRef, {
+                transaction.update(orderRef, {
                     status: 'Confirmed', confirmedAt: serverTimestamp(),
                     confirmedBy: { userId: user.uid, role: role },
                     stockApplied: true, stockAppliedAt: serverTimestamp(), stockError: null,
@@ -244,7 +243,7 @@ export default function AdminOrdersPage() {
             toast({ title: "تم تأكيد الطلب وخصم المخزون بنجاح!" });
         } else if (newStatus === 'Canceled' || newStatus === 'Returned') {
             await runTransaction(firestore, async (transaction) => {
-                const orderDoc = await transaction.get(dropshipperOrderRef);
+                const orderDoc = await transaction.get(orderRef);
                 if (!orderDoc.exists()) throw new Error("لم يتم العثور على الطلب.");
                 
                 const orderData = orderDoc.data() as Order;
@@ -264,14 +263,14 @@ export default function AdminOrdersPage() {
                             createdAt: serverTimestamp(), actor: { userId: user.uid, role: role },
                         });
                     }
-                    transaction.update(dropshipperOrderRef, { status: newStatus, stockRestored: true, updatedAt: serverTimestamp() });
+                    transaction.update(orderRef, { status: newStatus, stockRestored: true, updatedAt: serverTimestamp() });
                 } else {
-                    transaction.update(dropshipperOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+                    transaction.update(orderRef, { status: newStatus, updatedAt: serverTimestamp() });
                 }
             });
             toast({ title: `تم تحديث حالة الطلب إلى "${statusText[newStatus]}"` });
         } else {
-            await updateDoc(dropshipperOrderRef, { status: newStatus, updatedAt: serverTimestamp() });
+            await updateDoc(orderRef, { status: newStatus, updatedAt: serverTimestamp() });
             toast({ title: "تم تحديث حالة الطلب بنجاح" });
         }
 
@@ -307,7 +306,7 @@ export default function AdminOrdersPage() {
     setOrderToDelete(null); 
     toast({ title: "تم حذف الطلب بنجاح" });
 
-    const orderRef = doc(firestore, `users/${orderToDeleteCache.dropshipperId}/orders/${orderToDeleteCache.id}`);
+    const orderRef = doc(firestore, `orders/${orderToDeleteCache.id}`);
     
     deleteDoc(orderRef)
         .catch(async (error) => {
@@ -442,13 +441,16 @@ export default function AdminOrdersPage() {
                 </div>
             </CardHeader>
             
-            <Alert variant="destructive" className="m-4">
-                <ShieldAlert className="h-4 w-4" />
-                <AlertTitle>عرض الطلبات معطل مؤقتاً</AlertTitle>
-                <AlertDescription>
-                    تم تعطيل عرض قائمة الطلبات الشاملة مؤقتًا لحل مشكلة في الأداء. يمكنك استخدام البحث لإيجاد طلب معين إذا كنت تعرف رقمه أو بيانات العميل.
-                </AlertDescription>
-            </Alert>
+            {queryError && (
+                <Alert variant="destructive" className="mx-6">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>خطأ في جلب البيانات</AlertTitle>
+                    <AlertDescription>
+                        فشل تحميل قائمة الطلبات. قد يكون السبب مشكلة في الصلاحيات أو أن فهرس قاعدة البيانات المطلوب غير موجود.
+                        <p className="mt-2 text-xs font-mono">{queryError.message}</p>
+                    </AlertDescription>
+                </Alert>
+            )}
 
 
             {selectedOrders.length > 0 && (
@@ -676,7 +678,7 @@ export default function AdminOrdersPage() {
                                     <div className="flex flex-col items-center justify-center gap-4">
                                          <ListOrdered className="h-16 w-16 text-muted-foreground/50" />
                                          <p className="text-muted-foreground">
-                                          {'لم يتم العثور على طلبات. الاستعلام العام معطل حالياً.'}
+                                          {'لم يتم العثور على طلبات.'}
                                          </p>
                                     </div>
                                 </TableCell>
