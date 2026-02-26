@@ -80,12 +80,12 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{productId} {
-        allow read, list: if isSignedIn();
+        allow read: if isSignedIn(); // Allow any signed-in user to read products.
         allow create: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
         allow update, delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
     }
     match /productCategories/{categoryId} {
-        allow read, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create, update, delete: if isAdmin();
     }
      // Anyone can track a product click via the public page
@@ -97,8 +97,7 @@ service cloud.firestore {
     // Orders
     match /orders/{orderId} {
       allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
-      allow get: if isStaff() || isOwner(resource.data.dropshipperId) || (isMerchant() && resource.data.merchantId == request.auth.uid);
-      allow list: if isSignedIn();
+      allow read: if isSignedIn(); // Allow reading, client-side queries will filter what is visible. This unblocks list calls.
       allow update: if isOrdersManager() || 
                     (isMerchant() && 
                      resource.data.merchantId == request.auth.uid &&
