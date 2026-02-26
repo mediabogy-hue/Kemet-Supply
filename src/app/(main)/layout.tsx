@@ -1,6 +1,6 @@
 
 'use client';
-import { Sidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/layout/header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useSession } from "@/auth/SessionProvider";
@@ -31,18 +31,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <RoleGuard>
-      <div className="flex h-screen">
-        <Sidebar>
-          <SidebarNav />
-        </Sidebar>
-        <div className="flex flex-col flex-1 h-screen overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
+    <SidebarProvider>
+      <RoleGuard>
+        <div className="flex h-screen">
+          <Sidebar>
+            <SidebarNav />
+          </Sidebar>
+          <div className="flex flex-col flex-1 h-screen overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </RoleGuard>
+      </RoleGuard>
+    </SidebarProvider>
   );
 }
