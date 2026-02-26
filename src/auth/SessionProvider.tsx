@@ -31,20 +31,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // This listener handles auth state changes (login/logout)
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
       if (!authUser) {
-          // If no user, we are done. Clear profile and stop loading.
-          setProfile(null);
-          setIsLoading(false);
+        // If user logs out, we are done loading.
+        setIsLoading(false);
+        setProfile(null);
       }
     }, (authError) => {
-        // Handle listener errors
-        console.error("Auth state listener error:", authError);
-        setUser(null);
-        setProfile(null);
-        setError(authError);
-        setIsLoading(false);
+      console.error("Auth state error:", authError);
+      setError(authError);
+      setIsLoading(false);
+      setUser(null);
+      setProfile(null);
     });
 
     return () => unsubscribeAuth();
@@ -52,35 +52,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
-        // If user object is null (logged out), we don't need to fetch a profile.
-        // The isLoading state is handled by the auth-only useEffect.
-        return;
+      // If there is no authenticated user, no profile to fetch.
+      // The isLoading state is handled by the auth listener when user becomes null.
+      return;
     }
 
-    // User is authenticated, now fetch their profile.
-    // Set loading to true when we start fetching for a new user.
+    // When we have a user, but not yet a profile, we are loading.
     setIsLoading(true);
     const profileDocRef = doc(firestore, 'users', user.uid);
     
     const unsubscribeProfile = onSnapshot(profileDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
-        } else {
-            setProfile(null);
-            setError(new Error('User profile does not exist in Firestore.'));
-        }
-        // We are done loading once we have a profile (or know it doesn't exist)
-        setIsLoading(false);
-    }, (profileError) => {
-        console.error("Profile listener error:", profileError);
+      if (docSnap.exists()) {
+        setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
+      } else {
+        // Handle case where user exists in Auth but not Firestore
         setProfile(null);
-        setError(profileError);
-        setIsLoading(false);
+        setError(new Error('User profile does not exist in Firestore.'));
+      }
+      // Finished loading profile data
+      setIsLoading(false);
+    }, (profileError) => {
+      console.error("Profile snapshot error:", profileError);
+      setError(profileError);
+      setProfile(null);
+      // Finished loading (with an error)
+      setIsLoading(false);
     });
 
     return () => unsubscribeProfile();
-
-  }, [user, firestore]);
+  }, [user, firestore]); // Rerun when user object changes
 
   const contextValue = useMemo((): SessionContextState => {
     const role = profile?.role || null;

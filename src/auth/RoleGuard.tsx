@@ -5,9 +5,7 @@ import { hasPermission } from './permissions';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { getDefaultPath } from './permissions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, Rocket } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 
 export function RoleGuard({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useSession();
@@ -15,41 +13,36 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        // User is not logged in, redirect to login page.
-        router.replace('/login');
-      } else if (!hasPermission(role, pathname)) {
-        // User is logged in but doesn't have permission, redirect to their default page.
-        const defaultPath = getDefaultPath(role);
-        router.replace(defaultPath);
-      }
+    if (isLoading) {
+      return; // Wait until loading is complete
+    }
+
+    if (!user) {
+      // If not loading and no user, redirect to login
+      router.replace('/login');
+      return;
+    }
+
+    // If user is logged in, check for permissions
+    if (!hasPermission(role, pathname)) {
+      // If no permission, redirect to their default allowed page
+      const defaultPath = getDefaultPath(role);
+      router.replace(defaultPath);
     }
   }, [isLoading, user, role, pathname, router]);
 
-  if (isLoading || !user) {
-    // Show a loading screen while session is loading or before redirect happens.
+  // Render a loading state while loading or before redirection logic kicks in.
+  if (isLoading || !user || !hasPermission(role, pathname)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Rocket className="h-5 w-5 animate-pulse text-primary" />
-            <span>جاري التحميل...</span>
-          </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Rocket className="h-5 w-5 animate-pulse text-primary" />
+          <span>جاري التحميل...</span>
+        </div>
       </div>
     );
   }
-  
-  if (!hasPermission(role, pathname)) {
-    // This is a fallback screen, shown briefly before redirect.
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-             <div className="flex items-center gap-2 text-muted-foreground">
-                <Rocket className="h-5 w-5 animate-pulse text-primary" />
-                <span>جاري التحميل...</span>
-            </div>
-        </div>
-    );
-  }
 
+  // If all checks pass, render the children
   return <>{children}</>;
 }
