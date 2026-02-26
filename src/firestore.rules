@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -33,7 +34,7 @@ service cloud.firestore {
     }
     
     function isMerchant() {
-        return getRole() == 'Merchant' || isAdmin();
+        return getRole() == 'Merchant';
     }
 
     // Default-deny all reads and writes
@@ -88,8 +89,8 @@ service cloud.firestore {
         allow read: if isSignedIn(); // Anyone logged in can see products
         allow list: if isSignedIn();
         // A merchant can create/update their own product, an admin can manage any.
-        allow create: if isMerchant();
-        allow update: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
+        allow create: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
+        allow update: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
         allow delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
     }
     match /productCategories/{categoryId} {
@@ -107,12 +108,12 @@ service cloud.firestore {
     match /orders/{orderId} {
         // Logged-in users can create orders for themselves
         allow create: if isSignedIn() && request.resource.data.dropshipperId == request.auth.uid;
-        // Staff can view any order. Dropshippers can only view their own.
-        allow read: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
+        // Staff/Merchants can view orders for their products. Dropshippers can only view their own.
+        allow read: if (isSignedIn() && resource.data.dropshipperId == request.auth.uid) || isOrdersManager() || (isMerchant() && resource.data.merchantId == request.auth.uid);
         // Only Staff can list all orders.
-        allow list: if isStaff();
-        // Only Staff can update orders.
-        allow update: if isStaff() || isOrdersManager();
+        allow list: if isOrdersManager();
+        // Merchants can confirm orders, Staff/OrdersManagers can update fully
+        allow update: if isOrdersManager() || (isMerchant() && request.resource.data.status == 'Confirmed');
         // Only Admins can delete orders.
         allow delete: if isAdmin();
     }
@@ -137,8 +138,8 @@ service cloud.firestore {
 
      // Stock Ledger is append-only by authorized users or server functions
     match /stockLedger/{ledgerId} {
-        allow read, list: if isMerchant();
-        allow create: if isMerchant();
+        allow read, list: if isMerchant() || isAdmin();
+        allow create: if isMerchant() || isAdmin();
         allow update, delete: if false;
     }
 

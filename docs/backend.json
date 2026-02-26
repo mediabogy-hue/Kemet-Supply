@@ -19,7 +19,7 @@
         "role": {
           "type": "string",
           "description": "The role of the user, defining their permissions.",
-          "enum": ["Dropshipper", "Admin", "OrdersManager", "FinanceManager", "ProductManager"]
+          "enum": ["Dropshipper", "Admin", "OrdersManager", "FinanceManager", "Merchant"]
         },
         "firstName": {
           "type": "string"
@@ -79,8 +79,8 @@
         "definition": { "description": "Grants Finance Manager role." }
       },
       {
-        "path": "/roles_product_manager/{userId}",
-        "definition": { "description": "Grants Product Manager role." }
+        "path": "/roles_merchant/{userId}",
+        "definition": { "description": "Grants Merchant role." }
       }
     ]
   }

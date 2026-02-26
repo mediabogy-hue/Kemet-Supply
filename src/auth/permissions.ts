@@ -1,3 +1,4 @@
+
 import type { UserProfile } from '@/lib/types';
 
 export type UserRole = UserProfile['role'];
@@ -22,6 +23,7 @@ export function hasPermission(role: UserRole | null, path: string): boolean {
   }
   
   // Admin has access to all admin routes implicitly.
+  // Admins can also access the merchant portal for supervision.
   if (role === 'Admin' && (path.startsWith('/admin') || path.startsWith('/merchant'))) {
     return true;
   }
