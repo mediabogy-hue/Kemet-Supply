@@ -58,8 +58,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserProfile['role'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const pathname = usePathname();
 
   const refreshSession = useCallback(async () => {
     if (auth?.currentUser && firestore) {
@@ -89,16 +87,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             if (!loadedProfile) {
                 setError("User profile not found in database.");
             }
-            
-            // Redirect logic after session is loaded
-            const isPublicPage = ['/', '/register', '/forgot-password'].includes(pathname) || pathname.startsWith('/product/');
-            const defaultPath = getDefaultPath(loadedRole);
-            
-            if (!isPublicPage && !hasPermission(loadedRole, pathname)) {
-                router.replace(defaultPath);
-            } else if (isPublicPage && loadedRole) {
-                router.replace(defaultPath);
-            }
+
         } catch (e: any) {
             console.error("Failed to load session data:", e);
             setError("Failed to load user session. Please try again.");
@@ -112,16 +101,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setProfile(null);
         setRole(null);
-        const isPublicPage = ['/', '/register', '/forgot-password'].includes(pathname) || pathname.startsWith('/product/');
-        if (!isPublicPage) {
-            router.replace('/');
-        }
       }
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, router, pathname]);
+  }, [auth, firestore]);
   
   const contextValue = useMemo(() => ({
     user,
