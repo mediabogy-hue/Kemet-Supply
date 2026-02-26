@@ -1,11 +1,87 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This is a default-deny rule. 
-    // All reads and writes are disallowed until you explicitly grant access.
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isStaff() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))
+          || exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid))
+          || exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid))
+          || exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid));
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    
+    function isOrdersManager() {
+        return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/roles_orders_manager/$(request.auth.uid)));
+    }
+
+    function isFinanceManager() {
+        return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid)));
+    }
+    
+    function isProductManager() {
+        return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/roles_product_manager/$(request.auth.uid)));
+    }
+
+    // Default-deny all reads and writes
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      // Anyone can create their own user document during sign up.
+      allow create: if isOwner(userId);
+      // Users can get and update their own profile. Staff can view any profile.
+      allow get: if isOwner(userId) || isStaff();
+      allow update: if isOwner(userId) || isAdmin();
+      // Only admins can list or delete users.
+      allow list, delete: if isAdmin();
+    }
+    
+    // Role management collections - Only Admins can manage roles
+    match /roles_admin/{userId}           { allow read, write: if isAdmin(); }
+    match /roles_orders_manager/{userId}  { allow read, write: if isAdmin(); }
+    match /roles_finance_manager/{userId} { allow read, write: if isAdmin(); }
+    match /roles_product_manager/{userId}{ allow read, write: if isAdmin(); }
+    
+    // Products and Categories
+    match /products/{productId} {
+        allow read: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create, update, delete: if isProductManager();
+    }
+    match /productCategories/{categoryId} {
+        allow read: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create, update, delete: if isProductManager();
+    }
+    
+    // Orders
+    // Anyone can create an order as long as they are the dropshipper for it.
+    // Staff can manage all orders. Dropshippers can only read/manage their own.
+    match /orders/{orderId} {
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.dropshipperId;
+        allow read: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
+        allow list: if isStaff(); // List is expensive and should only be for admins
+        allow update: if isStaff();
+    }
+
+    // A helper collection to generate unique IDs
+    match /id_generator/{docId} {
+        allow create: if isSignedIn();
     }
   }
 }

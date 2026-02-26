@@ -29,10 +29,11 @@ export const storage = getStorage(app);
 // Using a function to handle HMR (Hot Module Replacement) correctly
 let db: ReturnType<typeof getFirestore>;
 try {
-  db = getFirestore(app);
-} catch (e) {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   });
+} catch (e) {
+  // This can happen in HMR if the app is already initialized.
+  db = getFirestore(app);
 }
 export { db };

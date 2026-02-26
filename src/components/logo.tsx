@@ -1,9 +1,10 @@
+
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/dashboard" className={cn("flex items-center gap-3", className)}>
+    <Link href="/" className={cn("flex items-center gap-3", className)}>
         <div className="flex items-center justify-center">
             <svg width="28" height="30" viewBox="0 0 28 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-auto">
                 <path d="M0 0H8V30H0V0Z" className="fill-primary"/>

@@ -16,10 +16,7 @@ export function SidebarNav() {
   }
   
   const accessibleLinks = navLinks.filter(link => {
-    if (role === 'Admin') return link.roles.includes('Admin');
-    if (role === 'Dropshipper') return link.roles.includes('Dropshipper');
-    // Add other roles here if needed
-    return false;
+    return link.roles.some(r => r === role) || role === 'Admin'
   });
 
   return (

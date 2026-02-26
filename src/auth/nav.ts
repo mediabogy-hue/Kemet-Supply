@@ -3,66 +3,69 @@ import React from "react";
 import {
   LayoutDashboard, Box, ShoppingCart, Users, Settings, FileText,
 } from "lucide-react";
+import type { UserRole } from "./permissions";
 
 export type NavLink = {
   href: string;
   label: string;
   icon: React.ReactElement;
-  roles: ('Admin' | 'Dropshipper' | 'Staff')[];
+  roles: UserRole[];
 };
 
 export const navLinks: NavLink[] = [
+    // Dropshipper Links
     {
         href: "/dashboard",
-        label: "Dashboard",
+        label: "لوحة التحكم",
         icon: React.createElement(LayoutDashboard),
         roles: ['Dropshipper'],
     },
     {
         href: "/products",
-        label: "Products",
+        label: "المنتجات",
         icon: React.createElement(Box),
         roles: ['Dropshipper'],
     },
     {
         href: "/orders",
-        label: "My Orders",
+        label: "طلباتي",
         icon: React.createElement(ShoppingCart),
         roles: ['Dropshipper'],
     },
     {
+        href: "/reports",
+        label: "التقارير المالية",
+        icon: React.createElement(FileText),
+        roles: ['Dropshipper'],
+    },
+    // Admin Links
+    {
         href: "/admin/dashboard",
-        label: "Admin Dashboard",
+        label: "لوحة التحكم",
         icon: React.createElement(LayoutDashboard),
-        roles: ['Admin'],
+        roles: ['Admin', 'OrdersManager', 'FinanceManager', 'ProductManager'],
     },
     {
         href: "/admin/orders",
-        label: "Manage Orders",
+        label: "إدارة الطلبات",
         icon: React.createElement(ShoppingCart),
-        roles: ['Admin'],
+        roles: ['Admin', 'OrdersManager'],
     },
     {
         href: "/admin/products",
-        label: "Manage Products",
+        label: "إدارة المنتجات",
         icon: React.createElement(Box),
-        roles: ['Admin'],
+        roles: ['Admin', 'ProductManager'],
     },
     {
         href: "/admin/users",
-        label: "Manage Users",
+        label: "إدارة المستخدمين",
         icon: React.createElement(Users),
         roles: ['Admin'],
     },
     {
-        href: "/admin/reports",
-        label: "Reports",
-        icon: React.createElement(FileText),
-        roles: ['Admin'],
-    },
-    {
         href: "/admin/settings",
-        label: "Settings",
+        label: "الإعدادات",
         icon: React.createElement(Settings),
         roles: ['Admin'],
     },
