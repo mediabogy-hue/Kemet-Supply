@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -11,8 +12,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Role checks based on existence of documents in dedicated role collections.
-    // This avoids circular reads on the user's profile document.
     function isAdmin() {
       return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
@@ -41,9 +40,7 @@ service cloud.firestore {
     // User profiles
     match /users/{userId} {
       allow create: if isOwner(userId);
-      // A user can get their own profile, or a staff member can get any profile.
       allow get: if isOwner(userId) || isStaff();
-      // A user can update their own profile, or an admin can update any profile.
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
     }
@@ -55,21 +52,22 @@ service cloud.firestore {
     }
 
     // Role documents for permission checks.
-    // Admins can manage roles, users can check their own.
+    // This is a hardened rule to prevent any recursion.
+    // `exists()` calls in functions do not require `get` permission.
     match /roles_admin/{userId} { 
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId);
         allow write, list, delete: if isAdmin();
      }
     match /roles_orders_manager/{userId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId);
         allow write, list, delete: if isAdmin();
     }
     match /roles_finance_manager/{userId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId);
         allow write, list, delete: if isAdmin();
     }
     match /roles_merchant/{userId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId);
         allow write, list, delete: if isAdmin();
     }
     
@@ -82,7 +80,6 @@ service cloud.firestore {
     // Products and Categories
     match /products/{productId} {
         allow read, list: if isSignedIn();
-        // Admins can manage any product. Merchants can manage their own products.
         allow create: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
         allow update, delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
     }
@@ -98,12 +95,9 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      // Anyone can create an order. Logged-in dropshippers must create for themselves.
       allow create: if (request.auth != null && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
-      // Staff, the dropshipper owner, or the product merchant can get the order.
       allow get: if isStaff() || isOwner(resource.data.dropshipperId) || (isMerchant() && resource.data.merchantId == request.auth.uid);
       allow list: if isStaff();
-      // Orders managers can update. Merchants can ONLY confirm pending orders for their products.
       allow update: if isOrdersManager() || 
                     (isMerchant() && 
                      resource.data.merchantId == request.auth.uid &&
@@ -142,7 +136,6 @@ service cloud.firestore {
             return product.keys().has('merchantId') && product.merchantId == request.auth.uid;
         }
         allow read, list: if isAdmin();
-        // Admins can adjust any stock. Merchants can adjust stock for their own products.
         allow create: if isAdmin() || (isMerchant() && isProductOwner(request.resource.data.productId));
         allow update, delete: if false;
     }

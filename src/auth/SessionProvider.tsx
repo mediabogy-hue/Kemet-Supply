@@ -64,7 +64,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         },
         (profileError) => {
-          console.error("Profile subscription error:", profileError);
           setProfile(null);
           setError(profileError);
           setIsLoading(false);
@@ -76,7 +75,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     }, (authError) => {
       // Handle errors from the auth listener itself
-      console.error("Auth state error:", authError);
       setUser(null);
       setProfile(null);
       setError(authError);
