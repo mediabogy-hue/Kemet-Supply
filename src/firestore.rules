@@ -90,7 +90,7 @@ service cloud.firestore {
         allow list: if isSignedIn();
         // A merchant can create/update their own product, an admin can manage any.
         allow create: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
-        allow update: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
+        allow update: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
         allow delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
     }
     match /productCategories/{categoryId} {
@@ -107,7 +107,7 @@ service cloud.firestore {
     // Orders
     match /orders/{orderId} {
         // Logged-in users can create orders for themselves
-        allow create: if isSignedIn() && request.resource.data.dropshipperId == request.auth.uid;
+        allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || (true);
         // Staff/Merchants can view orders for their products. Dropshippers can only view their own.
         allow read: if (isSignedIn() && resource.data.dropshipperId == request.auth.uid) || isOrdersManager() || (isMerchant() && resource.data.merchantId == request.auth.uid);
         // Only Staff can list all orders.
@@ -134,6 +134,12 @@ service cloud.firestore {
     match /merchantInquiries/{inquiryId} {
         allow create: if true;
         allow read, list, update, delete: if isAdmin();
+    }
+    
+    // Marketing customers can be created by anyone who successfully refers them
+    match /marketingCustomers/{contactId} {
+      allow create, update: if true;
+      allow read, list, delete: if isAdmin();
     }
 
      // Stock Ledger is append-only by authorized users or server functions

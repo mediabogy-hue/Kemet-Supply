@@ -180,7 +180,7 @@ export function AddProductDialog() {
           updatedAt: serverTimestamp(),
         };
 
-        if (profile.role === 'Merchant') {
+        if (profile.role === 'Merchant' && user) {
             newProductData.merchantId = user.uid;
             newProductData.merchantName = `${profile.firstName} ${profile.lastName}`.trim();
         }
