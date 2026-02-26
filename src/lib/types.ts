@@ -114,6 +114,9 @@ export interface Order {
   } | null;
   platformFee: number;
   adminNotes?: string;
+  // Shipment link
+  shipmentId?: string | null;
+  shipmentTrackingNumber?: string | null;
 }
 
 export interface Wallet {
