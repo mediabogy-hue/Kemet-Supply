@@ -1,7 +1,2 @@
-'use client';
-
-// The root login page has been moved to /src/app/(auth)/login/page.tsx
-// This file is a placeholder to prevent routing conflicts.
-export default function ConflictingLoginPage() {
-    return null;
-}
+// This file is intentionally left empty to resolve a Next.js route conflict.
+// The active page is at /src/app/page.tsx
