@@ -16,9 +16,10 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    // Staff are internal platform operators
     function isStaff() {
         let role = getRole();
-        return role == 'Admin' || role == 'OrdersManager' || role == 'FinanceManager' || role == 'Merchant';
+        return role == 'Admin' || role == 'OrdersManager' || role == 'FinanceManager';
     }
     
     function isAdmin() {
@@ -110,10 +111,10 @@ service cloud.firestore {
         allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || (true);
         // Staff/Merchants can view orders for their products. Dropshippers can only view their own.
         allow read: if (isSignedIn() && resource.data.dropshipperId == request.auth.uid) || isOrdersManager() || (isMerchant() && resource.data.merchantId == request.auth.uid);
-        // Only Staff can list all orders.
-        allow list: if isOrdersManager();
+        // Staff can list all orders. Merchants can list orders to find their own.
+        allow list: if isOrdersManager() || isMerchant();
         // Merchants can confirm orders, Staff/OrdersManagers can update fully
-        allow update: if isOrdersManager() || (isMerchant() && request.resource.data.status == 'Confirmed');
+        allow update: if isOrdersManager() || (isMerchant() && resource.data.status == 'Confirmed');
         // Only Admins can delete orders.
         allow delete: if isAdmin();
     }
@@ -135,7 +136,7 @@ service cloud.firestore {
         allow create: if true;
         allow read, list, update, delete: if isAdmin();
     }
-    
+
     // Marketing customers can be created by anyone who successfully refers them
     match /marketingCustomers/{contactId} {
       allow create, update: if true;
@@ -144,8 +145,8 @@ service cloud.firestore {
 
      // Stock Ledger is append-only by authorized users or server functions
     match /stockLedger/{ledgerId} {
-        allow read, list: if isMerchant() || isAdmin();
-        allow create: if isMerchant() || isAdmin();
+        allow read, list: if isAdmin();
+        allow create: if isAdmin();
         allow update, delete: if false;
     }
 
