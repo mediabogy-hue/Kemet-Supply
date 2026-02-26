@@ -1,2 +1,3 @@
-// This file is intentionally left empty to resolve a Next.js route conflict.
-// The active page is at /src/app/page.tsx
+// This file is intentionally left blank to resolve a routing conflict.
+// The actual root page is located at /src/app/page.tsx
+export default null;
