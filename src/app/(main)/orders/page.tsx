@@ -2,11 +2,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useSession } from '@/firebase';
 import { collection, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
 import type { Order, Shipment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useSession } from '@/auth/SessionProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DataTable } from '@/app/(main)/admin/orders/_components/data-table';
@@ -18,7 +17,8 @@ import { getDropshipperOrderColumns } from './_components/columns';
 
 
 export default function MyOrdersPage() {
-    const { firestore, user } = useSession();
+    const { user } = useSession();
+    const firestore = useFirestore();
     const { toast } = useToast();
     const router = useRouter();
 

@@ -19,17 +19,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase, useSession } from "@/firebase";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Loader2, PlusCircle, Briefcase } from "lucide-react";
 import { scrapeProductFromUrl } from "@/ai/flows/scrape-product-flow";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useSession } from "@/auth/SessionProvider";
 
 
 export function AddProductDialog() {
-  const { firestore, user, profile } = useSession();
+  const { user, profile } = useSession();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const categoriesQuery = useMemoFirebase(() => (firestore && user) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore, user]);

@@ -2,8 +2,7 @@
 'use client';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useSession } from "@/auth/SessionProvider";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useSession, useCollection, useMemoFirebase } from "@/firebase";
 import type { Order, Product } from "@/lib/types";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton';

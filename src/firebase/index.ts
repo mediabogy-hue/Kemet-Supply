@@ -9,20 +9,24 @@ export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
 
-// Re-define and export hooks based on the new unified SessionProvider
-import { useSession } from '@/auth/SessionProvider';
+// Re-export providers and core hooks
+export { FirebaseProvider, useFirebase } from './provider';
+export { SessionProvider, useSession } from '../auth/SessionProvider';
+
+
+// Define and export granular hooks
+import { useFirebase } from './provider';
+import { useSession } from '../auth/SessionProvider';
 import type { Auth } from 'firebase/auth';
 import type { FirebaseApp } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 import type { Storage } from 'firebase/storage';
 import { useMemo, type DependencyList } from 'react';
 
-
-export const useFirebase = useSession;
-export const useAuth = (): Auth => useSession().auth;
-export const useFirestore = (): Firestore => useSession().firestore;
-export const useStorage = (): Storage => useSession().storage;
-export const useFirebaseApp = (): FirebaseApp => useSession().firebaseApp;
+export const useAuth = (): Auth => useFirebase().auth;
+export const useFirestore = (): Firestore => useFirebase().firestore;
+export const useStorage = (): Storage => useFirebase().storage;
+export const useFirebaseApp = (): FirebaseApp => useFirebase().firebaseApp;
 
 export const useUser = () => {
     const { user, isLoading, error } = useSession();

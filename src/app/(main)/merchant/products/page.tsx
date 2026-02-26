@@ -2,11 +2,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useSession } from '@/firebase';
 import { collection, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useSession } from '@/auth/SessionProvider';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,7 +24,8 @@ import { UpdateStockDialog } from '@/app/(main)/admin/products/_components/updat
 
 
 export default function MerchantProductsPage() {
-    const { firestore, user } = useSession();
+    const { user } = useSession();
+    const firestore = useFirestore();
     const { toast } = useToast();
 
     // Dialogs State

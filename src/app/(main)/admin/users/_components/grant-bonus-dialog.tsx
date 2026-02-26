@@ -14,10 +14,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError, useSession } from "@/firebase";
 import { doc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import type { UserProfile, Bonus } from "@/lib/types";
-import { useSession } from "@/auth/SessionProvider";
 
 
 interface GrantBonusDialogProps {
@@ -27,8 +26,8 @@ interface GrantBonusDialogProps {
 }
 
 export function GrantBonusDialog({ user, isOpen, onOpenChange }: GrantBonusDialogProps) {
-  const { firestore, user: adminUser } = useFirebase();
-  const { profile: adminProfile } = useSession();
+  const firestore = useFirestore();
+  const { user: adminUser, profile: adminProfile } = useSession();
   const { toast } = useToast();
 
   const [amount, setAmount] = useState("");

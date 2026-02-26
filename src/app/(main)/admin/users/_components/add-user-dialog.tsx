@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, errorEmitter, FirestorePermissionError, useAuth, useFirestore } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError, useAuth, useSession } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Loader2, PlusCircle, Copy, Send } from "lucide-react";
-import { useSession } from "@/auth/SessionProvider";
 import { Switch } from "@/components/ui/switch";
 
 

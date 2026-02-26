@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster"
+import { FirebaseProvider } from '@/firebase/provider';
 import { SessionProvider } from '@/auth/SessionProvider';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -33,12 +34,14 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <SessionProvider>
-          <SidebarProvider>
-            {children}
-          </SidebarProvider>
-          <Toaster />
-        </SessionProvider>
+        <FirebaseProvider>
+          <SessionProvider>
+            <SidebarProvider>
+              {children}
+            </SidebarProvider>
+            <Toaster />
+          </SessionProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );

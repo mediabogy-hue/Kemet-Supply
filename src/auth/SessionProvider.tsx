@@ -1,20 +1,13 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
-import type { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import type { Storage } from 'firebase/storage';
-import { app, auth, db, storage } from '@/lib/firebaseClient';
+import { onSnapshot } from 'firebase/firestore';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase/provider';
 import type { UserProfile } from '@/lib/types';
-import { Rocket } from 'lucide-react';
 
 export interface SessionContextState {
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
-  storage: Storage;
   user: User | null;
   profile: UserProfile | null;
   role: UserProfile['role'] | null;
@@ -31,14 +24,14 @@ export interface SessionContextState {
 const SessionContext = createContext<SessionContextState | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { auth, firestore } = useFirebase(); // Consume the Firebase context
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Always start as loading
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, (authUser) => {
-      // If a user logs out, authUser will be null
       if (!authUser) {
         setUser(null);
         setProfile(null);
@@ -46,45 +39,41 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setError(null);
         return;
       }
-
-      // If a user logs in (or is already logged in)
+      
       setUser(authUser);
-
-      // Now, subscribe to their profile document in real-time
-      const profileDocRef = doc(db, 'users', authUser.uid);
-      const profileUnsubscribe = onSnapshot(profileDocRef,
+      const profileDocRef = doc(firestore, 'users', authUser.uid);
+      
+      const profileUnsubscribe = onSnapshot(profileDocRef, 
         (docSnap) => {
           if (docSnap.exists()) {
             setProfile(docSnap.data() as UserProfile);
             setError(null);
           } else {
             setProfile(null);
-            setError(new Error('User profile not found.'));
+            setError(new Error(`User profile not found for UID: ${authUser.uid}. This might happen if the user record was deleted or not created properly.`));
           }
           setIsLoading(false);
         },
         (profileError) => {
+          console.error("Error fetching user profile:", profileError);
           setProfile(null);
           setError(profileError);
           setIsLoading(false);
         }
       );
 
-      // Return a cleanup function for the profile subscription when authUser changes
       return () => profileUnsubscribe();
-
-    }, (authError) => {
-      // Handle errors from the auth listener itself
+    }, 
+    (authError) => {
+      console.error("Auth state change error:", authError);
       setUser(null);
       setProfile(null);
       setError(authError);
       setIsLoading(false);
     });
 
-    // Return the cleanup function for the auth listener
     return () => authUnsubscribe();
-
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+  }, [auth, firestore]);
 
   const contextValue = useMemo((): SessionContextState => {
     const role = profile?.role || null;
@@ -93,10 +82,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       profile,
       isLoading,
       error,
-      firebaseApp: app,
-      firestore: db,
-      auth: auth,
-      storage: storage,
       role,
       isAdmin: role === 'Admin',
       isOrdersManager: role === 'OrdersManager' || role === 'Admin',

@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { useSession } from '@/auth/SessionProvider';
+import { useFirestore, useCollection, useMemoFirebase, useSession } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 
@@ -19,7 +18,8 @@ import { ClientRelativeTime } from '@/components/shared/client-relative-time';
 const MINIMUM_STOCK_LEVEL = 3;
 
 export default function MerchantInventoryPage() {
-    const { firestore, user } = useSession();
+    const { user } = useSession();
+    const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
 
     const productsQuery = useMemoFirebase(

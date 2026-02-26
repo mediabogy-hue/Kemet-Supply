@@ -2,7 +2,7 @@
 import { Sidebar } from "@/components/ui/sidebar";
 import { Header } from "@/components/layout/header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { useSession } from "@/auth/SessionProvider";
+import { useSession } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Rocket } from "lucide-react";
