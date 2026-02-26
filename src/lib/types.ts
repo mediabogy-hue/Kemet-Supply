@@ -4,7 +4,7 @@ import type { Timestamp } from "firebase/firestore";
 export interface UserProfile {
   id: string;
   email: string;
-  role: 'Dropshipper' | 'Admin' | 'OrdersManager' | 'FinanceManager';
+  role: 'Dropshipper' | 'Admin' | 'OrdersManager' | 'FinanceManager' | 'Merchant';
   firstName: string;
   lastName: string;
   phone?: string;

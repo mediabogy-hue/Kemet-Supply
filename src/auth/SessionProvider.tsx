@@ -9,7 +9,7 @@ import type { UserProfile } from '@/lib/types';
 export interface SessionContextState {
   user: User | null;
   profile: UserProfile | null;
-  role: UserProfile['role'] | null;
+  role: 'Dropshipper' | 'Admin' | 'OrdersManager' | 'FinanceManager' | null;
   isLoading: boolean;
   error: Error | null;
   isAdmin: boolean;
@@ -82,20 +82,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [auth, firestore]);
 
   const contextValue = useMemo((): SessionContextState => {
-    const role = profile?.role || null;
-    const isAdmin = role === 'Admin';
+    // NORMALIZE ROLE: If the user has the legacy 'Merchant' role in the DB,
+    // treat them as a 'Dropshipper' for permissions and navigation to prevent loops.
+    let normalizedRole = profile?.role || null;
+    if (normalizedRole === 'Merchant') {
+      normalizedRole = 'Dropshipper';
+    }
+    
+    const originalRole = profile?.role || null;
+    const isAdmin = normalizedRole === 'Admin';
+
     return {
       user,
       profile,
       isLoading,
       error,
-      role,
+      role: normalizedRole as SessionContextState['role'],
       isAdmin,
-      isOrdersManager: role === 'OrdersManager' || isAdmin,
-      isFinanceManager: role === 'FinanceManager' || isAdmin,
-      isMerchant: role === 'Merchant',
-      isStaff: ['Admin', 'OrdersManager', 'FinanceManager'].includes(role || ''),
-      isDropshipper: role === 'Dropshipper',
+      isOrdersManager: normalizedRole === 'OrdersManager' || isAdmin,
+      isFinanceManager: normalizedRole === 'FinanceManager' || isAdmin,
+      isMerchant: originalRole === 'Merchant',
+      isStaff: ['Admin', 'OrdersManager', 'FinanceManager'].includes(normalizedRole || ''),
+      isDropshipper: normalizedRole === 'Dropshipper',
       firestore,
     };
   }, [user, profile, isLoading, error, firestore]);
