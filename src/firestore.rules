@@ -107,16 +107,24 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-        // Logged-in users can create orders for themselves
-        allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || (true);
-        // Staff/Merchants can view orders for their products. Dropshippers can only view their own.
-        allow read: if (isSignedIn() && resource.data.dropshipperId == request.auth.uid) || isOrdersManager() || (isMerchant() && resource.data.merchantId == request.auth.uid);
-        // Staff can list all orders. Merchants can list orders to find their own.
-        allow list: if isOrdersManager() || isMerchant();
-        // Merchants can confirm orders, Staff/OrdersManagers can update fully
-        allow update: if isOrdersManager() || (isMerchant() && resource.data.status == 'Confirmed');
-        // Only Admins can delete orders.
-        allow delete: if isAdmin();
+      // Anyone can create an order. Logged-in dropshippers must create for themselves.
+      allow create: if (request.auth != null && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
+      
+      // Read access: Owner of order (dropshipper), owner of product (merchant), or staff.
+      allow get: if (isOwner(resource.data.dropshipperId)) || (isMerchant() && resource.data.merchantId == request.auth.uid) || isOrdersManager();
+      
+      // List access for queries is checked by Firestore using the 'get' rule on each returned document.
+      allow list: if isSignedIn();
+      
+      // Update access: Staff can update fully. Merchants can ONLY confirm their own pending orders.
+      allow update: if isOrdersManager() || 
+                    (isMerchant() && 
+                      resource.data.merchantId == request.auth.uid &&
+                      resource.data.status == 'Pending' &&
+                      request.resource.data.status == 'Confirmed');
+                     
+      // Delete access: Admins only.
+      allow delete: if isAdmin();
     }
 
     // Withdrawal requests

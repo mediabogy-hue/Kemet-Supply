@@ -11,7 +11,7 @@ import { useSession } from '@/auth/SessionProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMerchantOrderColumns } from './_components/columns';
-import { DataTable } from '@/app/(main)/admin/orders/_components/data-table';
+import { DataTable } from './_components/data-table';
 
 
 export default function MerchantOrdersPage() {
