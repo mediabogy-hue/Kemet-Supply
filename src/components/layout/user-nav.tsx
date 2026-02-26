@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +15,6 @@ import { LogOut, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { useSession } from "@/auth/SessionProvider";
 import { Skeleton } from "../ui/skeleton";
 import { ShiftToggle } from "./shift-toggle";
@@ -25,13 +23,15 @@ import { ShiftToggle } from "./shift-toggle";
 export function UserNav() {
   const { profile, isLoading, isDropshipper } = useSession();
   const auth = useAuth();
-  const router = useRouter();
 
   const handleSignOut = () => {
     if (!auth) return;
-    signOut(auth).then(() => {
-      router.push('/');
-    });
+    // Calling signOut will trigger the onAuthStateChanged listener
+    // in the SessionProvider. The layouts that consume useSession
+    // will then automatically handle redirecting the user to the
+    // login page. This avoids a race condition where we manually
+    // push a route here while the layout is also trying to redirect.
+    signOut(auth);
   }
 
   if (isLoading || !profile) {
