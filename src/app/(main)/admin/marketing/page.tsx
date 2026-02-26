@@ -28,12 +28,22 @@ export default function AdminMerchantsPage() {
     const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
-    // Fetch merchants
+    // Fetch merchants without ordering from Firestore
     const merchantsQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "users"), where("role", "==", "Merchant"), orderBy("createdAt", "desc")) : null),
+        () => (firestore ? query(collection(firestore, "users"), where("role", "==", "Merchant")) : null),
         [firestore]
     );
-    const { data: merchants, isLoading, error } = useCollection<UserProfile>(merchantsQuery);
+    const { data, isLoading, error } = useCollection<UserProfile>(merchantsQuery);
+
+    // Sort the merchants on the client-side
+    const merchants = useMemo(() => {
+        if (!data) return null;
+        return [...data].sort((a, b) => {
+            const dateA = a.createdAt?.toDate()?.getTime() || 0;
+            const dateB = b.createdAt?.toDate()?.getTime() || 0;
+            return dateB - dateA; // For descending order
+        });
+    }, [data]);
 
     const handleDelete = async () => {
         if (!firestore || !userToDelete) return;
