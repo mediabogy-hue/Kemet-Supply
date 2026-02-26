@@ -18,9 +18,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, errorEmitter, FirestorePermissionError, useAuth, useSession } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, writeBatch, collection } from "firebase/firestore";
 import { cn } from "@/lib/utils";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, Product } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -158,6 +158,28 @@ export function AddUserDialog() {
             const roleDocRef = doc(firestore, roleCollection, newUser.uid);
             batch.set(roleDocRef, { createdAt: serverTimestamp() });
         }
+      }
+
+      if (role === 'Merchant' && newUserUid) {
+        const productDocRef = doc(collection(firestore, "products"));
+        const sampleProduct = {
+          id: productDocRef.id,
+          name: `منتج تجريبي - ${firstName}`,
+          description: "هذا منتج تجريبي تم إنشاؤه تلقائيًا لك. يمكنك تعديله أو حذفه من صفحة 'منتجاتي'.",
+          category: "إلكترونيات",
+          price: 150,
+          commission: 25,
+          stockQuantity: 10,
+          isAvailable: true,
+          imageUrls: ["https://picsum.photos/seed/newmerchant/600"],
+          videoUrl: "",
+          purchaseUrl: "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          merchantId: newUserUid,
+          merchantName: `${firstName} ${lastName}`.trim(),
+        };
+        batch.set(productDocRef, sampleProduct);
       }
 
       await batch.commit();
