@@ -1,29 +1,18 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/auth/SessionProvider';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Edit, Trash2, ShieldCheck, Award } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-// Re-using components from the main users page
-import { AddUserDialog } from '@/app/(main)/admin/users/_components/add-user-dialog';
-import { EditUserDialog } from '@/app/(main)/admin/users/_components/edit-user-dialog';
-import { DeleteUserAlert } from '@/app/(main)/admin/users/_components/delete-user-alert';
-import { SetTargetDialog } from '@/app/(main)/admin/users/_components/set-target-dialog';
-import { GrantBonusDialog } from '@/app/(main)/admin/users/_components/grant-bonus-dialog';
-
-const roleText: Record<UserProfile['role'], string> = {
+const roleText: Record<string, string> = {
   'Admin': 'أدمن',
   'OrdersManager': 'مدير طلبات',
   'FinanceManager': 'مدير مالي',
@@ -33,39 +22,13 @@ const roleText: Record<UserProfile['role'], string> = {
 
 export default function AdminMerchantsPage() {
     const firestore = useFirestore();
-    const { toast } = useToast();
     const { user: currentUser } = useSession();
-
-    const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
-    const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
-    const [userToSetTarget, setUserToSetTarget] = useState<UserProfile | null>(null);
-    const [userToGrantBonus, setUserToGrantBonus] = useState<UserProfile | null>(null);
 
     const merchantsQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, "users"), where("role", "==", "Merchant"), orderBy("createdAt", "desc")) : null),
         [firestore]
     );
     const { data: merchants, isLoading, error } = useCollection<UserProfile>(merchantsQuery);
-
-    const handleDelete = async () => {
-        if (!firestore || !userToDelete) return;
-        
-        if (userToDelete.id === currentUser?.uid) {
-            toast({ variant: 'destructive', title: 'لا يمكن حذف الحساب', description: 'لا يمكنك حذف حسابك الخاص من هنا.' });
-            setUserToDelete(null);
-            return;
-        }
-
-        const userRef = doc(firestore, "users", userToDelete.id);
-        
-        try {
-            await deleteDoc(userRef);
-            setUserToDelete(null);
-        } catch (e) {
-            console.error('Failed to delete user:', e);
-            toast({ variant: 'destructive', title: 'فشل حذف التاجر' });
-        }
-    };
     
     if (error) {
         return <p className="text-destructive">خطأ في تحميل التجار: {error.message}</p>;
@@ -76,9 +39,9 @@ export default function AdminMerchantsPage() {
              <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">إدارة التجار</h1>
-                    <p className="text-muted-foreground">عرض وتعديل حسابات التجار في المنصة.</p>
+                    <p className="text-muted-foreground">عرض حسابات التجار في المنصة.</p>
                 </div>
-                <AddUserDialog />
+                {/* Add button will be added back later */}
             </div>
 
             <Card>
@@ -94,10 +57,7 @@ export default function AdminMerchantsPage() {
                             {merchants?.length === 0 ? (
                                 <div className="text-center py-16">
                                     <h3 className="text-lg font-semibold">لا يوجد تجار</h3>
-                                    <p className="text-muted-foreground mt-2">ابدأ بإضافة تاجر جديد.</p>
-                                    <div className="mt-4">
-                                        <AddUserDialog />
-                                    </div>
+                                    <p className="text-muted-foreground mt-2">لم يتم إضافة أي تجار بعد.</p>
                                 </div>
                             ) : (
                                 merchants?.map(user => (
@@ -123,25 +83,6 @@ export default function AdminMerchantsPage() {
                                                 </Badge>
                                                 <p className="text-xs text-muted-foreground mt-1">الحالة</p>
                                             </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => setUserToEdit(user)}><Edit className="me-2"/> تعديل البيانات</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setUserToSetTarget(user)}><ShieldCheck className="me-2"/> تحديد الهدف</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setUserToGrantBonus(user)}><Award className="me-2"/> منح مكافأة / خصم</DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem 
-                                                        className="text-destructive" 
-                                                        onClick={() => setUserToDelete(user)}
-                                                        disabled={user.id === currentUser?.uid}
-                                                    >
-                                                        <Trash2 className="me-2"/> حذف التاجر
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 ))
@@ -150,29 +91,6 @@ export default function AdminMerchantsPage() {
                     )}
                 </CardContent>
             </Card>
-
-            {/* Re-using dialogs */}
-            <EditUserDialog 
-                user={userToEdit}
-                isOpen={!!userToEdit}
-                onOpenChange={(isOpen) => !isOpen && setUserToEdit(null)}
-            />
-             <DeleteUserAlert
-                user={userToDelete}
-                isOpen={!!userToDelete}
-                onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}
-                onConfirm={handleDelete}
-            />
-            <SetTargetDialog
-                user={userToSetTarget}
-                isOpen={!!userToSetTarget}
-                onOpenChange={(isOpen) => !isOpen && setUserToSetTarget(null)}
-            />
-             <GrantBonusDialog
-                user={userToGrantBonus}
-                isOpen={!!userToGrantBonus}
-                onOpenChange={(isOpen) => !isOpen && setUserToGrantBonus(null)}
-            />
         </div>
     );
 }
