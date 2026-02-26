@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  LayoutDashboard, Box, ShoppingCart, Users, Settings, FileText, BarChart, ShieldCheck, DollarSign, Truck
+  LayoutDashboard, Box, ShoppingCart, Users, Settings, FileText, BarChart, ShieldCheck, DollarSign, Truck, Package, Banknote
 } from "lucide-react";
 import type { UserRole } from "./permissions";
 
@@ -26,9 +26,15 @@ export const navLinks: NavLink[] = [
         roles: ['Dropshipper'],
     },
     {
+        href: "/orders/new",
+        label: "طلب جديد",
+        icon: React.createElement(ShoppingCart),
+        roles: ['Dropshipper'],
+    },
+    {
         href: "/orders",
         label: "طلباتي",
-        icon: React.createElement(ShoppingCart),
+        icon: React.createElement(Package),
         roles: ['Dropshipper'],
     },
     {
@@ -57,6 +63,12 @@ export const navLinks: NavLink[] = [
         icon: React.createElement(ShoppingCart),
         roles: ['Admin', 'OrdersManager'],
     },
+     {
+        href: "/admin/shipping",
+        label: "الشحن والتوصيل",
+        icon: React.createElement(Truck),
+        roles: ['Admin', 'OrdersManager'],
+    },
     {
         href: "/admin/products",
         label: "إدارة المنتجات",
@@ -72,19 +84,13 @@ export const navLinks: NavLink[] = [
     {
         href: "/admin/inventory",
         label: "المخزون",
-        icon: React.createElement(BarChart),
+        icon: React.createElement(Package),
         roles: ['Admin', 'ProductManager'],
     },
     {
-        href: "/admin/users",
-        label: "إدارة المستخدمين",
-        icon: React.createElement(Users),
-        roles: ['Admin'],
-    },
-     {
         href: "/admin/withdrawals",
         label: "طلبات السحب",
-        icon: React.createElement(DollarSign),
+        icon: React.createElement(Banknote),
         roles: ['Admin', 'FinanceManager'],
     },
     {
@@ -94,15 +100,15 @@ export const navLinks: NavLink[] = [
         roles: ['Admin', 'FinanceManager'],
     },
     {
-        href: "/admin/shipping",
-        label: "الشحن والتوصيل",
-        icon: React.createElement(Truck),
-        roles: ['Admin', 'OrdersManager'],
+        href: "/admin/users",
+        label: "إدارة المستخدمين",
+        icon: React.createElement(Users),
+        roles: ['Admin'],
     },
      {
         href: "/admin/reports",
         label: "التقارير",
-        icon: React.createElement(FileText),
+        icon: React.createElement(BarChart),
         roles: ['Admin'],
     },
     {

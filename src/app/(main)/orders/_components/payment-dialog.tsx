@@ -18,6 +18,7 @@ import type { Order, Payment, UserProfile } from '@/lib/types';
 import { useFirebase, errorEmitter, FirestorePermissionError, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp, collection, writeBatch } from "firebase/firestore";
 import { Loader2 } from 'lucide-react';
+import { useSession } from '@/auth/SessionProvider';
 
 interface PaymentDialogProps {
   order: Order | null;
@@ -27,18 +28,13 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }: PaymentDialogProps) {
-  const { firestore, user } = useFirebase();
+  const { firestore } = useFirebase();
+  const { profile: userProfile } = useSession();
   const { toast } = useToast();
   
   const [senderPhoneNumber, setSenderPhoneNumber] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Function to reset all state
   const resetAllState = () => {
@@ -54,7 +50,7 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
   }, [isOpen]);
 
   const handleSaveProof = async () => {
-    if (!order || !user || !firestore || !userProfile) {
+    if (!order || !userProfile || !firestore) {
         toast({ variant: "destructive", title: "بيانات غير مكتملة" });
         return;
     }
@@ -71,10 +67,9 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
     const amountToPay = order.totalAmount - (order.totalCommission || 0);
     const dropshipperName = `${userProfile.firstName} ${userProfile.lastName}`.trim() || userProfile.email;
 
-    const newPaymentData: Omit<Payment, 'createdAt' | 'updatedAt'> = {
-        id: paymentId,
+    const newPaymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'> = {
         orderId: order.id,
-        dropshipperId: user.uid,
+        dropshipperId: userProfile.id,
         dropshipperName: dropshipperName,
         paymentMethodId: order.customerPaymentMethod,
         amount: amountToPay,
@@ -85,7 +80,7 @@ export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }:
 
     const orderDocRef = doc(firestore, `orders/${order.id}`);
     const batch = writeBatch(firestore);
-    batch.set(paymentDocRef, { ...newPaymentData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    batch.set(paymentDocRef, { ...newPaymentData, id: paymentId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     batch.update(orderDocRef, { customerPaymentStatus: 'Pending', updatedAt: serverTimestamp() });
 
     try {

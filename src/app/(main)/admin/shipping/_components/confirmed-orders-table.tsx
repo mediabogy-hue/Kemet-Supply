@@ -57,7 +57,7 @@ export function ConfirmedOrdersTable({ orders, isLoading, onShipmentCreated }: C
 
             <BostaManualShipmentDialog 
                 order={selectedOrder}
-                link="https://business.bosta.co/signin"
+                link="https://business.bosta.co/deliveries/create"
                 isOpen={!!selectedOrder}
                 onOpenChange={(isOpen) => {
                     if (!isOpen) {

@@ -66,9 +66,10 @@ export function ProductAnalyticsDialog({ product, isOpen, onOpenChange }: Produc
             const clicksSnapshot = await getDocs(clicksQuery);
             const clickCount = clicksSnapshot.size;
 
-            // 2. Fetch All Orders - THIS IS DISABLED to prevent permission errors.
-            // A collection group query is too broad for the current security rules.
-            const productOrders: Order[] = [];
+            // 2. Fetch Orders for this product
+            const ordersQuery = query(collection(firestore, "orders"), where("productId", "==", product.id));
+            const ordersSnapshot = await getDocs(ordersQuery);
+            const productOrders = ordersSnapshot.docs.map(doc => doc.data() as Order);
 
 
             // 3. Calculate Stats
@@ -96,7 +97,7 @@ export function ProductAnalyticsDialog({ product, isOpen, onOpenChange }: Produc
             console.error("Failed to fetch product analytics:", e);
              if (e.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `collection group 'orders'`,
+                    path: `orders or products/${product.id}/clicks`,
                     operation: 'list',
                 }));
             }

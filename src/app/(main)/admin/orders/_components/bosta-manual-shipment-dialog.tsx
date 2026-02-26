@@ -22,7 +22,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
     const [trackingNumber, setTrackingNumber] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // New state for iframe loading
     const [iframeState, setIframeState] = useState<'loading' | 'loaded' | 'failed'>('loading');
 
     useEffect(() => {
@@ -34,7 +33,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
 
             return () => clearTimeout(timer);
         } else {
-            // Reset form when dialog closes
             setTrackingNumber("");
         }
     }, [isOpen]);
@@ -45,12 +43,10 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
 
     const handleCopyLink = () => {
         if (!link) return;
-
         const copyToClipboard = (text: string) => {
             if (navigator.clipboard && window.isSecureContext) {
                 return navigator.clipboard.writeText(text);
             } else {
-                // Fallback for older browsers
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
                 textArea.style.position = "fixed";
@@ -137,7 +133,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Top action bar */}
                 <div className="flex items-center gap-2 border-b pb-4">
                      <div className="text-sm space-y-1 p-3 rounded-md border bg-background flex-1">
                         <p><strong>العميل:</strong> {order.customerName} | <strong>الهاتف:</strong> {order.customerPhone}</p>
@@ -151,7 +146,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
                     </Button>
                 </div>
                 
-                {/* Iframe section */}
                 <div className="flex-1 border rounded-lg overflow-hidden relative">
                     {(iframeState === 'loading' || iframeState === 'failed') && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-muted text-center z-10">
@@ -188,7 +182,6 @@ export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, o
                     />
                 </div>
 
-                {/* Bottom tracking input */}
                 <div className="pt-4 border-t">
                     <Label htmlFor="tracking-number" className="text-base font-semibold">ربط الشحنة</Label>
                     <p className="text-sm text-muted-foreground mb-2">بعد إنشاء الشحنة على موقع بوسطة، الصق رقم التتبع هنا.</p>
