@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { useSession } from "@/auth/SessionProvider";
 import { Switch } from "@/components/ui/switch";
 
@@ -121,13 +121,7 @@ export function AddUserDialog() {
         }
       }
 
-
       await batch.commit();
-
-      toast({
-        title: "تم إنشاء حساب المستخدم بنجاح!",
-        description: `تم إنشاء حساب لـ ${email} بدور ${role}.`,
-      });
       
       resetForm();
 
@@ -155,7 +149,7 @@ export function AddUserDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-        if(!open) resetForm();
+        if(!isSubmitting && !open) resetForm();
         setIsOpen(open)
     }}>
       <DialogTrigger asChild>
@@ -260,9 +254,10 @@ export function AddUserDialog() {
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">إلغاء</Button>
+            <Button variant="outline" disabled={isSubmitting}>إلغاء</Button>
           </DialogClose>
           <Button type="button" onClick={handleSaveUser} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
           </Button>
         </DialogFooter>

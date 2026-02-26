@@ -19,6 +19,7 @@ import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
+import { Loader2 } from "lucide-react";
 
 interface EditCategoryDialogProps {
     category: ProductCategory | null;
@@ -70,7 +71,7 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
 
     updateDoc(categoryDocRef, updatedData)
         .then(() => {
-            toast({ title: "تم تحديث الفئة بنجاح!" });
+            onOpenChange(false);
         })
         .catch(async (error: any) => {
             toast({
@@ -82,8 +83,6 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
         .finally(() => {
             setIsSubmitting(false);
         });
-
-    onOpenChange(false);
   };
   
   if (!category) return null;
@@ -107,6 +106,7 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
               id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -115,6 +115,7 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
               id="edit-imageUrl"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
            <div className="space-y-2">
@@ -124,6 +125,7 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
               placeholder="مثال: power tools"
               value={dataAiHint}
               onChange={(e) => setDataAiHint(e.target.value)}
+              disabled={isSubmitting}
             />
              <p className="text-xs text-muted-foreground">
                 كلمة أو كلمتين بالإنجليزية لوصف الصورة.
@@ -140,12 +142,14 @@ export function EditCategoryDialog({ category, isOpen, onOpenChange }: EditCateg
                   id="edit-isAvailable"
                   checked={isAvailable}
                   onCheckedChange={setIsAvailable}
+                  disabled={isSubmitting}
               />
           </div>
         </div>
         <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
           <Button type="button" onClick={handleUpdate} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
           </Button>
         </DialogFooter>

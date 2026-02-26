@@ -66,10 +66,9 @@ export default function AdminUsersPage() {
         // NOTE: This only deletes the Firestore user profile. The Auth user remains.
         // A robust implementation would use a Cloud Function to delete the Auth user too.
         const userRef = doc(firestore, "users", userToDelete.id);
-        toast({ title: 'جاري حذف المستخدم...' });
+        
         try {
             await deleteDoc(userRef);
-            toast({ title: 'تم حذف المستخدم بنجاح' });
             setUserToDelete(null);
         } catch (e) {
             console.error('Failed to delete user:', e);

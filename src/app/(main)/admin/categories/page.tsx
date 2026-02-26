@@ -34,10 +34,9 @@ export default function AdminCategoriesPage() {
     const handleDelete = async () => {
         if (!firestore || !categoryToDelete) return;
         const categoryRef = doc(firestore, "productCategories", categoryToDelete.id);
-        toast({ title: 'جاري حذف الفئة...' });
+        
         try {
             await deleteDoc(categoryRef);
-            toast({ title: 'تم حذف الفئة بنجاح' });
             setCategoryToDelete(null);
         } catch (e) {
             console.error('Failed to delete category:', e);

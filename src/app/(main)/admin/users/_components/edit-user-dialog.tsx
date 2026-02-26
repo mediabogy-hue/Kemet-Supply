@@ -20,6 +20,7 @@ import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase
 import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
+import { Loader2 } from "lucide-react";
 
 
 interface EditUserDialogProps {
@@ -63,9 +64,6 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
       return;
     }
     setIsSubmitting(true);
-    onOpenChange(false);
-    toast({ title: "جاري تحديث بيانات المستخدم..." });
-
 
     const batch = writeBatch(firestore);
     
@@ -111,10 +109,7 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
 
     batch.commit()
         .then(() => {
-            toast({
-                title: "تم تحديث بيانات المستخدم بنجاح!",
-            });
-            // No need to call onUserUpdate, parent will update via onSnapshot
+            onOpenChange(false);
         })
         .catch(async (error: any) => {
             toast({
@@ -246,6 +241,7 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
         <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
           <Button type="button" onClick={handleUpdateUser} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
           </Button>
         </DialogFooter>

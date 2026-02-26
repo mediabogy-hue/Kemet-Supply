@@ -34,7 +34,7 @@ export default function AdminOrdersPage() {
     const handleStatusUpdate = async (order: Order, status: Order['status']) => {
         if (!firestore) return;
         const orderRef = doc(firestore, 'orders', order.id);
-        toast({ title: 'جاري تحديث حالة الطلب...' });
+        toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
         try {
             const updateData: any = { status, updatedAt: serverTimestamp() };
             if (status === 'Confirmed') updateData.confirmedAt = serverTimestamp();
@@ -44,7 +44,7 @@ export default function AdminOrdersPage() {
             if (status === 'Canceled') updateData.canceledAt = serverTimestamp();
 
             await updateDoc(orderRef, updateData);
-            toast({ title: 'تم تحديث حالة الطلب بنجاح!' });
+            // Success toast removed for better UX. The UI will update via the listener.
         } catch (e) {
             console.error('Failed to update order status:', e);
             toast({ variant: 'destructive', title: 'فشل تحديث الحالة' });
@@ -70,10 +70,9 @@ export default function AdminOrdersPage() {
     const handleDelete = async () => {
         if (!firestore || !orderToDelete) return;
         const orderRef = doc(firestore, 'orders', orderToDelete.id);
-        toast({ title: 'جاري حذف الطلب...' });
+        
         try {
             await deleteDoc(orderRef);
-            toast({ title: 'تم حذف الطلب بنجاح' });
             setOrderToDelete(null);
         } catch (e) {
             console.error('Failed to delete order:', e);

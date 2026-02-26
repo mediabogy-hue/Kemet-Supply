@@ -20,7 +20,7 @@ import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, us
 import { doc, updateDoc, serverTimestamp, collection, query, orderBy, writeBatch } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Loader2 } from "lucide-react";
 
 
 interface EditProductDialogProps {
@@ -101,8 +101,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
     }
 
     setIsSubmitting(true);
-    onOpenChange(false);
-    toast({ title: "جاري تحديث المنتج..." });
     
     try {
         const batch = writeBatch(firestore);
@@ -153,10 +151,7 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         batch.update(productDocRef, updatedData);
         
         await batch.commit();
-
-        toast({
-            title: "تم تحديث المنتج بنجاح!",
-        });
+        onOpenChange(false);
     } catch (error: any) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `products/${product.id} or productCategories`,
@@ -281,6 +276,7 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
           <Button type="button" onClick={handleUpdateProduct} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
           </Button>
         </DialogFooter>

@@ -78,7 +78,6 @@ export function EditableStockCell({ product }: EditableStockCellProps) {
             });
         }
       });
-      toast({ title: 'تم تحديث المخزون بنجاح!' });
       setIsEditing(false);
     } catch (e: any) {
       console.error("Stock update failed: ", e);

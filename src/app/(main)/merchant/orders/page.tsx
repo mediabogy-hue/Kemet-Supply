@@ -37,7 +37,7 @@ export default function MerchantOrdersPage() {
             if (status === 'Confirmed') updateData.confirmedAt = serverTimestamp();
 
             await updateDoc(orderRef, updateData);
-            toast({ title: 'تم تحديث حالة الطلب بنجاح!' });
+            // Success toast removed for better UX.
         } catch (e) {
             console.error('Failed to update order status:', e);
             toast({ variant: 'destructive', title: 'فشل تحديث الحالة' });
@@ -76,4 +76,3 @@ export default function MerchantOrdersPage() {
         </div>
     );
 }
-

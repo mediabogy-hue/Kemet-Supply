@@ -139,9 +139,6 @@ export function AddProductDialog() {
 
     setIsSubmitting(true);
     
-    setIsOpen(false);
-    toast({ title: "جاري حفظ المنتج..." });
-    
     try {
         const batch = writeBatch(firestore);
         const finalCategoryName = category.trim();
@@ -192,10 +189,7 @@ export function AddProductDialog() {
         
         await batch.commit();
 
-        toast({
-          title: "تم إضافة المنتج بنجاح!",
-        });
-        
+        setIsOpen(false);
         resetForm();
       }
       catch (error: any) {
@@ -326,6 +320,7 @@ export function AddProductDialog() {
             <Button variant="outline" disabled={isSubmitting}>إلغاء</Button>
           </DialogClose>
           <Button type="button" onClick={handleSaveProduct} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ المنتج'}
           </Button>
         </DialogFooter>

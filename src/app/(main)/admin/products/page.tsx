@@ -40,10 +40,9 @@ export default function AdminProductsPage() {
     const handleDelete = async () => {
         if (!firestore || !productToDelete) return;
         const productRef = doc(firestore, "products", productToDelete.id);
-        toast({ title: 'جاري حذف المنتج...' });
+        
         try {
             await deleteDoc(productRef);
-            toast({ title: 'تم حذف المنتج بنجاح' });
             setProductToDelete(null);
         } catch (e) {
             console.error('Failed to delete product:', e);

@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
-import { PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export function AddCategoryDialog() {
@@ -73,7 +73,8 @@ export function AddCategoryDialog() {
 
     setDoc(categoryDocRef, newCategoryData)
       .then(() => {
-        toast({ title: "تم إضافة الفئة بنجاح!" });
+        setIsOpen(false);
+        resetForm();
       })
       .catch(async (error: any) => {
         toast({
@@ -85,9 +86,6 @@ export function AddCategoryDialog() {
       .finally(() => {
           setIsSubmitting(false);
       });
-    
-    setIsOpen(false);
-    resetForm();
   };
 
   return (
@@ -117,6 +115,7 @@ export function AddCategoryDialog() {
               placeholder="مثال: أدوات كهربائية"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -126,6 +125,7 @@ export function AddCategoryDialog() {
               placeholder="https://picsum.photos/seed/cat/200"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -135,6 +135,7 @@ export function AddCategoryDialog() {
               placeholder="مثال: power tools"
               value={dataAiHint}
               onChange={(e) => setDataAiHint(e.target.value)}
+              disabled={isSubmitting}
             />
              <p className="text-xs text-muted-foreground">
                 كلمة أو كلمتين بالإنجليزية لوصف الصورة (تستخدم للبحث عن صور بديلة).
@@ -151,6 +152,7 @@ export function AddCategoryDialog() {
                   id="isAvailable"
                   checked={isAvailable}
                   onCheckedChange={setIsAvailable}
+                  disabled={isSubmitting}
               />
           </div>
         </div>
@@ -159,6 +161,7 @@ export function AddCategoryDialog() {
             <Button variant="outline" disabled={isSubmitting}>إلغاء</Button>
           </DialogClose>
           <Button type="button" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'جاري الحفظ...' : 'حفظ الفئة'}
           </Button>
         </DialogFooter>

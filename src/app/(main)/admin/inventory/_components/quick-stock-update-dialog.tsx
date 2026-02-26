@@ -163,7 +163,6 @@ export function QuickStockUpdateDialog({ triggerButton }: QuickStockUpdateDialog
             }
         });
         
-        toast({ title: "تم تحديث المخزون بنجاح!" });
         setIsOpen(false);
 
     } catch (e: any) {
@@ -180,9 +179,11 @@ export function QuickStockUpdateDialog({ triggerButton }: QuickStockUpdateDialog
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-        setIsOpen(open);
-        if (!open) {
-            resetForm();
+        if (!isSubmitting) {
+            setIsOpen(open);
+            if (!open) {
+                resetForm();
+            }
         }
     }}>
       <DialogTrigger asChild>
@@ -272,6 +273,7 @@ export function QuickStockUpdateDialog({ triggerButton }: QuickStockUpdateDialog
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>إلغاء</Button>
           <Button onClick={handleUpdate} disabled={isSubmitting || !selectedProduct}>
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? "جاري التحديث..." : "تحديث المخزون"}
           </Button>
         </DialogFooter>
