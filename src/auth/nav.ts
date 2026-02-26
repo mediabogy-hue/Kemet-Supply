@@ -64,6 +64,12 @@ export const navLinks: NavLink[] = [
         roles: ['Merchant'],
     },
     {
+        href: "/merchant/orders",
+        label: "طلبات منتجاتي",
+        icon: React.createElement(ShoppingCart),
+        roles: ['Merchant'],
+    },
+    {
         href: "/merchant/inventory",
         label: "مخزوني",
         icon: React.createElement(Package),
