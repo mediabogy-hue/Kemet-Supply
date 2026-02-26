@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { UserProfile } from '@/lib/types';
 
@@ -24,78 +23,44 @@ type SessionContextType = {
 
 const SessionContext = createContext<SessionContextType | null>(null);
 
-const loadSessionData = async (firestore: any, user: User): Promise<{ profile: UserProfile | null, role: UserProfile['role'] | null }> => {
-    if (!firestore || !user) {
-        return { profile: null, role: null };
-    }
-    const userDocRef = doc(firestore, 'users', user.uid);
+/**
+ * Loads the user profile from Firestore. This function is designed to be simple and robust.
+ * It performs a single document read and avoids complex, multi-read verification logic
+ * on the client-side. The role stored in the user document is trusted as the source of truth for the client.
+ * @param firestore - The Firestore instance.
+ * @param user - The authenticated Firebase user.
+ * @returns An object containing the user's profile and role, or nulls if not found or on error.
+ */
+const loadSessionData = async (firestore: Firestore, user: User): Promise<{ profile: UserProfile | null; role: UserProfile['role'] | null }> => {
+  const userDocRef = doc(firestore, 'users', user.uid);
+  try {
     const userDocSnap = await getDoc(userDocRef);
 
-    let profile: UserProfile | null = null;
-    let primaryRole: UserProfile['role'] | null = null;
-
     if (userDocSnap.exists()) {
-        const data = userDocSnap.data() as UserProfile;
-        profile = data;
-        primaryRole = data.role || null;
+      const profile = userDocSnap.data() as UserProfile;
+      // The role in the user document is the source of truth for the client.
+      const role = profile.role || 'Dropshipper'; // Default to Dropshipper if role is missing.
+      
+      // Self-healing: If the role field is missing, update it in Firestore.
+      if (!profile.role) {
+        console.warn(`User ${user.uid} is missing a role. Defaulting to Dropshipper and updating profile.`);
+        updateDoc(userDocRef, { role: 'Dropshipper', updatedAt: serverTimestamp() }).catch(console.error);
+        profile.role = 'Dropshipper'; // Update in-memory profile for the current session.
+      }
+      
+      return { profile, role };
+    } else {
+      // This case can happen if a user exists in Auth but their Firestore document was deleted
+      // or failed to be created during registration.
+      console.warn(`User profile not found in Firestore for UID: ${user.uid}.`);
+      return { profile: null, role: null };
     }
-
-    // Role Verification & Correction Logic
-    let authoritativeRole: UserProfile['role'] | null = primaryRole;
-    let verifiedRoleFromCollection: UserProfile['role'] | null = null;
-
-    const roleChecks: Array<{ roleName: UserProfile['role'], path: string }> = [
-        { roleName: 'Admin', path: `roles_admin/${user.uid}` },
-        { roleName: 'Merchant', path: `roles_merchant/${user.uid}` },
-        { roleName: 'OrdersManager', path: `roles_orders_manager/${user.uid}` },
-        { roleName: 'FinanceManager', path: `roles_finance_manager/${user.uid}` },
-    ];
-
-    for (const check of roleChecks) {
-        try {
-            const roleDocSnap = await getDoc(doc(firestore, check.path));
-            if (roleDocSnap.exists()) {
-                verifiedRoleFromCollection = check.roleName;
-                break; // Found the highest-precedence role, stop checking
-            }
-        } catch (e) {
-            console.warn(`Could not check role at path: ${check.path}`);
-        }
-    }
-    
-    // If a role was found in a specific collection, it is the source of truth.
-    if (verifiedRoleFromCollection) {
-        authoritativeRole = verifiedRoleFromCollection;
-    } 
-    // If no specific role doc was found, but we have a profile, assume Dropshipper if role is missing.
-    else if (profile && !primaryRole) {
-        authoritativeRole = 'Dropshipper';
-    }
-
-    // Self-Healing: If the authoritative role differs from what's in the user profile, correct the profile.
-    if (authoritativeRole && profile && profile.role !== authoritativeRole) {
-        console.warn(`Correcting user role mismatch for ${user.uid}. Was: ${profile.role}, Should be: ${authoritativeRole}`);
-        profile.role = authoritativeRole; // Correct in-memory profile for the current session.
-        // Fire-and-forget update to the database to fix it for the future.
-        updateDoc(userDocRef, { role: authoritativeRole, updatedAt: serverTimestamp() }).catch(err => {
-            console.error(`Failed to self-heal user role for ${user.uid}:`, err);
-        });
-    }
-    
-    // If no profile exists at all, but we found a role, create a minimal profile.
-    if (!profile && authoritativeRole) {
-         profile = { 
-            id: user.uid,
-            email: user.email!, 
-            firstName: user.displayName?.split(' ')[0] || '',
-            lastName: user.displayName?.split(' ')[1] || '',
-            role: authoritativeRole 
-        } as UserProfile;
-    }
-
-    return { profile, role: authoritativeRole };
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    // This could be a permissions error. We must handle it gracefully by returning nulls.
+    return { profile: null, role: null };
+  }
 };
-
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { auth, firestore } = useFirebase();
@@ -119,30 +84,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (!auth || !firestore) {
       setIsLoading(false);
       return;
-    };
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
+      setError(null);
+
       if (firebaseUser) {
-        try {
-            setUser(firebaseUser);
-            const { profile: loadedProfile, role: loadedRole } = await loadSessionData(firestore, firebaseUser);
-            setProfile(loadedProfile);
-            setRole(loadedRole);
-            
-            if (!loadedProfile) {
-                setError("User profile not found in database.");
-            }
-
-        } catch (e: any) {
-            console.error("Failed to load session data:", e);
-            setError("Failed to load user session. Please try again.");
-            // Gracefully clear session data on error instead of crashing
-            setUser(null);
-            setProfile(null);
-            setRole(null);
+        setUser(firebaseUser);
+        const { profile, role } = await loadSessionData(firestore, firebaseUser);
+        setProfile(profile);
+        setRole(role);
+        if (!profile) {
+            setError("User profile could not be loaded from the database.");
         }
-
       } else {
         setUser(null);
         setProfile(null);
