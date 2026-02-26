@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSession } from "@/auth/SessionProvider";
@@ -13,11 +12,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!isLoading && user) {
+      // User is already logged in, redirect them to their default dashboard.
       const defaultPath = getDefaultPath(role);
       router.replace(defaultPath);
     }
   }, [isLoading, user, role, router]);
 
+  // If session is loading OR user is logged in, show a loading screen
+  // while the redirect is happening.
   if (isLoading || user) {
      return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -29,5 +31,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
+  // If session is loaded and there is NO user, show the children (login, register pages).
   return <>{children}</>;
 }

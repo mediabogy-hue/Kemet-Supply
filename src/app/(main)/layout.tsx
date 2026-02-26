@@ -1,4 +1,3 @@
-
 'use client';
 import { Sidebar } from "@/components/ui/sidebar";
 import { Header } from "@/components/layout/header";
@@ -17,7 +16,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/');
+      router.replace('/login');
     }
   }, [user, isLoading, router]);
 

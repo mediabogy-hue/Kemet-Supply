@@ -1,8 +1,7 @@
-
 'use client';
 
-// This page is intentionally left blank.
-// The root login page is now at /src/app/page.tsx to resolve a routing conflict.
+// The root login page has been moved to /src/app/(auth)/login/page.tsx
+// This file is a placeholder to prevent routing conflicts.
 export default function ConflictingLoginPage() {
     return null;
 }
