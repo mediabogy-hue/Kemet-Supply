@@ -1,10 +1,13 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSession, useCollection, useMemoFirebase, useFirebase } from "@/firebase";
+import { useSession } from "@/auth/SessionProvider";
+import { useFirebase } from '@/firebase/provider';
+import { useCollection, useMemoFirebase } from "@/firebase";
 import type { Order } from "@/lib/types";
 import { collection, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { format, subDays } from 'date-fns';

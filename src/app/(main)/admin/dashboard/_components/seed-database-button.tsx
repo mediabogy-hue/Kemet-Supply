@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
 import { writeBatch, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Loader2, DatabaseZap } from 'lucide-react';
 import type { Order } from '@/lib/types';

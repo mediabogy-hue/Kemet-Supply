@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Check, X, Pencil, Minus, Plus } from 'lucide-react';
-import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useSession } from '@/auth/SessionProvider';
 import { doc, runTransaction, serverTimestamp, collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
@@ -19,8 +20,8 @@ interface EditableStockCellProps {
 const MINIMUM_STOCK_LEVEL = 3;
 
 export function EditableStockCell({ product }: EditableStockCellProps) {
-  const { firestore, user } = useFirebase();
-  const { role } = useSession();
+  const { firestore } = useFirebase();
+  const { user, role } = useSession();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [quantity, setQuantity] = useState(product.stockQuantity.toString());

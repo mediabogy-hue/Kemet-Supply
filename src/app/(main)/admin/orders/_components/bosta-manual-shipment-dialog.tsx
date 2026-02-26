@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Link as LinkIcon, Loader2, ExternalLink, Copy, FileWarning } from 'lucide-react';

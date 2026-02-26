@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useSession } from "@/firebase";
+import { useSession } from "@/auth/SessionProvider";
 import { getDefaultPath } from "@/auth/permissions";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";

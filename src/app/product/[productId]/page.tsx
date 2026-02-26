@@ -4,7 +4,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useFirebase, useDoc, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
+import { useDoc, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
