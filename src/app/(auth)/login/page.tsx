@@ -47,9 +47,9 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <Card className="mx-auto w-full max-w-sm">
             <CardHeader className="text-center space-y-4">
-              <div className="mx-auto">
+              <Link href="/" className="mx-auto">
                 <Logo />
-              </div>
+              </Link>
               <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
               <CardDescription>
                 أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك
@@ -113,6 +113,8 @@ export default function LoginPage() {
           data-ai-hint="abstract tech"
           fill
           className="object-cover"
+          sizes="50vw"
+          priority
         />
          <div className="relative z-10 flex items-center justify-center h-full bg-black/50">
             <div className="text-center text-white p-8 rounded-lg max-w-md">
@@ -126,4 +128,3 @@ export default function LoginPage() {
     </div>
   );
 }
-    

@@ -259,6 +259,8 @@ export default function RegisterPage() {
           data-ai-hint="abstract tech"
           fill
           className="object-cover"
+          sizes="50vw"
+          priority
         />
          <div className="relative z-10 flex items-center justify-center h-full bg-black/50">
             <div className="text-center text-white p-8 rounded-lg max-w-md">
@@ -272,4 +274,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-    

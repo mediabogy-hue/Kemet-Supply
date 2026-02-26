@@ -377,7 +377,9 @@ export default function PublicProductPage() {
                     <CardContent>
                         <p className="text-muted-foreground">لقد تم استلام طلبك بنجاح. سيقوم فريقنا بالتواصل معك في أقرب وقت لتأكيد تفاصيل الشحن.</p>
                          <div className="mt-8 flex justify-center">
-                            <Logo />
+                            <Link href="/">
+                                <Logo />
+                            </Link>
                         </div>
                     </CardContent>
                 </Card>
