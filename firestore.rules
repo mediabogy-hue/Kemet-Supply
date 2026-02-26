@@ -44,7 +44,7 @@ service cloud.firestore {
     // User profiles can be created by anyone.
     // Users can read/update their own profile. Staff can view any profile. Admins can do anything.
     match /users/{userId} {
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       allow get: if isOwner(userId) || isStaff();
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
@@ -102,8 +102,8 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-        // Logged-in users can create orders for themselves
-        allow create: if isSignedIn() && request.resource.data.dropshipperId == request.auth.uid;
+        // Admins can create orders, and Dropshippers can create their own.
+        allow create: if isAdmin() || (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid);
         // Staff can view any order. Dropshippers can only view their own.
         allow read: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
         // Only Staff can list all orders.
