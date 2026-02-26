@@ -30,18 +30,6 @@ export interface UseCollectionResult<T> {
   lastUpdated: Date | null;
 }
 
-/* Internal implementation of Query:
-  https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
-*/
-export interface InternalQuery extends Query<DocumentData> {
-  _query: {
-    path: {
-      canonicalString(): string;
-      toString(): string;
-    }
-  }
-}
-
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
@@ -93,24 +81,11 @@ export function useCollection<T = any>(
         setLastUpdated(new Date());
       },
       (error: FirestoreError) => {
-        let path = 'unknown_path';
-        try {
-            const internalQuery = memoizedTargetRefOrQuery as any;
-            if (memoizedTargetRefOrQuery?.type === 'collection') {
-                path = (memoizedTargetRefOrQuery as CollectionReference).path;
-            } else if (internalQuery?._query?.collectionGroup) {
-                path = `**/${internalQuery._query.collectionGroup}`;
-            } else if (internalQuery?._query?.path) {
-                path = internalQuery._query.path.canonicalString();
-            }
-        } catch (e) {
-            console.warn("Could not determine path for Firestore error reporting:", e);
-        }
-
+        // Fallback for permission errors to ensure stability.
         if (error.code === 'permission-denied') {
             const contextualError = new FirestorePermissionError({
                 operation: 'list',
-                path,
+                path: 'a collection', // Use a generic path to avoid relying on internal SDK properties.
             });
             setError(contextualError);
         } else {
