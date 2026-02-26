@@ -47,7 +47,7 @@ service cloud.firestore {
     // Users can read/update their own profile. Staff can view any profile. Admins can do anything.
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow get: if isOwner(userId) || isStaff();
+      allow get: if isOwner(userId) || isStaff() || isMerchant();
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
     }
@@ -97,7 +97,7 @@ service cloud.firestore {
     match /productCategories/{categoryId} {
         allow read: if isSignedIn();
         allow list: if isSignedIn();
-        allow create, update, delete: if isMerchant() || isAdmin();
+        allow create, update, delete: if isAdmin();
     }
      // Anyone can track a product click via the public page
     match /products/{productId}/clicks/{clickId} {
@@ -153,8 +153,11 @@ service cloud.firestore {
 
      // Stock Ledger is append-only by authorized users or server functions
     match /stockLedger/{ledgerId} {
+        function isProductOwner(productId) {
+            return get(/databases/$(database)/documents/products/$(productId)).data.merchantId == request.auth.uid;
+        }
         allow read, list: if isAdmin();
-        allow create: if isAdmin();
+        allow create: if isAdmin() || (isMerchant() && isProductOwner(request.resource.data.productId));
         allow update, delete: if false;
     }
 

@@ -1,6 +1,6 @@
 
 
-"use client";
+'use client';
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -145,19 +145,29 @@ export function AddProductDialog() {
 
         const existingCategory = categories?.find(c => c.name.trim().toLowerCase() === finalCategoryName.toLowerCase());
 
-        if (!existingCategory && finalCategoryName) {
-            const categoryId = doc(collection(firestore, "productCategories")).id;
-            const categoryDocRef = doc(firestore, "productCategories", categoryId);
-            const newCategoryData = {
-              id: categoryId,
-              name: finalCategoryName,
-              imageUrl: `https://picsum.photos/seed/${encodeURIComponent(finalCategoryName)}/200`,
-              dataAiHint: finalCategoryName.split(" ").slice(0, 2).join(" "),
-              isAvailable: true,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            };
-            batch.set(categoryDocRef, newCategoryData);
+        if (!existingCategory) {
+            if (profile.role === 'Admin') {
+                const categoryId = doc(collection(firestore, "productCategories")).id;
+                const categoryDocRef = doc(firestore, "productCategories", categoryId);
+                const newCategoryData = {
+                  id: categoryId,
+                  name: finalCategoryName,
+                  imageUrl: `https://picsum.photos/seed/${encodeURIComponent(finalCategoryName)}/200`,
+                  dataAiHint: finalCategoryName.split(" ").slice(0, 2).join(" "),
+                  isAvailable: true,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                };
+                batch.set(categoryDocRef, newCategoryData);
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "فئة غير موجودة",
+                    description: `الفئة "${finalCategoryName}" غير موجودة. الرجاء اختيار فئة من القائمة أو اطلب من الأدمن إضافتها.`,
+                });
+                setIsSubmitting(false);
+                return;
+            }
         }
         
         const productId = doc(collection(firestore, "products")).id;

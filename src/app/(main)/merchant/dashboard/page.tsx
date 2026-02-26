@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/auth/SessionProvider";
-import { useCollection, useMemoFirebase, useFirebase } from "@/firebase";
+import { useCollection, useMemoFirebase } from "@/firebase";
 import type { Order, Product } from "@/lib/types";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,7 @@ import { Box, ShoppingCart, Activity } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { OrderStatusBadge } from '../orders/_components/order-status-badge';
+import { OrderStatusBadge } from '@/app/(main)/merchant/orders/_components/order-status-badge';
 
 export default function MerchantDashboardPage() {
   const { profile, user, firestore } = useSession();
@@ -136,7 +136,7 @@ export default function MerchantDashboardPage() {
                                 <TableCell>{order.customerName}</TableCell>
                                 <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(order.createdAt.toDate(), { addSuffix: true, locale: ar })}
+                                    {order.createdAt?.toDate ? formatDistanceToNow(order.createdAt.toDate(), { addSuffix: true, locale: ar }) : 'N/A'}
                                 </TableCell>
                             </TableRow>
                         ))}

@@ -7,8 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { writeBatch, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Loader2, DatabaseZap } from 'lucide-react';
-import type { ProductCategory, Product, Order, UserProfile } from '@/lib/types';
-import { ar } from 'date-fns/locale';
+import type { Order } from '@/lib/types';
 
 const dropshippers = [
     { id: 'dropshipper-ahmad-ali', firstName: 'أحمد', lastName: 'علي', email: 'ahmad.ali@example.com' },
