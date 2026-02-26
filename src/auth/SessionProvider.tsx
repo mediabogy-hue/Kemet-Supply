@@ -1,14 +1,11 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { UserProfile } from '@/lib/types';
-import { useRouter, usePathname } from 'next/navigation';
-import { getDefaultPath, hasPermission } from './permissions';
 
 type SessionContextType = {
   user: User | null;
@@ -35,20 +32,18 @@ const loadSessionData = async (firestore: any, user: User): Promise<{ profile: U
     const userDocSnap = await getDoc(userDocRef);
 
     let profile: UserProfile | null = null;
-    let role: UserProfile['role'] | null = null;
+    let primaryRole: UserProfile['role'] | null = null;
 
     if (userDocSnap.exists()) {
         const data = userDocSnap.data() as UserProfile;
         profile = data;
-        // Trust the role in the user document if it exists.
-        if (data.role) {
-            role = data.role;
-        }
+        primaryRole = data.role || null;
     }
 
-    // If the user's role is still not 'Admin' (or not determined),
-    // check the dedicated role collections as a potential override or fallback.
-    // This makes the system resilient to incorrect `role` fields in the user doc.
+    // Role Verification & Correction Logic
+    let authoritativeRole: UserProfile['role'] | null = primaryRole;
+    let verifiedRoleFromCollection: UserProfile['role'] | null = null;
+
     const roleChecks: Array<{ roleName: UserProfile['role'], path: string }> = [
         { roleName: 'Admin', path: `roles_admin/${user.uid}` },
         { roleName: 'Merchant', path: `roles_merchant/${user.uid}` },
@@ -60,38 +55,45 @@ const loadSessionData = async (firestore: any, user: User): Promise<{ profile: U
         try {
             const roleDocSnap = await getDoc(doc(firestore, check.path));
             if (roleDocSnap.exists()) {
-                // If a specific role doc exists, it takes precedence.
-                role = check.roleName;
-                break;
+                verifiedRoleFromCollection = check.roleName;
+                break; // Found the highest-precedence role, stop checking
             }
         } catch (e) {
             console.warn(`Could not check role at path: ${check.path}`);
         }
     }
     
-    // If after all checks there is still no role, and a profile was loaded,
-    // it implies a dropshipper account (as they don't have a separate role doc).
-    if (!role && profile) {
-        role = 'Dropshipper';
+    // If a role was found in a specific collection, it is the source of truth.
+    if (verifiedRoleFromCollection) {
+        authoritativeRole = verifiedRoleFromCollection;
+    } 
+    // If no specific role doc was found, but we have a profile, assume Dropshipper if role is missing.
+    else if (profile && !primaryRole) {
+        authoritativeRole = 'Dropshipper';
     }
 
-    // If profile was not loaded but a role was found via role collections, create a minimal profile.
-    if (!profile && role) {
+    // Self-Healing: If the authoritative role differs from what's in the user profile, correct the profile.
+    if (authoritativeRole && profile && profile.role !== authoritativeRole) {
+        console.warn(`Correcting user role mismatch for ${user.uid}. Was: ${profile.role}, Should be: ${authoritativeRole}`);
+        profile.role = authoritativeRole; // Correct in-memory profile for the current session.
+        // Fire-and-forget update to the database to fix it for the future.
+        updateDoc(userDocRef, { role: authoritativeRole, updatedAt: serverTimestamp() }).catch(err => {
+            console.error(`Failed to self-heal user role for ${user.uid}:`, err);
+        });
+    }
+    
+    // If no profile exists at all, but we found a role, create a minimal profile.
+    if (!profile && authoritativeRole) {
          profile = { 
             id: user.uid,
             email: user.email!, 
             firstName: user.displayName?.split(' ')[0] || '',
             lastName: user.displayName?.split(' ')[1] || '',
-            role: role 
+            role: authoritativeRole 
         } as UserProfile;
     }
-    
-    // Final check: if we have a profile, make sure its role matches the determined role.
-    if (profile && role) {
-        profile.role = role;
-    }
 
-    return { profile, role };
+    return { profile, role: authoritativeRole };
 };
 
 
