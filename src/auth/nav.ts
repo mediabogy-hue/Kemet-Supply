@@ -50,12 +50,32 @@ export const navLinks: NavLink[] = [
         roles: ['Dropshipper'],
     },
 
+    // Merchant Links
+    {
+        href: "/merchant/dashboard",
+        label: "لوحة التحكم",
+        icon: React.createElement(LayoutDashboard),
+        roles: ['Merchant'],
+    },
+    {
+        href: "/merchant/products",
+        label: "منتجاتي",
+        icon: React.createElement(Box),
+        roles: ['Merchant'],
+    },
+    {
+        href: "/merchant/inventory",
+        label: "مخزوني",
+        icon: React.createElement(Package),
+        roles: ['Merchant'],
+    },
+
     // Admin & Staff Links
     {
         href: "/admin/dashboard",
         label: "لوحة التحكم",
         icon: React.createElement(LayoutDashboard),
-        roles: ['Admin', 'OrdersManager', 'FinanceManager', 'ProductManager'],
+        roles: ['Admin', 'OrdersManager', 'FinanceManager'],
     },
     {
         href: "/admin/orders",
@@ -73,19 +93,19 @@ export const navLinks: NavLink[] = [
         href: "/admin/products",
         label: "إدارة المنتجات",
         icon: React.createElement(Box),
-        roles: ['Admin', 'ProductManager'],
+        roles: ['Admin'],
     },
     {
         href: "/admin/categories",
         label: "الفئات",
         icon: React.createElement(FileText),
-        roles: ['Admin', 'ProductManager'],
+        roles: ['Admin'],
     },
     {
         href: "/admin/inventory",
         label: "المخزون",
         icon: React.createElement(Package),
-        roles: ['Admin', 'ProductManager'],
+        roles: ['Admin'],
     },
     {
         href: "/admin/withdrawals",

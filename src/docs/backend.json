@@ -5,7 +5,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the system, which can be a Dropshipper or an Admin.",
+      "description": "Represents a user of the system, which can be a Dropshipper or an Admin-level role.",
       "properties": {
         "id": {
           "type": "string",
@@ -18,7 +18,8 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user, e.g., 'Dropshipper', 'Admin'."
+          "description": "The role of the user, defining their permissions.",
+          "enum": ["Dropshipper", "Admin", "OrdersManager", "FinanceManager", "Merchant"]
         },
         "firstName": {
           "type": "string"
@@ -38,6 +39,9 @@
           "format": "date-time"
         },
         "isActive": {
+          "type": "boolean"
+        },
+         "initialPasswordChangeRequired": {
           "type": "boolean"
         }
       },
@@ -64,9 +68,19 @@
       },
       {
         "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "AdminRole"
-        }
+        "definition": { "description": "Grants Admin role." }
+      },
+      {
+        "path": "/roles_orders_manager/{userId}",
+        "definition": { "description": "Grants Orders Manager role." }
+      },
+      {
+        "path": "/roles_finance_manager/{userId}",
+        "definition": { "description": "Grants Finance Manager role." }
+      },
+      {
+        "path": "/roles_merchant/{userId}",
+        "definition": { "description": "Grants Merchant role." }
       }
     ]
   }

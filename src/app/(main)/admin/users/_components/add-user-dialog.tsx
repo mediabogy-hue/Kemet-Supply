@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from "react";
@@ -111,7 +112,7 @@ export function AddUserDialog() {
             'Admin': 'roles_admin',
             'OrdersManager': 'roles_orders_manager',
             'FinanceManager': 'roles_finance_manager',
-            'ProductManager': 'roles_product_manager',
+            'Merchant': 'roles_merchant',
         };
         const roleCollection = staffRolesMap[role];
         if (roleCollection) {
@@ -228,7 +229,7 @@ export function AddUserDialog() {
                     {isAdmin && <SelectItem value="Admin">أدمن</SelectItem>}
                     <SelectItem value="OrdersManager">مدير طلبات</SelectItem>
                     <SelectItem value="FinanceManager">مدير مالي</SelectItem>
-                    <SelectItem value="ProductManager">مدير منتجات</SelectItem>
+                    <SelectItem value="Merchant">تاجر</SelectItem>
                 </SelectContent>
             </Select>
           </div>

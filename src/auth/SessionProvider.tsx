@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
@@ -18,7 +19,7 @@ type SessionContextType = {
   isAdmin: boolean;
   isOrdersManager: boolean;
   isFinanceManager: boolean;
-  isProductManager: boolean;
+  isMerchant: boolean;
   isStaff: boolean;
   isDropshipper: boolean;
   refreshSession: () => void;
@@ -122,8 +123,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isAdmin: role === 'Admin',
     isOrdersManager: role === 'OrdersManager' || role === 'Admin',
     isFinanceManager: role === 'FinanceManager' || role === 'Admin',
-    isProductManager: role === 'ProductManager' || role === 'Admin',
-    isStaff: ['Admin', 'OrdersManager', 'FinanceManager', 'ProductManager'].includes(role || ''),
+    isMerchant: role === 'Merchant' || role === 'Admin',
+    isStaff: ['Admin', 'OrdersManager', 'FinanceManager', 'Merchant'].includes(role || ''),
     isDropshipper: role === 'Dropshipper',
     refreshSession,
   }), [user, profile, role, isLoading, error, refreshSession]);

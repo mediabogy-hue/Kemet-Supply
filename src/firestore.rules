@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,8 +11,29 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
+    function getRole() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isStaff() {
+        let role = getRole();
+        return role == 'Admin' || role == 'OrdersManager' || role == 'FinanceManager' || role == 'Merchant';
+    }
+    
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+        return getRole() == 'Admin';
+    }
+    
+    function isOrdersManager() {
+        return getRole() == 'OrdersManager' || isAdmin();
+    }
+
+    function isFinanceManager() {
+        return getRole() == 'FinanceManager' || isAdmin();
+    }
+    
+    function isMerchant() {
+        return getRole() == 'Merchant' || isAdmin();
     }
 
     // Default-deny all reads and writes
@@ -21,28 +41,114 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // User profiles
+    // User profiles can be created by anyone.
+    // Users can read/update their own profile. Staff can view any profile. Admins can do anything.
     match /users/{userId} {
-      // Anyone can create their own user document during sign up
-      allow create: if isOwner(userId);
-      // Users can get and update their own profile. Admins can manage any profile.
-      allow get, update: if isOwner(userId) || isAdmin();
-      // Only admins can list or delete users.
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isOwner(userId) || isStaff();
+      allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
     }
     
-    // Role management collections
-    match /roles_admin/{userId} {
-      allow read, write: if isAdmin();
+    // Wallets are tied to users. Only the owner can see their wallet.
+    // Staff roles that need to see wallets (Finance/Admin) can also get them.
+    match /wallets/{userId} {
+        allow get: if isOwner(userId) || isFinanceManager();
+        allow create, update: if false; // Managed by server-side logic (e.g. cloud functions)
     }
+
+    // Role documents are used for permission checks by the app.
+    // Only the user themselves needs to check if their own role doc exists.
+    // Only Admins can write to these collections.
+    match /roles_admin/{userId} { 
+        allow get: if isOwner(userId);
+        allow write, list, delete: if isAdmin();
+     }
     match /roles_orders_manager/{userId} {
-      allow read, write: if isAdmin();
+        allow get: if isOwner(userId);
+        allow write, list, delete: if isAdmin();
     }
     match /roles_finance_manager/{userId} {
-      allow read, write: if isAdmin();
+        allow get: if isOwner(userId);
+        allow write, list, delete: if isAdmin();
     }
-    match /roles_product_manager/{userId} {
-      allow read, write: if isAdmin();
+    match /roles_merchant/{userId} {
+        allow get: if isOwner(userId);
+        allow write, list, delete: if isAdmin();
+    }
+    
+    // Public Settings can be read by anyone
+    match /publicSettings/{docId} {
+        allow get: if true;
+        allow write: if isAdmin();
+    }
+
+    // Products and Categories
+    match /products/{productId} {
+        allow read: if isSignedIn(); // Anyone logged in can see products
+        allow list: if isSignedIn();
+        // A merchant can create/update their own product, an admin can manage any.
+        allow create: if isMerchant();
+        allow update: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
+        allow delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
+    }
+    match /productCategories/{categoryId} {
+        allow read: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create, update, delete: if isMerchant() || isAdmin();
+    }
+     // Anyone can track a product click via the public page
+    match /products/{productId}/clicks/{clickId} {
+        allow create: if true;
+        allow read, list, update, delete: if false;
+    }
+    
+    // Orders
+    match /orders/{orderId} {
+        // Logged-in users can create orders for themselves
+        allow create: if isSignedIn() && request.resource.data.dropshipperId == request.auth.uid;
+        // Staff can view any order. Dropshippers can only view their own.
+        allow read: if isStaff() || (isSignedIn() && resource.data.dropshipperId == request.auth.uid);
+        // Only Staff can list all orders.
+        allow list: if isStaff();
+        // Only Staff can update orders.
+        allow update: if isStaff() || isOrdersManager();
+        // Only Admins can delete orders.
+        allow delete: if isAdmin();
+    }
+
+    // Withdrawal requests
+    // Admins get a denormalized copy for review
+    match /adminWithdrawalRequests/{reqId} {
+        allow read, list, update, delete: if isFinanceManager();
+        allow create: if false; // Only server can create
+    }
+    // Users manage their own requests
+    match /users/{userId}/withdrawalRequests/{reqId} {
+        allow read, list: if isOwner(userId);
+        allow create, update, delete: if false; // Managed by server-side logic
+    }
+    
+    // Merchant Inquiries can be created by anyone.
+    match /merchantInquiries/{inquiryId} {
+        allow create: if true;
+        allow read, list, update, delete: if isAdmin();
+    }
+
+     // Stock Ledger is append-only by authorized users or server functions
+    match /stockLedger/{ledgerId} {
+        allow read, list: if isMerchant();
+        allow create: if isMerchant();
+        allow update, delete: if false;
+    }
+
+    // Helper collections
+    match /id_generator/{docId} {
+        allow create: if isSignedIn();
+    }
+    match /webhooks_bosta/{webhookId} {
+        allow create: if true; // Webhooks can write
+        allow read, list, update, delete: if isAdmin();
     }
   }
 }

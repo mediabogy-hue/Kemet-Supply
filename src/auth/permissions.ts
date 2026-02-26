@@ -7,7 +7,7 @@ const PERMISSIONS: Record<UserRole, string[]> = {
   Admin: ['/admin'],
   OrdersManager: ['/admin/orders', '/admin/shipping', '/admin/dashboard'],
   FinanceManager: ['/admin/withdrawals', '/admin/payments', '/admin/dashboard'],
-  ProductManager: ['/admin/products', '/admin/inventory', '/admin/categories', '/admin/dashboard'],
+  Merchant: ['/merchant'],
   Dropshipper: ['/dashboard', '/products', '/orders', '/reports', '/profile', '/policy'],
 };
 
@@ -22,7 +22,7 @@ export function hasPermission(role: UserRole | null, path: string): boolean {
   }
   
   // Admin has access to all admin routes implicitly.
-  if (role === 'Admin' && path.startsWith('/admin')) {
+  if (role === 'Admin' && (path.startsWith('/admin') || path.startsWith('/merchant'))) {
     return true;
   }
 
@@ -34,7 +34,7 @@ export function getDefaultPath(role: UserRole | null): string {
   if (role === 'Admin') return '/admin/dashboard';
   if (role === 'OrdersManager') return '/admin/orders';
   if (role === 'FinanceManager') return '/admin/withdrawals';
-  if (role === 'ProductManager') return '/admin/products';
+  if (role === 'Merchant') return '/merchant/dashboard';
   if (role === 'Dropshipper') return '/dashboard';
   
   // Default fallback for unhandled or null roles

@@ -183,7 +183,7 @@ export function AddProductDialog() {
           updatedAt: serverTimestamp(),
         };
 
-        if (profile.role === 'ProductManager') {
+        if (profile.role === 'Merchant') {
             newProductData.merchantId = user.uid;
             newProductData.merchantName = `${profile.firstName} ${profile.lastName}`.trim();
         }
