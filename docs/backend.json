@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -19,7 +18,13 @@
         "role": {
           "type": "string",
           "description": "The role of the user, defining their permissions.",
-          "enum": ["Dropshipper", "Admin", "OrdersManager", "FinanceManager", "Merchant"]
+          "enum": [
+            "Dropshipper",
+            "Admin",
+            "OrdersManager",
+            "FinanceManager",
+            "Merchant"
+          ]
         },
         "firstName": {
           "type": "string"
@@ -41,7 +46,7 @@
         "isActive": {
           "type": "boolean"
         },
-         "initialPasswordChangeRequired": {
+        "initialPasswordChangeRequired": {
           "type": "boolean"
         }
       },
@@ -55,33 +60,45 @@
       ]
     }
   },
-  "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/entities/User"
-          }
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": { "description": "Grants Admin role." }
-      },
-      {
-        "path": "/roles_orders_manager/{userId}",
-        "definition": { "description": "Grants Orders Manager role." }
-      },
-      {
-        "path": "/roles_finance_manager/{userId}",
-        "definition": { "description": "Grants Finance Manager role." }
-      },
-      {
-        "path": "/roles_merchant/{userId}",
-        "definition": { "description": "Grants Merchant role." }
-      }
+  "auth": {
+    "providers": [
+      "email"
     ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores public information about a user."
+    },
+    "/roles_admin/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "description": "A document in this collection grants a user the Admin role."
+    },
+    "/roles_orders_manager/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "description": "A document in this collection grants a user the Orders Manager role."
+    },
+    "/roles_finance_manager/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "description": "A document in this collection grants a user the Finance Manager role."
+    },
+    "/roles_merchant/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "description": "A document in this collection grants a user the Merchant role."
+    }
   }
 }
