@@ -15,14 +15,6 @@ const dropshippers = [
     { id: 'dropshipper-youssef-hassan', firstName: 'يوسف', lastName: 'حسن', email: 'youssef.hassan@example.com' },
 ];
 
-const merchantUser = {
-    id: 'merchant-kemet-store',
-    firstName: 'متجر',
-    lastName: 'كيميت',
-    email: 'merchant@example.com'
-};
-
-
 const categories = [
     { id: 'electronics-cat', name: 'إلكترونيات', imageUrl: 'https://picsum.photos/seed/electronics/200', dataAiHint: 'electronics' },
     { id: 'clothing-cat', name: 'ملابس', imageUrl: 'https://picsum.photos/seed/clothing/200', dataAiHint: 'clothing' },
@@ -30,11 +22,11 @@ const categories = [
 ];
 
 const products = [
-    { id: 'product-headphones', name: 'سماعة رأس لاسلكية', description: 'صوت نقي وبطارية تدوم طويلاً', category: 'إلكترونيات', price: 750, commission: 80, stockQuantity: 50, isAvailable: true, imageUrls: ['https://picsum.photos/seed/headphones/600'], isMerchantProduct: true },
-    { id: 'product-tshirt', name: 'تيشيرت قطني أسود', description: 'تيشيرت مريح وعالي الجودة', category: 'ملابس', price: 300, commission: 40, stockQuantity: 120, isAvailable: true, imageUrls: ['https://picsum.photos/seed/tshirt/600'], isMerchantProduct: false },
-    { id: 'product-blender', name: 'خلاط كهربائي قوي', description: 'للعصائر والمشروبات الباردة', category: 'أدوات منزلية', price: 1200, commission: 150, stockQuantity: 30, isAvailable: true, imageUrls: ['https://picsum.photos/seed/blender/600'], isMerchantProduct: true },
-    { id: 'product-smartwatch', name: 'ساعة ذكية رياضية', description: 'تتبع نشاطك اليومي ونبضات القلب', category: 'إلكترونيات', price: 1500, commission: 200, stockQuantity: 40, isAvailable: true, imageUrls: ['https://picsum.photos/seed/smartwatch/600'], isMerchantProduct: true },
-    { id: 'product-jeans', name: 'بنطلون جينز أزرق', description: 'تصميم عصري ومناسب لجميع الأوقات', category: 'ملابس', price: 550, commission: 60, stockQuantity: 80, isAvailable: true, imageUrls: ['https://picsum.photos/seed/jeans/600'], isMerchantProduct: false },
+    { id: 'product-headphones', name: 'سماعة رأس لاسلكية', description: 'صوت نقي وبطارية تدوم طويلاً', category: 'إلكترونيات', price: 750, commission: 80, stockQuantity: 50, isAvailable: true, imageUrls: ['https://picsum.photos/seed/headphones/600'] },
+    { id: 'product-tshirt', name: 'تيشيرت قطني أسود', description: 'تيشيرت مريح وعالي الجودة', category: 'ملابس', price: 300, commission: 40, stockQuantity: 120, isAvailable: true, imageUrls: ['https://picsum.photos/seed/tshirt/600'] },
+    { id: 'product-blender', name: 'خلاط كهربائي قوي', description: 'للعصائر والمشروبات الباردة', category: 'أدوات منزلية', price: 1200, commission: 150, stockQuantity: 30, isAvailable: true, imageUrls: ['https://picsum.photos/seed/blender/600'] },
+    { id: 'product-smartwatch', name: 'ساعة ذكية رياضية', description: 'تتبع نشاطك اليومي ونبضات القلب', category: 'إلكترونيات', price: 1500, commission: 200, stockQuantity: 40, isAvailable: true, imageUrls: ['https://picsum.photos/seed/smartwatch/600'] },
+    { id: 'product-jeans', name: 'بنطلون جينز أزرق', description: 'تصميم عصري ومناسب لجميع الأوقات', category: 'ملابس', price: 550, commission: 60, stockQuantity: 80, isAvailable: true, imageUrls: ['https://picsum.photos/seed/jeans/600'] },
 ];
 
 export function SeedDatabaseButton() {
@@ -54,44 +46,33 @@ export function SeedDatabaseButton() {
         try {
             const batch = writeBatch(firestore);
 
-            // 1. Seed Users (Dropshippers + Merchant)
-            const allUsers = [...dropshippers, merchantUser];
-            allUsers.forEach(user => {
+            // 1. Seed Users (Dropshippers)
+            dropshippers.forEach(user => {
                 const userRef = doc(firestore, 'users', user.id);
-                const role = user.id.startsWith('merchant') ? 'Merchant' : 'Dropshipper';
                 batch.set(userRef, {
                     ...user,
                     id: user.id,
-                    role: role,
+                    role: 'Dropshipper',
                     isActive: true,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                 });
             });
             
-            // 2. Seed Roles document for the merchant
-            const merchantRoleRef = doc(firestore, 'roles_merchant', merchantUser.id);
-            batch.set(merchantRoleRef, { createdAt: serverTimestamp() });
-            
-            // 3. Seed Categories
+            // 2. Seed Categories
             categories.forEach(category => {
                 const categoryRef = doc(firestore, 'productCategories', category.id);
                 batch.set(categoryRef, { ...category, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), isAvailable: true });
             });
 
-            // 4. Seed Products
-            products.forEach(p => {
-                const { isMerchantProduct, ...product } = p;
+            // 3. Seed Products
+            products.forEach(product => {
                 const productRef = doc(firestore, 'products', product.id);
                 const productData: any = { ...product, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-                if (isMerchantProduct) {
-                    productData.merchantId = merchantUser.id;
-                    productData.merchantName = `${merchantUser.firstName} ${merchantUser.lastName}`;
-                }
                 batch.set(productRef, productData);
             });
 
-            // 5. Seed Orders
+            // 4. Seed Orders
             const customerNames = ['خالد إبراهيم', 'نورة عبدالله', 'سالم القحطاني', 'مريم الغامدي', 'عمر الزهراني'];
             const cities = ['القاهرة', 'الجيزة', 'الإسكندرية'];
             const statuses: Order['status'][] = ['Delivered', 'Shipped', 'Pending', 'Confirmed', 'Returned', 'Canceled'];
@@ -125,11 +106,6 @@ export function SeedDatabaseButton() {
                     platformFee: 0,
                 };
                 
-                if(randomProduct.isMerchantProduct) {
-                    orderData.merchantId = merchantUser.id;
-                    orderData.merchantName = `${merchantUser.firstName} ${merchantUser.lastName}`;
-                }
-
                 batch.set(orderRef, orderData);
             }
             

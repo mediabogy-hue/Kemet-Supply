@@ -152,35 +152,12 @@ export function AddUserDialog() {
             'Admin': 'roles_admin',
             'OrdersManager': 'roles_orders_manager',
             'FinanceManager': 'roles_finance_manager',
-            'Merchant': 'roles_merchant',
         };
         const roleCollection = staffRolesMap[role];
         if (roleCollection) {
             const roleDocRef = doc(firestore, roleCollection, newUser.uid);
             batch.set(roleDocRef, { createdAt: serverTimestamp() });
         }
-      }
-
-      if (role === 'Merchant' && newUserUid) {
-        const productDocRef = doc(collection(firestore, "products"));
-        const sampleProduct = {
-          id: productDocRef.id,
-          name: `منتج تجريبي - ${firstName}`,
-          description: "هذا منتج تجريبي تم إنشاؤه تلقائيًا لك. يمكنك تعديله أو حذفه من صفحة 'منتجاتي'.",
-          category: "إلكترونيات",
-          price: 150,
-          commission: 25,
-          stockQuantity: 10,
-          isAvailable: true,
-          imageUrls: ["https://picsum.photos/seed/newmerchant/600"],
-          videoUrl: "",
-          purchaseUrl: "",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          merchantId: newUserUid,
-          merchantName: `${firstName} ${lastName}`.trim(),
-        };
-        batch.set(productDocRef, sampleProduct);
       }
 
       await batch.commit();
@@ -328,7 +305,6 @@ export function AddUserDialog() {
                             {isAdmin && <SelectItem value="Admin">أدمن</SelectItem>}
                             <SelectItem value="OrdersManager">مدير طلبات</SelectItem>
                             <SelectItem value="FinanceManager">مدير مالي</SelectItem>
-                            <SelectItem value="Merchant">تاجر</SelectItem>
                         </SelectContent>
                     </Select>
                   </div>

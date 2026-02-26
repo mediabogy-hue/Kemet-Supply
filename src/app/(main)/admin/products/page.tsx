@@ -96,7 +96,6 @@ export default function AdminProductsPage() {
                                     <CardHeader className="flex-grow">
                                         <CardTitle className="text-lg leading-tight h-12">{product.name}</CardTitle>
                                         <CardDescription>{product.category}</CardDescription>
-                                        {product.merchantName && <CardDescription className="text-xs pt-1">التاجر: {product.merchantName}</CardDescription>}
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <div className="flex justify-between items-center font-semibold">

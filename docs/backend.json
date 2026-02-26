@@ -22,8 +22,7 @@
             "Dropshipper",
             "Admin",
             "OrdersManager",
-            "FinanceManager",
-            "Merchant"
+            "FinanceManager"
           ]
         },
         "firstName": {
@@ -92,13 +91,6 @@
         "properties": {}
       },
       "description": "A document in this collection grants a user the Finance Manager role."
-    },
-    "/roles_merchant/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "description": "A document in this collection grants a user the Merchant role."
     }
   }
 }

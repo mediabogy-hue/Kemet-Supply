@@ -287,10 +287,6 @@ export default function PublicProductPage() {
             createdAt: serverTimestamp() as any,
             updatedAt: serverTimestamp() as any,
         };
-
-        if (product.merchantInfo) {
-          orderData.merchantInfo = product.merchantInfo;
-        }
     
         if (data.customerPaymentMethod !== 'Cash on Delivery') {
             orderData.customerPaymentStatus = 'Pending';

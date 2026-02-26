@@ -93,13 +93,7 @@ export default function NewOrderPage() {
       status: "Pending",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      merchantId: selectedProduct.merchantId || null,
-      merchantName: selectedProduct.merchantName || null,
     };
-    
-    if (selectedProduct.merchantInfo) {
-      orderData.merchantInfo = selectedProduct.merchantInfo;
-    }
 
     try {
         await setDoc(orderRef, orderData);

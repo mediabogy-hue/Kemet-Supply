@@ -50,11 +50,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
   const [purchaseUrl, setPurchaseUrl] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
 
-  // Merchant state
-  const [merchantName, setMerchantName] = useState("");
-  const [merchantPhone, setMerchantPhone] = useState("");
-  const [merchantWhatsapp, setMerchantWhatsapp] = useState("");
-  
   // Control state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,9 +65,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         setVideoUrl(product.videoUrl || "");
         setPurchaseUrl(product.purchaseUrl || "");
         setIsAvailable(product.isAvailable);
-        setMerchantName(product.merchantInfo?.name || "");
-        setMerchantPhone(product.merchantInfo?.phone || "");
-        setMerchantWhatsapp(product.merchantInfo?.whatsapp || "");
     }
   }, [product]);
 
@@ -137,17 +129,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
           videoUrl: videoUrl,
           updatedAt: serverTimestamp(),
         };
-
-        if (merchantName && merchantPhone) {
-            updatedData.merchantInfo = {
-                name: merchantName,
-                phone: merchantPhone,
-                whatsapp: merchantWhatsapp || merchantPhone,
-            };
-        } else {
-            updatedData.merchantInfo = null; // Or delete(field) if you want to remove it
-        }
-
 
         batch.update(productDocRef, updatedData);
         
@@ -247,32 +228,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
                 <span>{isAvailable ? "نشط" : "غير نشط"}</span>
             </div>
           </div>
-            <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="merchant-info">
-                    <AccordionTrigger>
-                        <div className="flex items-center gap-2">
-                            <Briefcase/>
-                            <span>معلومات التاجر الخارجي (اختياري)</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-4 pt-2">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit-merchant-name" className="text-right">اسم التاجر</Label>
-                                <Input id="edit-merchant-name" value={merchantName} onChange={(e) => setMerchantName(e.target.value)} className="col-span-3" />
-                            </div>
-                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit-merchant-phone" className="text-right">هاتف التاجر</Label>
-                                <Input id="edit-merchant-phone" type="tel" value={merchantPhone} onChange={(e) => setMerchantPhone(e.target.value)} className="col-span-3" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit-merchant-whatsapp" className="text-right">واتساب التاجر</Label>
-                                <Input id="edit-merchant-whatsapp" type="tel" value={merchantWhatsapp} onChange={(e) => setMerchantWhatsapp(e.target.value)} className="col-span-3" />
-                            </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
         </div>
         <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>

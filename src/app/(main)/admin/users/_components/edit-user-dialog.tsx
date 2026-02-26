@@ -91,7 +91,6 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
             'Admin': 'roles_admin',
             'OrdersManager': 'roles_orders_manager',
             'FinanceManager': 'roles_finance_manager',
-            'Merchant': 'roles_merchant',
         };
 
         const oldRoleCollection = staffRolesMap[oldRole];
@@ -197,7 +196,6 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
                     <SelectItem value="Admin">أدمن</SelectItem>
                     <SelectItem value="OrdersManager">مدير طلبات</SelectItem>
                     <SelectItem value="FinanceManager">مدير مالي</SelectItem>
-                    <SelectItem value="Merchant">تاجر</SelectItem>
                 </SelectContent>
             </Select>
           </div>

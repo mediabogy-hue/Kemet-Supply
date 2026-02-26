@@ -4,7 +4,7 @@ import type { Timestamp } from "firebase/firestore";
 export interface UserProfile {
   id: string;
   email: string;
-  role: 'Dropshipper' | 'Admin' | 'OrdersManager' | 'FinanceManager' | 'Merchant';
+  role: 'Dropshipper' | 'Admin' | 'OrdersManager' | 'FinanceManager';
   firstName: string;
   lastName: string;
   phone?: string;
@@ -53,14 +53,6 @@ export interface Product {
   purchaseUrl?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  // For products added by merchants/product managers
-  merchantId?: string;
-  merchantName?: string;
-  merchantInfo?: {
-    name: string;
-    phone: string;
-    whatsapp: string;
-  } | null;
 }
 
 export interface ProductCategory {
@@ -104,14 +96,6 @@ export interface Order {
   quantity: number;
   unitPrice: number;
   unitCommission: number;
-  // Denormalized merchant info from product
-  merchantId?: string | null;
-  merchantName?: string | null;
-  merchantInfo?: {
-    name: string;
-    phone: string;
-    whatsapp: string;
-  } | null;
   platformFee: number;
   adminNotes?: string;
   // Shipment link

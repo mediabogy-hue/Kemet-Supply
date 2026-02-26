@@ -22,12 +22,11 @@ import { DeleteUserAlert } from './_components/delete-user-alert';
 import { SetTargetDialog } from './_components/set-target-dialog';
 import { GrantBonusDialog } from './_components/grant-bonus-dialog';
 
-const roleText: Record<UserProfile['role'], string> = {
+const roleText: Partial<Record<UserProfile['role'], string>> = {
   'Admin': 'أدمن',
   'OrdersManager': 'مدير طلبات',
   'FinanceManager': 'مدير مالي',
   'Dropshipper': 'مسوق',
-  'Merchant': 'تاجر',
 };
 
 const levelText: Record<NonNullable<UserProfile['level']>, string> = {

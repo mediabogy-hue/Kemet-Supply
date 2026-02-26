@@ -23,10 +23,6 @@ service cloud.firestore {
     function isFinanceManager() {
       return exists(/databases/$(database)/documents/roles_finance_manager/$(request.auth.uid));
     }
-    
-    function isMerchant() {
-      return exists(/databases/$(database)/documents/roles_merchant/$(request.auth.uid));
-    }
 
     function isStaff() {
       return isAdmin() || isOrdersManager() || isFinanceManager();
@@ -67,10 +63,6 @@ service cloud.firestore {
         allow get: if isOwner(userId);
         allow write, list, delete: if isAdmin();
     }
-    match /roles_merchant/{userId} {
-        allow get: if isOwner(userId);
-        allow write, list, delete: if isAdmin();
-    }
     
     // Public Settings
     match /publicSettings/{docId} {
@@ -81,8 +73,7 @@ service cloud.firestore {
     // Products and Categories
     match /products/{productId} {
         allow read: if isSignedIn(); // Allow any signed-in user to read products.
-        allow create: if (isMerchant() && request.resource.data.merchantId == request.auth.uid) || isAdmin();
-        allow update, delete: if (isMerchant() && resource.data.merchantId == request.auth.uid) || isAdmin();
+        allow create, update, delete: if isAdmin();
     }
     match /productCategories/{categoryId} {
         allow read: if isSignedIn();
@@ -98,12 +89,7 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
       allow read: if isSignedIn(); // Allow reading, client-side queries will filter what is visible. This unblocks list calls.
-      allow update: if isOrdersManager() || 
-                    (isMerchant() && 
-                     resource.data.merchantId == request.auth.uid &&
-                     resource.data.status == 'Pending' &&
-                     request.resource.data.status == 'Confirmed' &&
-                     request.resource.data.keys().hasAll(['status', 'updatedAt', 'confirmedAt']));
+      allow update: if isOrdersManager();
       allow delete: if isAdmin();
     }
 
@@ -131,12 +117,8 @@ service cloud.firestore {
 
     // Stock Ledger
     match /stockLedger/{ledgerId} {
-        function isProductOwner(productId) {
-            let product = get(/databases/$(database)/documents/products/$(productId)).data;
-            return product.keys().has('merchantId') && product.merchantId == request.auth.uid;
-        }
         allow read, list: if isAdmin();
-        allow create: if isAdmin() || (isMerchant() && isProductOwner(request.resource.data.productId));
+        allow create: if isAdmin();
         allow update, delete: if false;
     }
 
