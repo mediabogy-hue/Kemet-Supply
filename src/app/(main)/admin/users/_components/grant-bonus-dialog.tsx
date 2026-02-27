@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, errorEmitter, FirestorePermissionError, useSession } from "@/firebase";
+import { useFirestore } from "@/firebase";
+import { useSession } from "@/auth/SessionProvider";
 import { doc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import type { UserProfile, Bonus } from "@/lib/types";
 

@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useSession } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useSession } from '@/auth/SessionProvider';
 import { collection, query, orderBy, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
