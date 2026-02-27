@@ -64,8 +64,12 @@ const scrapeProductFlow = ai.defineFlow(
   },
   async ({ htmlContent, categoryNames, productUrl }) => {
     
-    // Advanced sanitization to remove noise and focus on content
-    let cleanedHtml = htmlContent
+    // 1. Extract only the body content to reduce noise and context size.
+    const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyContent = bodyMatch ? bodyMatch[1] : htmlContent;
+
+    // 2. Advanced sanitization to remove irrelevant tags and reduce whitespace.
+    let cleanedHtml = bodyContent
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
         .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
         .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
@@ -75,13 +79,13 @@ const scrapeProductFlow = ai.defineFlow(
         .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, ' ')
         .replace(/<!--[\s\S]*?-->/g, ' ');
 
-    // Reduce whitespace and then truncate
+    // 3. Reduce whitespace and then truncate to fit within the model's context window.
     const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 200000);
 
     const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
 
     if (!output) {
-      throw new Error('Failed to parse product data from the AI response.');
+      throw new Error('فشل تحليل بيانات المنتج من استجابة الذكاء الاصطناعي. قد يكون المحتوى غير متوافق أو أن النموذج لم يتمكن من إرجاع بيانات صالحة.');
     }
     return output;
   }
@@ -129,10 +133,10 @@ export async function scrapeProductFromUrl(productUrl: string, categoryNames: st
     console.error("Error in scrapeProductFromUrl:", error);
     
     if (error.name === 'AbortError') {
-         throw new Error('Could not retrieve data from the URL: The request timed out.');
+         throw new Error('لم نتمكن من جلب البيانات من الرابط: انتهت مهلة الطلب.');
     }
 
     // Re-throw a more user-friendly error
-    throw new Error(`Could not scrape data. The server may be blocking requests or the page is invalid. Details: ${error.message}`);
+    throw new Error(`فشل جلب البيانات. قد يقوم الخادم بحظر الطلبات أو أن الصفحة غير صالحة. التفاصيل: ${error.message}`);
   }
 }
