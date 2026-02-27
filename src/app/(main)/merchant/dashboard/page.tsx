@@ -32,7 +32,6 @@ export default function MerchantDashboardPage() {
       return query(
           collection(firestore, "orders"),
           where("merchantId", "==", user.uid),
-          orderBy("createdAt", "desc"),
           limit(20) // Limit for dashboard performance
       );
   }, [firestore, user]);

@@ -22,8 +22,7 @@ export default function MerchantOrdersPage() {
     const ordersQuery = useMemoFirebase(
         () => (firestore && user) ? query(
             collection(firestore, "orders"),
-            where("merchantId", "==", user.uid),
-            orderBy("createdAt", "desc")
+            where("merchantId", "==", user.uid)
         ) : null,
         [firestore, user]
     );

@@ -38,8 +38,7 @@ export default function MerchantProductsPage() {
     const productsQuery = useMemoFirebase(
         () => (firestore && user) ? query(
             collection(firestore, "products"), 
-            where("merchantId", "==", user.uid),
-            orderBy("createdAt", "desc")
+            where("merchantId", "==", user.uid)
         ) : null,
         [firestore, user]
     );

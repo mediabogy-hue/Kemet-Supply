@@ -24,7 +24,7 @@ export default function MerchantInventoryPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     const productsQuery = useMemoFirebase(
-        () => (firestore && user ? query(collection(firestore, 'products'), where('merchantId', '==', user.uid), orderBy('name', 'asc')) : null),
+        () => (firestore && user ? query(collection(firestore, 'products'), where('merchantId', '==', user.uid)) : null),
         [firestore, user]
     );
     const { data: products, isLoading: productsLoading, lastUpdated } = useCollection<Product>(productsQuery);
