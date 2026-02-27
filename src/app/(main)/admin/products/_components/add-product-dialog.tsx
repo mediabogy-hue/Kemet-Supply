@@ -173,7 +173,7 @@ export function AddProductDialog() {
                  toast({
                     variant: "destructive",
                     title: "فئة غير موجودة",
-                    description: `الفئة "${finalCategoryName}" غير موجودة. الرجاء اختيار فئة من القائمة أو اطلب من الأدمن إضافتها.`,
+                    description: `الفئة "${finalCategoryName}" غير موجودة. لا يمكنك إنشاء فئات جديدة.`,
                 });
                 setIsSubmitting(false);
                 return;

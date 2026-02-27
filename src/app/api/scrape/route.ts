@@ -53,7 +53,7 @@ const scrapePrompt = ai.definePrompt({
     config: {
         temperature: 0.0,
     },
-    model: 'gemini-1.5-pro-latest'
+    model: 'gemini-1.5-flash-latest' // Switched to a more stable/faster model
 });
 
 const scrapeProductFlow = ai.defineFlow(
@@ -77,7 +77,7 @@ const scrapeProductFlow = ai.defineFlow(
         .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, ' ')
         .replace(/<!--[\s\S]*?-->/g, ' ');
 
-    const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 200000);
+    const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 150000); // Reduced size slightly for safety
 
     const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
 
