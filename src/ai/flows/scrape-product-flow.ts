@@ -9,16 +9,6 @@ import { z } from 'zod';
 import { genkit } from '@genkit-ai/core';
 import { googleAI } from '@genkit-ai/google-genai';
 
-const ai = genkit({
-  plugins: [googleAI()],
-});
-
-
-const ScrapeProductInputSchema = z.object({
-  htmlContent: z.string().describe("The full HTML content of the product page."),
-  categoryNames: z.array(z.string()).describe("A list of available category names to choose from."),
-  productUrl: z.string().describe("The URL of the product page for resolving relative image paths."),
-});
 
 const ScrapedProductDataSchema = z.object({
   name: z.string().describe('The name of the product.'),
@@ -30,12 +20,26 @@ const ScrapedProductDataSchema = z.object({
 
 export type ScrapedProductData = z.infer<typeof ScrapedProductDataSchema>;
 
-// Define the prompt and flow at the module level for efficiency.
-const scrapePrompt = ai.definePrompt({
-    name: 'scrapeProductPrompt',
-    input: { schema: ScrapeProductInputSchema },
-    output: { schema: ScrapedProductDataSchema },
-    prompt: `You are an expert web scraper and product categorizer. Your task is to extract product information from the provided HTML content and classify it into the most relevant category.
+const ScrapeProductInputSchema = z.object({
+  htmlContent: z.string().describe("The full HTML content of the product page."),
+  categoryNames: z.array(z.string()).describe("A list of available category names to choose from."),
+  productUrl: z.string().describe("The URL of the product page for resolving relative image paths."),
+});
+
+
+// This is the server action that the client will call.
+export async function scrapeProductFromUrl(productUrl: string, categoryNames: string[]): Promise<ScrapedProductData> {
+  
+  // Initialize Genkit and define flows INSIDE the function body to prevent bundling issues.
+  const ai = genkit({
+    plugins: [googleAI()],
+  });
+
+  const scrapePrompt = ai.definePrompt({
+      name: 'scrapeProductPrompt',
+      input: { schema: ScrapeProductInputSchema },
+      output: { schema: ScrapedProductDataSchema },
+      prompt: `You are an expert web scraper and product categorizer. Your task is to extract product information from the provided HTML content and classify it into the most relevant category.
     The HTML has been pre-processed to remove scripts, styles, and other irrelevant tags.
     Focus on the main content area to find the product details.
 
@@ -53,56 +57,53 @@ const scrapePrompt = ai.definePrompt({
     \`\`\`
 
     IMPORTANT: Return the result as a valid JSON object. If you cannot find a piece of information, you MUST return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list. Do not omit any fields. Your response MUST be a single JSON object and nothing else.`,
-    config: {
-        temperature: 0.0,
+      config: {
+          temperature: 0.0,
+      },
+      model: 'gemini-1.5-pro-latest'
+  });
+
+  const scrapeProductFlow = ai.defineFlow(
+    {
+      name: 'scrapeProductFlow',
+      inputSchema: ScrapeProductInputSchema,
+      outputSchema: ScrapedProductDataSchema,
     },
-    model: 'gemini-1.5-pro-latest'
-});
+    async ({ htmlContent, categoryNames, productUrl }) => {
+      
+      // 1. Extract only the body content to reduce noise and context size.
+      const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      const bodyContent = bodyMatch ? bodyMatch[1] : htmlContent;
 
-const scrapeProductFlow = ai.defineFlow(
-  {
-    name: 'scrapeProductFlow',
-    inputSchema: ScrapeProductInputSchema,
-    outputSchema: ScrapedProductDataSchema,
-  },
-  async ({ htmlContent, categoryNames, productUrl }) => {
-    
-    // 1. Extract only the body content to reduce noise and context size.
-    const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-    const bodyContent = bodyMatch ? bodyMatch[1] : htmlContent;
+      // 2. Advanced sanitization to remove irrelevant tags and reduce whitespace.
+      let cleanedHtml = bodyContent
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+          .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
+          .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
+          .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
+          .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
+          .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, ' ')
+          .replace(/<!--[\s\S]*?-->/g, ' ');
 
-    // 2. Advanced sanitization to remove irrelevant tags and reduce whitespace.
-    let cleanedHtml = bodyContent
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-        .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
-        .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
-        .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
-        .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
-        .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, ' ')
-        .replace(/<!--[\s\S]*?-->/g, ' ');
+      // 3. Reduce whitespace and then truncate to fit within the model's context window.
+      const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 200000);
 
-    // 3. Reduce whitespace and then truncate to fit within the model's context window.
-    const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 200000);
+      const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
 
-    const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
+      if (!output) {
+        throw new Error('فشل تحليل بيانات المنتج من استجابة الذكاء الاصطناعي. قد يكون المحتوى غير متوافق أو أن النموذج لم يتمكن من إرجاع بيانات صالحة.');
+      }
+      
+      // Loosen validation for image URLs
+      const validatedOutput = ScrapedProductDataSchema.omit({ imageUrls: true }).extend({
+          imageUrls: z.array(z.string())
+      }).parse(output);
 
-    if (!output) {
-      throw new Error('فشل تحليل بيانات المنتج من استجابة الذكاء الاصطناعي. قد يكون المحتوى غير متوافق أو أن النموذج لم يتمكن من إرجاع بيانات صالحة.');
+      return validatedOutput;
     }
-    
-    // Loosen validation for image URLs
-    const validatedOutput = ScrapedProductDataSchema.omit({ imageUrls: true }).extend({
-        imageUrls: z.array(z.string())
-    }).parse(output);
-
-    return validatedOutput;
-  }
-);
-
-
-// This is the server action that the client will call.
-export async function scrapeProductFromUrl(productUrl: string, categoryNames: string[]): Promise<ScrapedProductData> {
+  );
+  
   if (!productUrl) {
     throw new Error('Product URL cannot be empty.');
   }
