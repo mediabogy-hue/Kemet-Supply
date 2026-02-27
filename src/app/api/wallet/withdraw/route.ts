@@ -1,10 +1,15 @@
-
+export async function POST(req: Request) {
+  const admin = await import("firebase-admin");
+  const FieldValue = admin.firestore.FieldValue;
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { getAdminApp, getAdminDb } from "@/firebase/server-init";
-import { FieldValue } from "firebase-admin/firestore";
+const admin = await import("firebase-admin");
+const FieldValue = admin.firestore.FieldValue;
+
 import type { UserProfile } from "@/lib/types";
 
 export async function POST(req: Request) {
