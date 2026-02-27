@@ -6,8 +6,18 @@
  * - scrapeProductFromUrl - A server action that fetches a URL and uses an AI flow to extract product data.
  * - ScrapedProductData - The type of the data returned by the scraping flow.
  */
-import { ai } from '@/ai/genkit';
+import { genkit } from '@genkit-ai/core';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
+
+const ai = genkit({
+    plugins: [
+        googleAI({
+            apiVersion: "v1beta"
+        }),
+    ],
+});
+
 
 const ScrapeProductInputSchema = z.object({
   htmlContent: z.string().describe("The full HTML content of the product page."),
