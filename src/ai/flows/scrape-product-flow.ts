@@ -30,6 +30,7 @@ const scrapePrompt = ai.definePrompt({
     name: 'scrapeProductPrompt',
     input: { schema: ScrapeProductInputSchema },
     output: { schema: ScrapedProductDataSchema },
+    model: 'gemini-1.5-pro-latest',
     prompt: `You are an expert web scraper and product categorizer. Your task is to extract product information from the provided HTML content and classify it into the most relevant category.
     The HTML has been pre-processed to remove scripts, styles, and other irrelevant tags.
     Focus on the main content area to find the product details.

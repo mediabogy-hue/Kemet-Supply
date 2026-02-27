@@ -1,6 +1,6 @@
 'use server';
 
-import { genkit } from '@genkit-ai/core';
+import genkit from '@genkit-ai/core';
 import { googleAI } from '@genkit-ai/google-genai';
 
 /**
@@ -8,5 +8,9 @@ import { googleAI } from '@genkit-ai/google-genai';
  * This ensures that Genkit is initialized only once.
  */
 export const ai = genkit({
-  plugins: [googleAI()],
+  plugins: [
+    googleAI({
+      apiVersion: 'v1beta',
+    }),
+  ],
 });
