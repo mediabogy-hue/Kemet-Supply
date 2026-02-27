@@ -1,70 +1,56 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { genkit } from '@genkit-ai/core';
+import { googleAI } from '@genkit-ai/google-genai';
 
-// This function contains the entire Genkit logic and is only called on the server.
-// It dynamically imports Genkit to prevent Next.js from bundling it on the client.
-async function runScrapeFlow(htmlContent: string, categoryNames: string[], productUrl: string) {
-    const { genkit } = await import('@genkit-ai/core');
-    const { googleAI } = await import('@genkit-ai/google-genai');
-    
-    // Initialize Genkit within the server-side execution context.
-    const ai = genkit({
-        plugins: [googleAI()],
-    });
+// This entire file only runs on the server.
+// Initialize Genkit ONCE at the module level.
+const ai = genkit({
+    plugins: [googleAI()],
+});
 
-    // Define the precise schemas for input and output.
-    const ScrapedProductDataSchema = z.object({
-      name: z.string().describe('The name of the product.'),
-      description: z.string().describe('The detailed description of the product.'),
-      price: z.number().describe('The price of the product. Extract only the number, without currency symbols or text.'),
-      imageUrls: z.array(z.string()).describe('A list of all absolute URLs for the product images.'),
-      category: z.string().describe('The most relevant category for the product from the provided list.'),
-    });
+// Define the precise schemas for input and output.
+const ScrapedProductDataSchema = z.object({
+  name: z.string().describe('The name of the product.'),
+  description: z.string().describe('The detailed description of the product.'),
+  price: z.number().describe('The price of the product. Extract only the number, without currency symbols or text.'),
+  imageUrls: z.array(z.string()).describe('A list of all absolute URLs for the product images.'),
+  category: z.string().describe('The most relevant category for the product from the provided list.'),
+});
 
-    const ScrapeProductInputSchema = z.object({
-      htmlContent: z.string().describe("The full HTML content of the product page."),
-      categoryNames: z.array(z.string()).describe("A list of available category names to choose from."),
-      productUrl: z.string().describe("The URL of the product page for resolving relative image paths."),
-    });
-    
-    // Define the prompt with clear instructions for the AI model.
-    const scrapePrompt = ai.definePrompt({
-        name: 'scrapeProductPrompt_v5', // Versioning the prompt
-        input: { schema: ScrapeProductInputSchema },
-        output: { schema: ScrapedProductDataSchema },
-        prompt: `You are an expert web scraper for e-commerce sites like Amazon, Noon, and Jumia. Your task is to extract product information from the provided HTML content and classify it.
-          The HTML has been pre-processed to remove scripts, styles, and other irrelevant tags, but it's still complex. Focus on the main content area.
+const ScrapeProductInputSchema = z.object({
+  htmlContent: z.string().describe("The full HTML content of the product page."),
+  categoryNames: z.array(z.string()).describe("A list of available category names to choose from."),
+  productUrl: z.string().describe("The URL of the product page for resolving relative image paths."),
+});
 
-          Please extract the following details precisely:
-          1.  **Product Name**: Find the main heading or title of the product. This is often inside an <h1> tag, but could be in another prominent element.
-          2.  **Product Description**: Find the most detailed product description. It might be in multiple paragraphs, bullet points (ul/li), or a dedicated description section. Combine them into one coherent string.
-          3.  **Price**: Find the product's price. Extract only the numerical value, removing any currency symbols (like "EGP", "ج.م", "$"), text, or commas. For example, if the price is "1,250.50 EGP", extract 1250.50.
-          4.  **Image URLs**: Find all *main* product images. Scrape the 'src' attribute. If you find relative URLs (e.g., /images/product.jpg), you MUST convert them to absolute URLs using the provided product URL as the base: {{{productUrl}}}. Only include full, valid URLs. Do not include tiny thumbnails or logos unless they are the only images available.
-          5.  **Category**: Based on the product's name and description, choose the *single most appropriate* category from the following list. You must return one of these exact strings.
-              Available Categories: {{#each categoryNames}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+// Define the prompt with clear instructions for the AI model.
+const scrapePrompt = ai.definePrompt({
+    name: 'scrapeProductPrompt_v5', // Versioning the prompt
+    input: { schema: ScrapeProductInputSchema },
+    output: { schema: ScrapedProductDataSchema },
+    prompt: `You are an expert web scraper for e-commerce sites like Amazon, Noon, and Jumia. Your task is to extract product information from the provided HTML content and classify it.
+      The HTML has been pre-processed to remove scripts, styles, and other irrelevant tags, but it's still complex. Focus on the main content area.
 
-          HTML Content:
-          \`\`\`html
-          {{{htmlContent}}}
-          \`\`\`
+      Please extract the following details precisely:
+      1.  **Product Name**: Find the main heading or title of the product. This is often inside an <h1> tag, but could be in another prominent element.
+      2.  **Product Description**: Find the most detailed product description. It might be in multiple paragraphs, bullet points (ul/li), or a dedicated description section. Combine them into one coherent string.
+      3.  **Price**: Find the product's price. Extract only the numerical value, removing any currency symbols (like "EGP", "ج.م", "$"), text, or commas. For example, if the price is "1,250.50 EGP", extract 1250.50.
+      4.  **Image URLs**: Find all *main* product images. Scrape the 'src' attribute. If you find relative URLs (e.g., /images/product.jpg), you MUST convert them to absolute URLs using the provided product URL as the base: {{{productUrl}}}. Only include full, valid URLs. Do not include tiny thumbnails or logos unless they are the only images available.
+      5.  **Category**: Based on the product's name and description, choose the *single most appropriate* category from the following list. You must return one of these exact strings.
+          Available Categories: {{#each categoryNames}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 
-          IMPORTANT: Return the result as a valid JSON object. If you cannot find a piece of information, you MUST return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list. Do not omit any fields. Your response MUST be a single JSON object and nothing else.`,
-        config: {
-            temperature: 0.1, // Lower temperature for more predictable, structured output
-        },
-        model: 'gemini-1.5-flash-latest' // Using a modern, fast model
-    });
+      HTML Content:
+      \`\`\`html
+      {{{htmlContent}}}
+      \`\`\`
 
-    // Execute the prompt.
-    const { output } = await scrapePrompt({ htmlContent, categoryNames, productUrl });
-
-    if (!output) {
-      throw new Error('AI response failed to parse product data.');
-    }
-
-    // Validate the output against the schema before returning.
-    return ScrapedProductDataSchema.parse(output);
-}
+      IMPORTANT: Return the result as a valid JSON object. If you cannot find a piece of information, you MUST return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list. Do not omit any fields. Your response MUST be a single JSON object and nothing else.`,
+    config: {
+        temperature: 0.1, // Lower temperature for more predictable, structured output
+    },
+    model: 'gemini-1.5-flash-latest'
+});
 
 // Ensure this route runs on the Node.js runtime.
 export const runtime = "nodejs";
@@ -114,8 +100,15 @@ export async function POST(req: Request) {
         // Limit size to prevent overly large requests to the AI model.
         const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 150000); 
         
-        // Run the isolated Genkit flow.
-        const validatedOutput = await runScrapeFlow(simplifiedHtml, categoryNames, productUrl);
+        // Call the pre-defined Genkit prompt.
+        const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
+
+        if (!output) {
+          throw new Error('AI response failed to parse product data.');
+        }
+
+        // Validate the output against the schema before returning.
+        const validatedOutput = ScrapedProductDataSchema.parse(output);
 
         return NextResponse.json({ data: validatedOutput });
 
