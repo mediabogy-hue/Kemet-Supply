@@ -22,9 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
-import type { Product, ProductCategory } from "@/lib/types";
+import type { Product, ProductCategory, ScrapedProductData } from "@/lib/types";
 import { Loader2, PlusCircle, Briefcase } from "lucide-react";
-import { scrapeProductFromUrl } from "@/ai/flows/scrape-product-flow";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
@@ -83,7 +82,19 @@ export function AddProductDialog() {
 
     setIsImporting(true);
     try {
-        const data = await scrapeProductFromUrl(importUrl, categoryNames);
+        const response = await fetch('/api/scrape', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productUrl: importUrl, categoryNames }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'فشل استيراد البيانات من الخادم.');
+        }
+
+        const data: ScrapedProductData = result.data;
         
         if (data.name) setName(data.name);
         if (data.description) setDescription(data.description);

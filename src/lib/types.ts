@@ -243,3 +243,11 @@ export interface AutomationSettings {
     shippingUpdates: boolean;
   };
 }
+
+export interface ScrapedProductData {
+  name: string;
+  description: string;
+  price: number;
+  imageUrls: string[];
+  category: string;
+}

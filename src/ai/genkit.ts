@@ -1,7 +1,2 @@
-import 'server-only';
-import { genkit } from '@genkit-ai/core';
-import { googleAI } from '@genkit-ai/google-genai';
-
-export const ai = genkit({
-  plugins: [googleAI()],
-});
+// This file is no longer needed and has been emptied to prevent import conflicts.
+// Genkit initialization is now self-contained within the flow that uses it.
