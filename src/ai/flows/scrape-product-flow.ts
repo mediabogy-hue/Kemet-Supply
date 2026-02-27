@@ -20,7 +20,7 @@ const ScrapedProductDataSchema = z.object({
   name: z.string().describe('The name of the product.'),
   description: z.string().describe('The detailed description of the product.'),
   price: z.number().describe('The price of the product. Extract only the number, without currency symbols or text.'),
-  imageUrls: z.array(z.string().url()).describe('A list of all absolute URLs for the product images.'),
+  imageUrls: z.array(z.string()).describe('A list of all absolute URLs for the product images.'),
   category: z.string().describe('The most relevant category for the product from the provided list.'),
 });
 
@@ -48,7 +48,7 @@ const scrapePrompt = ai.definePrompt({
     {{{htmlContent}}}
     \`\`\`
 
-    Return the result as a valid JSON object. If you cannot find a piece of information, return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list.`,
+    IMPORTANT: Return the result as a valid JSON object. If you cannot find a piece of information, you MUST return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list. Do not omit any fields. Your response MUST be a single JSON object and nothing else.`,
     config: {
         temperature: 0.0,
     }
