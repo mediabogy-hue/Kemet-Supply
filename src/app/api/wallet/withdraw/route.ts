@@ -1,16 +1,15 @@
-export async function POST(req: Request) {
-  const admin = await import("firebase-admin");
-  const FieldValue = admin.firestore.FieldValue;
+
+import { NextResponse } from "next/server";
+import admin from "firebase-admin";
+import { getAdminApp, getAdminDb } from "@/firebase/server-init";
+import type { UserProfile } from "@/lib/types";
+
+// Next.js route segment config
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { NextResponse } from "next/server";
-import { getAdminApp, getAdminDb } from "@/firebase/server-init";
-const admin = await import("firebase-admin");
 const FieldValue = admin.firestore.FieldValue;
-
-import type { UserProfile } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
@@ -36,14 +35,16 @@ export async function POST(req: Request) {
     const decodedToken = await adminApp.auth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
     
-    const userDoc = await getAdminDb().collection('users').doc(userId).get();
+    const adminDb = getAdminDb();
+    
+    const userDoc = await adminDb.collection('users').doc(userId).get();
     if (!userDoc.exists) {
         return NextResponse.json({ error: "User profile not found" }, { status: 404 });
     }
     const userData = userDoc.data()! as UserProfile;
     const userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || 'Unknown User';
     
-    const walletRef = getAdminDb().doc(`wallets/${userId}`);
+    const walletRef = adminDb.doc(`wallets/${userId}`);
     const walletDoc = await walletRef.get();
     const availableBalance = walletDoc.exists() ? walletDoc.data()?.availableBalance || 0 : 0;
     
@@ -51,7 +52,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Insufficient funds." }, { status: 400 });
     }
 
-    const adminDb = getAdminDb();
     const batch = adminDb.batch();
 
     // Generate one ID to be used for both documents
