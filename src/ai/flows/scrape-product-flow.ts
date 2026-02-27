@@ -6,7 +6,7 @@
  * - scrapeProductFromUrl - A server action that fetches a URL and uses an AI flow to extract product data.
  * - ScrapedProductData - The type of the data returned by the scraping flow.
  */
-import { ai } from '@/ai';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ScrapeProductInputSchema = z.object({
@@ -30,7 +30,6 @@ const scrapePrompt = ai.definePrompt({
     name: 'scrapeProductPrompt',
     input: { schema: ScrapeProductInputSchema },
     output: { schema: ScrapedProductDataSchema },
-    model: 'gemini-1.5-pro-latest',
     prompt: `You are an expert web scraper and product categorizer. Your task is to extract product information from the provided HTML content and classify it into the most relevant category.
     The HTML has been pre-processed to remove scripts, styles, and other irrelevant tags.
     Focus on the main content area to find the product details.
@@ -51,7 +50,8 @@ const scrapePrompt = ai.definePrompt({
     IMPORTANT: Return the result as a valid JSON object. If you cannot find a piece of information, you MUST return an empty string for string fields, 0 for the price, and an empty array for image URLs. For category, if you cannot determine a suitable one, you must still choose the most likely category from the provided list. Do not omit any fields. Your response MUST be a single JSON object and nothing else.`,
     config: {
         temperature: 0.0,
-    }
+    },
+    model: 'gemini-1.5-pro-latest'
 });
 
 
@@ -87,7 +87,13 @@ const scrapeProductFlow = ai.defineFlow(
     if (!output) {
       throw new Error('فشل تحليل بيانات المنتج من استجابة الذكاء الاصطناعي. قد يكون المحتوى غير متوافق أو أن النموذج لم يتمكن من إرجاع بيانات صالحة.');
     }
-    return output;
+    
+    // Loosen validation for image URLs
+    const validatedOutput = ScrapedProductDataSchema.omit({ imageUrls: true }).extend({
+        imageUrls: z.array(z.string())
+    }).parse(output);
+
+    return validatedOutput;
   }
 );
 
@@ -134,6 +140,10 @@ export async function scrapeProductFromUrl(productUrl: string, categoryNames: st
     
     if (error.name === 'AbortError') {
          throw new Error('لم نتمكن من جلب البيانات من الرابط: انتهت مهلة الطلب.');
+    }
+    
+    if (error instanceof z.ZodError) {
+        throw new Error(`فشل التحقق من صحة البيانات المستلمة من الذكاء الاصطناعي: ${error.errors.map(e => e.message).join(', ')}`);
     }
 
     // Re-throw a more user-friendly error
