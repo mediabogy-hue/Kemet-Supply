@@ -13,6 +13,7 @@ import { z } from 'zod';
 const ScrapeProductInputSchema = z.object({
   htmlContent: z.string().describe("The full HTML content of the product page."),
   categoryNames: z.array(z.string()).describe("A list of available category names to choose from."),
+  productUrl: z.string().url().describe("The URL of the product page for resolving relative image paths."),
 });
 
 const ScrapedProductDataSchema = z.object({
@@ -37,8 +38,8 @@ const scrapePrompt = ai.definePrompt({
     Please extract the following details precisely:
     1.  **Product Name**: Find the main heading or title of the product. This is often inside an <h1> tag, but could be in another prominent element.
     2.  **Product Description**: Find the most detailed product description available. It might be in multiple paragraphs or a dedicated description section. Combine them into one string.
-    3.  **Price**: Find the product's price. Extract only the numerical value, removing any currency symbols, text, or commas. Handle different decimal formats.
-    4.  **Image URLs**: Find all *main* product images. Ensure the URLs are absolute. If you find relative URLs (e.g., /images/product.jpg), you must not include them. Only include full, valid URLs. Do not include thumbnails or logos unless they are the only images available.
+    3.  **Price**: Find the product's price. Extract only the numerical value, removing any currency symbols (like "EGP" or "ج.م"), text, or commas. For example, if the price is "1,250.50 EGP", extract 1250.50.
+    4.  **Image URLs**: Find all *main* product images. If you find relative URLs (e.g., /images/product.jpg), you MUST convert them to absolute URLs using the provided product URL as the base: {{{productUrl}}}. Only include full, valid URLs. Do not include thumbnails or logos unless they are the only images available.
     5.  **Category**: Based on the product's name and description, choose the *single most appropriate* category from the following list. You must return one of these exact strings.
         Available Categories: {{#each categoryNames}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 
@@ -61,7 +62,7 @@ const scrapeProductFlow = ai.defineFlow(
     inputSchema: ScrapeProductInputSchema,
     outputSchema: ScrapedProductDataSchema,
   },
-  async ({ htmlContent, categoryNames }) => {
+  async ({ htmlContent, categoryNames, productUrl }) => {
     
     // Advanced sanitization to remove noise and focus on content
     let cleanedHtml = htmlContent
@@ -77,7 +78,7 @@ const scrapeProductFlow = ai.defineFlow(
     // Reduce whitespace and then truncate
     const simplifiedHtml = cleanedHtml.replace(/\s\s+/g, ' ').substring(0, 200000);
 
-    const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames });
+    const { output } = await scrapePrompt({ htmlContent: simplifiedHtml, categoryNames, productUrl });
 
     if (!output) {
       throw new Error('Failed to parse product data from the AI response.');
@@ -121,7 +122,7 @@ export async function scrapeProductFromUrl(productUrl: string, categoryNames: st
     const htmlContent = await response.text();
 
     // Now call the Genkit flow with the HTML content
-    const scrapedData = await scrapeProductFlow({ htmlContent, categoryNames });
+    const scrapedData = await scrapeProductFlow({ htmlContent, categoryNames, productUrl });
     return scrapedData;
   } catch (error: any) {
     clearTimeout(timeoutId); // Ensure timeout is cleared on error too
