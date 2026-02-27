@@ -17,12 +17,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
 import type { Product, ProductCategory, ScrapedProductData } from "@/lib/types";
-import { Loader2, PlusCircle, Briefcase } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Loader2, PlusCircle } from "lucide-react";
 
 
 export function AddProductDialog() {
@@ -243,11 +242,11 @@ export function AddProductDialog() {
         
         <div className="max-h-[65vh] overflow-y-auto px-1 space-y-4">
             <div className="border-b pb-4">
-                <Label htmlFor="import-url" className="mb-2 block">استيراد من رابط</Label>
+                <Label htmlFor="import-url" className="mb-2 block">استيراد من رابط (تجريبي)</Label>
                 <div className="flex gap-2">
                     <Input 
                         id="import-url"
-                        placeholder="https://example.com/product-page"
+                        placeholder="https://www.noon.com/..."
                         value={importUrl}
                         onChange={(e) => setImportUrl(e.target.value)}
                         disabled={isImporting || isSubmitting}
@@ -257,7 +256,7 @@ export function AddProductDialog() {
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                    لصق رابط المنتج لجلب البيانات تلقائياً باستخدام الذكاء الاصطناعي.
+                    لصق رابط المنتج من (جوميا، نون، أمازون) لجلب البيانات تلقائياً.
                 </p>
             </div>
             <div className="grid gap-4 py-4">
