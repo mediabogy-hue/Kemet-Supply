@@ -66,10 +66,13 @@ export default function RegisterPage() {
       const userDocRef = doc(firestore, 'users', newUser.uid);
       const walletDocRef = doc(firestore, 'wallets', newUser.uid);
       
+      // Make the newly registered user an Admin to bootstrap the app
+      const userRole: UserProfile['role'] = 'Admin';
+
       const newUserProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
         id: newUser.uid,
         email: newUser.email!,
-        role: 'Dropshipper',
+        role: userRole,
         firstName: firstName,
         lastName: lastName,
         phone: phone,
@@ -85,6 +88,10 @@ export default function RegisterPage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      
+      // Add to admin roles collection to make security rules work
+      const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
+      batch.set(adminRoleRef, { createdAt: serverTimestamp() });
 
       batch.set(walletDocRef, {
         id: newUser.uid,
@@ -99,7 +106,7 @@ export default function RegisterPage() {
       
       toast({
         title: 'تم إنشاء الحساب بنجاح!',
-        description: 'مرحباً بك. سيتم توجيهك الآن.',
+        description: 'مرحباً بك. تم منحك صلاحيات المدير (Admin). سيتم توجيهك الآن.',
       });
       // The SessionProvider will automatically redirect the user to their dashboard.
 
@@ -141,7 +148,7 @@ export default function RegisterPage() {
         <div className="mx-auto grid w-full max-w-lg gap-8">
             <Card>
               <CardHeader className="text-center space-y-4">
-                <Link href="/login" className="mx-auto">
+                <Link href="/" className="mx-auto">
                   <Logo />
                 </Link>
                 <CardTitle className="text-2xl">إنشاء حساب مسوق جديد</CardTitle>
