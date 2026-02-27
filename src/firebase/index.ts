@@ -1,5 +1,11 @@
-
 'use client';
+
+import { useContext, useMemo, type DependencyList } from 'react';
+import type { Auth } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import type { Firestore } from 'firebase/firestore';
+import type { Storage } from 'firebase/storage';
+import { FirebaseContext, type FirebaseContextState } from './provider';
 
 // Re-export hooks and utilities from other files
 export * from './firestore/use-collection';
@@ -14,13 +20,14 @@ export * from './error-emitter';
 // e.g., import { FirebaseProvider } from '@/firebase/provider';
 // e.g., import { SessionProvider } from '@/auth/SessionProvider';
 
-// Define and export granular hooks
-import { useFirebase } from './provider';
-import type { Auth } from 'firebase/auth';
-import type { FirebaseApp } from 'firebase/app';
-import type { Firestore } from 'firebase/firestore';
-import type { Storage } from 'firebase/storage';
-import { useMemo, type DependencyList } from 'react';
+// Define and export useFirebase hook
+export const useFirebase = (): FirebaseContextState => {
+  const context = useContext(FirebaseContext);
+  if (context === undefined) {
+    throw new Error('useFirebase must be used within a FirebaseProvider.');
+  }
+  return context;
+};
 
 // These hooks are safe to export from a barrel file.
 export const useAuth = (): Auth => useFirebase().auth;
