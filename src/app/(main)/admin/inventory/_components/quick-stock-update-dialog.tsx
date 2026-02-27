@@ -16,8 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase } from '@/firebase/provider';
-import { errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { doc, serverTimestamp, runTransaction, collection, query, orderBy, where, limit, getDocs } from "firebase/firestore";
 import type { Product } from "@/lib/types";
@@ -31,7 +30,7 @@ interface QuickStockUpdateDialogProps {
 }
 
 export function QuickStockUpdateDialog({ triggerButton }: QuickStockUpdateDialogProps) {
-  const { firestore } = useFirebase();
+  const firestore = useFirestore();
   const { user, role } = useSession();
   const { toast } = useToast();
 

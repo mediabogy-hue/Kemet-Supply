@@ -7,8 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useFirebase } from '@/firebase/provider';
-import { errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Link as LinkIcon, Loader2, ExternalLink, Copy, FileWarning } from 'lucide-react';
@@ -17,7 +16,7 @@ import { useSession } from '@/auth/SessionProvider';
 
 
 export function BostaManualShipmentDialog({ order, link, isOpen, onOpenChange, onShipmentCreated }: { order: Order | null; link: string; isOpen: boolean; onOpenChange: (open: boolean) => void; onShipmentCreated?: () => void; }) {
-    const { firestore } = useFirebase();
+    const firestore = useFirestore();
     const { user: authUser } = useSession();
     const { toast } = useToast();
     const [trackingNumber, setTrackingNumber] = useState("");

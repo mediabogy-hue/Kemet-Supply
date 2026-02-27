@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { writeBatch, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Loader2, DatabaseZap } from 'lucide-react';
 import type { Order } from '@/lib/types';
@@ -30,7 +30,7 @@ const products = [
 ];
 
 export function SeedDatabaseButton() {
-    const { firestore } = useFirebase();
+    const firestore = useFirestore();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 

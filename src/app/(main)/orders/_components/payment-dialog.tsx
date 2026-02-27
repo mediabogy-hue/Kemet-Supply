@@ -15,8 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Order, Payment, UserProfile } from '@/lib/types';
-import { useFirebase } from '@/firebase/provider';
-import { errorEmitter, FirestorePermissionError, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp, collection, writeBatch } from "firebase/firestore";
 import { Loader2 } from 'lucide-react';
 import { useSession } from '@/auth/SessionProvider';
@@ -29,7 +28,7 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ order, isOpen, onOpenChange, onPaymentSuccess }: PaymentDialogProps) {
-  const { firestore } = useFirebase();
+  const firestore = useFirestore();
   const { profile: userProfile } = useSession();
   const { toast } = useToast();
   

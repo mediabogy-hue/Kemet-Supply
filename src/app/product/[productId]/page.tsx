@@ -4,8 +4,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useFirebase } from '@/firebase/provider';
-import { useDoc, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -119,7 +118,7 @@ const orderSchema = z.object({
 type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function PublicProductPage() {
-    const { firestore } = useFirebase();
+    const firestore = useFirestore();
     const params = useParams();
     const searchParams = useSearchParams();
     const { toast } = useToast();
