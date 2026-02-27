@@ -88,10 +88,6 @@ export default function RegisterPage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      
-      // Add to admin roles collection to make security rules work
-      const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
-      batch.set(adminRoleRef, { createdAt: serverTimestamp() });
 
       batch.set(walletDocRef, {
         id: newUser.uid,

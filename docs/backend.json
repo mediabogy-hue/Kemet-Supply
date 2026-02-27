@@ -105,34 +105,6 @@
         "$ref": "#/entities/Order"
       },
       "description": "Stores order details."
-    },
-    "/roles_admin/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "description": "A document in this collection grants a user the Admin role."
-    },
-    "/roles_orders_manager/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "description": "A document in this collection grants a user the Orders Manager role."
-    },
-    "/roles_finance_manager/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "description": "A document in this collection grants a user the Finance Manager role."
-    },
-    "/roles_merchant/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "description": "A document in this collection grants a user the Merchant role."
     }
   }
 }

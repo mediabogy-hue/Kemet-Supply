@@ -127,9 +127,7 @@ export function AddUserDialog() {
       const newUser = userCredential.user;
       newUserUid = newUser.uid;
 
-      // Step 2: Create user profile and role documents in a batch
-      const batch = writeBatch(firestore);
-      
+      // Step 2: Create user profile in Firestore
       const userDocRef = doc(firestore, "users", newUser.uid);
       const userProfileData: Partial<UserProfile> = {
         id: newUser.uid,
@@ -145,28 +143,8 @@ export function AddUserDialog() {
         shiftStatus: 'off',
         canTrackShift: role === 'Dropshipper' ? canTrackShift : false,
       };
-      batch.set(userDocRef, userProfileData);
-
-      const staffRolesMap: Partial<Record<UserProfile['role'], string>> = {
-          'Admin': 'roles_admin',
-          'OrdersManager': 'roles_orders_manager',
-          'FinanceManager': 'roles_finance_manager',
-          'Merchant': 'roles_merchant',
-      };
-
-      // Clear any old roles if they exist (belt-and-suspenders)
-      Object.values(staffRolesMap).forEach(roleCollection => {
-          batch.delete(doc(firestore, roleCollection, newUser.uid));
-      });
-
-      // Set the new role
-      const newRoleCollection = staffRolesMap[role];
-      if (newRoleCollection) {
-          const roleDocRef = doc(firestore, newRoleCollection, newUser.uid);
-          batch.set(roleDocRef, { createdAt: serverTimestamp() });
-      }
-
-      await batch.commit();
+      
+      await setDoc(userDocRef, userProfileData);
       
       setCreationSuccessData({ email, password, phone, name: `${firstName} ${lastName}`});
 

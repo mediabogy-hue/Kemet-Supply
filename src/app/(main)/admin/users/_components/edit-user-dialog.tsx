@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
@@ -65,8 +65,6 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
     }
     setIsSubmitting(true);
 
-    const batch = writeBatch(firestore);
-    
     const userDocRef = doc(firestore, "users", user.id);
     const updatedData: any = {
       firstName,
@@ -81,33 +79,7 @@ export function EditUserDialog({ user, isOpen, onOpenChange }: EditUserDialogPro
         updatedData.level = level;
     }
 
-    batch.update(userDocRef, updatedData);
-
-    const oldRole = user.role;
-    const newRole = role;
-
-    if (oldRole !== newRole) {
-        const allRolesMap: Partial<Record<UserProfile['role'], string>> = {
-            'Admin': 'roles_admin',
-            'OrdersManager': 'roles_orders_manager',
-            'FinanceManager': 'roles_finance_manager',
-            'Merchant': 'roles_merchant',
-        };
-
-        const oldRoleCollection = allRolesMap[oldRole];
-        if (oldRoleCollection) {
-            const oldRoleDocRef = doc(firestore, oldRoleCollection, user.id);
-            batch.delete(oldRoleDocRef);
-        }
-        
-        const newRoleCollection = allRolesMap[newRole];
-        if (newRoleCollection) {
-            const newRoleDocRef = doc(firestore, newRoleCollection, user.id);
-            batch.set(newRoleDocRef, { createdAt: serverTimestamp() });
-        }
-    }
-
-    batch.commit()
+    updateDoc(userDocRef, updatedData)
         .then(() => {
             onOpenChange(false);
         })
