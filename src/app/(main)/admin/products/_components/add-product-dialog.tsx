@@ -201,11 +201,6 @@ export function AddProductDialog() {
         resetForm();
       }
       catch (error: any) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: 'products and/or productCategories',
-          operation: 'create',
-          requestResourceData: { productName: name, categoryName: category }
-        }));
         toast({
           variant: "destructive",
           title: "فشل إضافة المنتج",

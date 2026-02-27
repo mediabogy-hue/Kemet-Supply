@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,7 +31,7 @@ interface EditProductDialogProps {
 
 export function EditProductDialog({ product, isOpen, onOpenChange }: EditProductDialogProps) {
   const firestore = useFirestore();
-  const { user } = useSession();
+  const { user, profile } = useSession();
   const { toast } = useToast();
 
   const categoriesQuery = useMemoFirebase(() => (firestore && user) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore, user]);
@@ -69,7 +68,7 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
   }, [product]);
 
   const handleUpdateProduct = async () => {
-    if (!product || !firestore) return;
+    if (!product || !firestore || !profile) return;
 
     const priceNumber = parseFloat(price);
     const commissionNumber = parseFloat(commission);
@@ -102,15 +101,28 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         const existingCategory = categories?.find(c => c.name.trim().toLowerCase() === finalCategoryName.toLowerCase());
 
         if (!existingCategory && finalCategoryName) {
-            const categoryId = doc(collection(firestore, "productCategories")).id;
-            const categoryDocRef = doc(firestore, "productCategories", categoryId);
-            const newCategoryData = {
-              id: categoryId,
-              name: finalCategoryName,
-              imageUrl: `https://picsum.photos/seed/${encodeURIComponent(finalCategoryName)}/200`,
-              dataAiHint: finalCategoryName.split(" ").slice(0, 2).join(" "),
-            };
-            batch.set(categoryDocRef, newCategoryData);
+            if (profile.role === 'Admin') {
+                const categoryId = doc(collection(firestore, "productCategories")).id;
+                const categoryDocRef = doc(firestore, "productCategories", categoryId);
+                const newCategoryData = {
+                  id: categoryId,
+                  name: finalCategoryName,
+                  imageUrl: `https://picsum.photos/seed/${encodeURIComponent(finalCategoryName)}/200`,
+                  dataAiHint: finalCategoryName.split(" ").slice(0, 2).join(" "),
+                  isAvailable: true,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                };
+                batch.set(categoryDocRef, newCategoryData);
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "فئة غير موجودة",
+                    description: `الفئة "${finalCategoryName}" غير موجودة. لا يمكنك إنشاء فئات جديدة.`,
+                });
+                setIsSubmitting(false);
+                return;
+            }
         }
 
         const productDocRef = doc(firestore, "products", product.id);
@@ -135,11 +147,6 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         await batch.commit();
         onOpenChange(false);
     } catch (error: any) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `products/${product.id} or productCategories`,
-            operation: 'update',
-            requestResourceData: { name, category },
-        }));
         toast({
             variant: "destructive",
             title: "فشل تحديث المنتج",
