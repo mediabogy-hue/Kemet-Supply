@@ -50,6 +50,12 @@ const nextConfig = {
         hostname: "firebasestorage.googleapis.com",
         port: "",
         pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "eg.jumia.is",
+        port: "",
+        pathname: "/**",
       }
     ],
   },
