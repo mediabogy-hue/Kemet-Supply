@@ -21,7 +21,7 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, Globe, Sparkles } from "lucide-react";
 
 
 export function AddProductDialog() {
@@ -44,6 +44,10 @@ export function AddProductDialog() {
   const [purchaseUrl, setPurchaseUrl] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
   
+  // Scrape state
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+
   // Control state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -59,6 +63,43 @@ export function AddProductDialog() {
       setVideoUrl("");
       setPurchaseUrl("");
       setIsAvailable(true);
+      setScrapeUrl("");
+  };
+
+  const handleScrape = async () => {
+    if (!scrapeUrl) {
+      toast({ variant: 'destructive', title: 'الرجاء إدخال رابط' });
+      return;
+    }
+    setIsScraping(true);
+    try {
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل جلب البيانات');
+      }
+
+      const data = await response.json();
+      
+      // Populate form fields with scraped data
+      setName(data.name || '');
+      setDescription(data.description || '');
+      setPrice(data.price?.toString() || '');
+      setImageUrls(data.imageUrls?.join('\n') || '');
+      setCategory(data.category || '');
+      
+      toast({ title: 'تم جلب البيانات بنجاح!', description: 'الرجاء مراجعة الحقول وتعبئة أي بيانات ناقصة.' });
+
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'خطأ أثناء جلب البيانات', description: error.message });
+    } finally {
+      setIsScraping(false);
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -184,6 +225,26 @@ export function AddProductDialog() {
         </DialogHeader>
         
         <div className="max-h-[65vh] overflow-y-auto px-1 space-y-4">
+            <div className="space-y-2 rounded-lg border p-4">
+                <Label htmlFor="scrape-url" className="flex items-center gap-2 font-semibold">
+                    <Sparkles className="text-primary" />
+                    جلب بيانات المنتج تلقائياً
+                </Label>
+                <div className="flex gap-2">
+                    <Input 
+                        id="scrape-url"
+                        placeholder="الصق رابط المنتج هنا (أمازون، نون، جوميا...)"
+                        value={scrapeUrl}
+                        onChange={(e) => setScrapeUrl(e.target.value)}
+                        disabled={isScraping || isSubmitting}
+                    />
+                    <Button type="button" onClick={handleScrape} disabled={isScraping || isSubmitting}>
+                        {isScraping ? <Loader2 className="animate-spin"/> : <Globe />}
+                    </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">تجريبي: قد لا تعمل الميزة مع جميع المواقع.</p>
+            </div>
+        
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">

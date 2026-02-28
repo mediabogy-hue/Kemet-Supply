@@ -1,7 +1,24 @@
-// This feature has been temporarily disabled to resolve a critical application-wide build issue.
-// The corresponding handler and Genkit/AI logic have been removed.
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
-    return NextResponse.json({ error: "This feature is temporarily disabled." }, { status: 503 });
+  try {
+    const body = await req.json();
+    const { url } = body;
+
+    if (!url) {
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    }
+
+    // Dynamically import the handler to keep server-only code out of the build graph
+    const { handleScrape } = await import('./handler');
+    const data = await handleScrape(url);
+
+    return NextResponse.json(data);
+
+  } catch (error: any) {
+    console.error('[API_SCRAPE_ERROR]', error);
+    return NextResponse.json({ error: error.message || 'An unknown error occurred during scraping.' }, { status: 500 });
+  }
 }
