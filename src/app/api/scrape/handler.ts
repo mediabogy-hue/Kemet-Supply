@@ -1,3 +1,4 @@
+
 import 'server-only';
 import { genkit, z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
@@ -60,26 +61,34 @@ ${html}
 
 // This is the main function that will be dynamically imported by the route
 export async function handleScrape(url: string) {
-  // 1. Fetch the HTML content of the page with more robust headers
+  // 1. Fetch the HTML content of the page
   let htmlContent = '';
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        // Use a less suspicious, common crawler User-Agent to avoid getting blocked.
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Upgrade-Insecure-Requests': '1',
       },
     });
+
     if (!response.ok) {
+      // Handle specific HTTP errors gracefully to give better feedback.
+      if (response.status === 403) {
+        throw new Error(`The target website blocked the request (Error 403 Forbidden). This site may have anti-scraping measures.`);
+      }
+      if (response.status === 404) {
+        throw new Error(`The requested URL was not found (Error 404 Not Found).`);
+      }
       throw new Error(`Failed to fetch URL: ${response.statusText} (Status: ${response.status})`);
     }
+
     htmlContent = await response.text();
   } catch (fetchError: any) {
     console.error(`Error fetching URL ${url}:`, fetchError);
-    throw new Error(`Could not fetch the content from the provided URL. The site may be blocking requests. Error: ${fetchError.message}`);
+    // Re-throw a cleaner error message for the frontend to display in a toast.
+    throw new Error(fetchError.message || 'An unknown error occurred while fetching the page.');
   }
 
   // For very large pages, we should truncate to avoid exceeding model token limits
