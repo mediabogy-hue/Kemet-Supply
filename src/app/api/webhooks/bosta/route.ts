@@ -1,8 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/firebase/server-init";
-import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * Bosta Webhook Receiver
@@ -15,6 +13,7 @@ import { FieldValue } from "firebase-admin/firestore";
  */
 export async function POST(req: Request) {
   try {
+    const { getAdminDb, FieldValue } = await import("@/firebase/server-init");
     const adminDb = getAdminDb();
 
     const payload = await req.json().catch(() => ({}));

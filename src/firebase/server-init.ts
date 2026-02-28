@@ -1,6 +1,8 @@
 import "server-only";
 import admin from "firebase-admin";
 
+export const FieldValue = admin.firestore.FieldValue;
+
 function loadServiceAccount() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!raw) return null;
