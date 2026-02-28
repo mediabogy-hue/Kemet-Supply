@@ -7,14 +7,16 @@ function loadServiceAccount() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!raw) return null;
 
-  const sa = JSON.parse(raw);
-
-  // Important: keep multiline key valid
-  if (sa.private_key && sa.private_key.includes("\\n")) {
-    sa.private_key = sa.private_key.replace(/\\n/g, "\n");
+  try {
+    const sa = JSON.parse(raw);
+    if (sa.private_key && sa.private_key.includes("\\n")) {
+      sa.private_key = sa.private_key.replace(/\\n/g, "\n");
+    }
+    return sa;
+  } catch (e) {
+    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", e);
+    return null;
   }
-
-  return sa;
 }
 
 /**
@@ -26,7 +28,8 @@ export function getAdminApp() {
 
   const sa = loadServiceAccount();
   if (!sa) {
-    throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_KEY");
+    console.error("CRITICAL: Missing or invalid FIREBASE_SERVICE_ACCOUNT_KEY. Server-side admin features will be disabled.");
+    return null;
   }
 
   return admin.initializeApp({
@@ -39,5 +42,7 @@ export function getAdminApp() {
 }
 
 export function getAdminDb() {
-  return getAdminApp().firestore();
+  const app = getAdminApp();
+  if (!app) return null;
+  return app.firestore();
 }

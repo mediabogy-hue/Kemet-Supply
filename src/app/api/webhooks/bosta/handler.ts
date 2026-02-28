@@ -6,6 +6,11 @@ export async function handleBostaWebhook(req: Request) {
     const { getAdminDb, FieldValue } = await import("@/firebase/server-init");
     const adminDb = getAdminDb();
 
+    if (!adminDb) {
+      console.error("Bosta Webhook: Admin DB not configured. Skipping webhook processing.");
+      return NextResponse.json({ ok: true, message: "Admin not configured, webhook ignored." });
+    }
+
     const payload = await req.json().catch(() => ({}));
     const headersObj: Record<string, string> = {};
     req.headers.forEach((v, k) => (headersObj[k] = v));

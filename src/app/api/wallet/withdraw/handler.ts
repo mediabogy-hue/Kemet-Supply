@@ -27,6 +27,11 @@ export async function handleWithdraw(req: Request) {
         const adminApp = getAdminApp();
         const adminDb = getAdminDb();
         
+        if (!adminApp || !adminDb) {
+            console.error("Withdrawal failed: Firebase Admin SDK is not configured.");
+            return NextResponse.json({ error: "Server is not configured for this operation." }, { status: 503 });
+        }
+        
         const decodedToken = await adminApp.auth().verifyIdToken(idToken);
         const userId = decodedToken.uid;
         
