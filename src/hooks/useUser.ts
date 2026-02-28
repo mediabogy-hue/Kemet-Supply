@@ -1,18 +1,2 @@
-import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-
-export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const auth = getAuth();
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsub();
-  }, []);
-
-  return { user, loading };
-}
+// This legacy hook is no longer used and has been emptied to resolve an elusive import error.
+// The application now exclusively uses the `useSession` hook from `src/auth/SessionProvider.tsx` for all user and session management.
