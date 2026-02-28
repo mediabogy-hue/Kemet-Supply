@@ -1,15 +1,13 @@
 
 import { NextResponse } from "next/server";
-import admin from "firebase-admin";
 import { getAdminApp, getAdminDb } from "@/firebase/server-init";
 import type { UserProfile } from "@/lib/types";
+import { FieldValue } from "firebase-admin/firestore";
 
 // Next.js route segment config
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const FieldValue = admin.firestore.FieldValue;
 
 export async function POST(req: Request) {
   try {
@@ -32,10 +30,10 @@ export async function POST(req: Request) {
     }
     
     const adminApp = getAdminApp();
+    const adminDb = getAdminDb();
+    
     const decodedToken = await adminApp.auth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
-    
-    const adminDb = getAdminDb();
     
     const userDoc = await adminDb.collection('users').doc(userId).get();
     if (!userDoc.exists) {
@@ -54,13 +52,9 @@ export async function POST(req: Request) {
 
     const batch = adminDb.batch();
 
-    // Generate one ID to be used for both documents
     const newId = adminDb.collection('id_generator').doc().id;
 
-    // 1. Create the request in the user's private subcollection
     const userWithdrawalRef = adminDb.doc(`users/${userId}/withdrawalRequests/${newId}`);
-    
-    // 2. Create a denormalized copy for the admin panel
     const adminWithdrawalRef = adminDb.doc(`adminWithdrawalRequests/${newId}`);
 
     const withdrawalData = {
@@ -78,13 +72,11 @@ export async function POST(req: Request) {
     batch.set(userWithdrawalRef, withdrawalData);
     batch.set(adminWithdrawalRef, withdrawalData);
 
-    // 3. Update the user's wallet
     batch.update(walletRef, {
       availableBalance: FieldValue.increment(-amount),
       pendingWithdrawals: FieldValue.increment(amount),
       updatedAt: FieldValue.serverTimestamp()
     });
-
 
     await batch.commit();
 
@@ -100,3 +92,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+    

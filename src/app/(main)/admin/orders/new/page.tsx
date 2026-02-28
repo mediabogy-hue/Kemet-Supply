@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useFirestore, useUser, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirestore, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -36,11 +37,10 @@ const orderSchema = z.object({
 type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function NewOrderPage() {
-  const { user } = useUser();
+  const { user, profile: userProfile } = useSession();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { profile: userProfile } = useSession();
 
   const { register, handleSubmit, control, watch, formState: { errors, isSubmitting } } = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
@@ -96,10 +96,6 @@ export default function NewOrderPage() {
       merchantId: selectedProduct.merchantId || null,
       merchantName: selectedProduct.merchantName || null,
     };
-    
-    if (selectedProduct.merchantInfo) {
-      orderData.merchantInfo = selectedProduct.merchantInfo;
-    }
 
     try {
         await setDoc(orderRef, orderData);
@@ -269,3 +265,5 @@ export default function NewOrderPage() {
       </div>
   );
 }
+
+    
