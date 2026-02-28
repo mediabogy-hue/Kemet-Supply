@@ -1,39 +1,47 @@
-
 import { notFound } from 'next/navigation';
-import { getAdminDb } from '@/firebase/server-init';
 import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ProductOrderForm } from './_components/product-order-form';
 import { Separator } from '@/components/ui/separator';
+
+// NEW: Direct imports for a more stable server-side fetch
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebaseClient'; // Using the client SDK instance directly
 
 type ProductPageProps = {
     params: { productId: string };
     searchParams: { [key: string]: string | string[] | undefined };
 };
 
+// This function now uses the client SDK on the server, which is allowed by the security rules.
+// This removes the dependency on the Admin SDK and the problematic environment variable for this public page.
 async function getProduct(productId: string): Promise<Product | null> {
-    const adminDb = getAdminDb();
-    if (!adminDb) {
-        console.error("Admin DB not available");
-        return null;
-    }
-    const productRef = adminDb.collection('products').doc(productId);
-    const docSnap = await productRef.get();
+    try {
+        const productRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(productRef);
 
-    if (!docSnap.exists) {
+        if (!docSnap.exists()) {
+            return null;
+        }
+
+        // Convert Firestore Timestamp to a serializable format for the client component
+        const data = docSnap.data();
+        const productData: Product = {
+            id: docSnap.id,
+            ...data,
+            // Ensure Timestamps are converted to strings if they exist
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+        } as Product;
+        
+        return productData;
+
+    } catch (error) {
+        console.error("Error fetching product directly on server:", error);
+        // Return null on any error to trigger a 'not found' page, which is safer for the user.
         return null;
     }
-    // Convert Firestore Timestamp to serializable format (string)
-    const data = docSnap.data() as any;
-    const productData: Product = {
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate().toISOString(),
-        updatedAt: data.updatedAt?.toDate().toISOString(),
-    };
-    return productData;
 }
 
 
@@ -54,23 +62,38 @@ export default async function PublicProductPage({ params, searchParams }: Produc
                 <div className="space-y-4 sticky top-4">
                      <Carousel className="w-full">
                         <CarouselContent>
-                            {product.imageUrls.map((url, index) => (
-                                <CarouselItem key={index}>
+                            {(product.imageUrls && product.imageUrls.length > 0) ? (
+                                product.imageUrls.map((url, index) => (
+                                    <CarouselItem key={index}>
+                                        <div className="aspect-square w-full bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
+                                            <Image
+                                                src={url}
+                                                alt={`${product.name} - image ${index + 1}`}
+                                                width={800}
+                                                height={800}
+                                                className="w-full h-full object-contain"
+                                                priority={index === 0}
+                                            />
+                                        </div>
+                                    </CarouselItem>
+                                ))
+                            ) : (
+                                <CarouselItem>
                                     <div className="aspect-square w-full bg-muted rounded-lg flex items-center justify-center overflow-hidden border">
-                                        <Image
-                                            src={url}
-                                            alt={`${product.name} - image ${index + 1}`}
+                                         <Image
+                                            src={`https://picsum.photos/seed/${product.id}/800`}
+                                            alt={product.name}
                                             width={800}
                                             height={800}
                                             className="w-full h-full object-contain"
-                                            priority={index === 0}
+                                            priority
                                         />
                                     </div>
                                 </CarouselItem>
-                            ))}
+                            )}
                         </CarouselContent>
-                        <CarouselPrevious className="left-2" />
-                        <CarouselNext className="right-2" />
+                        <CarouselPrevious className="hidden sm:flex" />
+                        <CarouselNext className="hidden sm:flex" />
                     </Carousel>
                 </div>
 

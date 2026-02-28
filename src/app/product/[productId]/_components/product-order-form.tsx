@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -45,6 +44,11 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
     const totalAmount = product.price * quantity;
 
     const onSubmit = async (data: OrderFormData) => {
+        if (!firestore) {
+            toast({ variant: "destructive", title: "خطأ", description: "خدمة قاعدة البيانات غير متاحة." });
+            return;
+        }
+
         if (!refId) {
             toast({ variant: "destructive", title: "خطأ", description: "رابط التسويق غير صالح." });
             return;
@@ -79,7 +83,7 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
                 customerPaymentMethod: 'Cash on Delivery',
                 productId: product.id,
                 productName: product.name,
-                productImageUrl: product.imageUrls[0] || null,
+                productImageUrl: product.imageUrls?.[0] || null,
                 quantity: data.quantity,
                 unitPrice: product.price,
                 totalAmount: totalAmount,
