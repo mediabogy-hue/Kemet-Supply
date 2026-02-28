@@ -122,18 +122,23 @@ export function AddProductDialog() {
         
         const uploadedImageUrls = await Promise.all(imageUploadPromises);
         const finalImageUrls = [...uploadedImageUrls, ...parsedImageUrls];
-        const finalVideoUrl = videoUrlInput.trim() || undefined;
+        const finalVideoUrl = videoUrlInput.trim();
         
         const productDocRef = doc(firestore, "products", productId);
-        const newProductData: Omit<Product, 'createdAt' | 'updatedAt'> = {
+        
+        const newProductData = {
           id: productId, name, category, description,
           price: priceNumber, commission: commissionNumber, stockQuantity: quantityNumber,
-          isAvailable, imageUrls: finalImageUrls, videoUrl: finalVideoUrl, purchaseUrl,
+          isAvailable, imageUrls: finalImageUrls, 
+          videoUrl: finalVideoUrl || null,
+          purchaseUrl: purchaseUrl || null,
           merchantId: profile?.role === 'Merchant' ? user.uid : null,
-          merchantName: profile?.role === 'Merchant' ? `${profile.firstName} ${profile.lastName}`.trim() : 'Kemet Supply',
+          merchantName: profile?.role === 'Merchant' ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() : 'Kemet Supply',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         };
         
-        await setDoc(productDocRef, { ...newProductData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        await setDoc(productDocRef, newProductData);
 
         updateToast({
           title: "✅ تم إضافة المنتج بنجاح!",
@@ -142,10 +147,11 @@ export function AddProductDialog() {
         });
 
       } catch (error: any) {
+        console.error("Product creation failed:", error);
         updateToast({
           variant: "destructive",
           title: "فشل إضافة المنتج",
-          description: error.message || "قد لا تملك الصلاحيات الكافية.",
+          description: String(error.message || error),
           duration: 10000,
         });
       } finally {

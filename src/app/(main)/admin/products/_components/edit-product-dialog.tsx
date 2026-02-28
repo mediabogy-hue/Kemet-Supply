@@ -123,16 +123,18 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
                 finalImageUrls.push(...newUrls);
             }
 
-            const finalVideoUrl = videoUrlInput.trim() || null;
+            const finalVideoUrl = videoUrlInput.trim();
 
             const productDocRef = doc(firestore, "products", product.id);
-            const updatedData: any = {
+            const updatedData = {
               name, category, description,
               price: parseFloat(price) || 0,
               commission: parseFloat(commission) || 0,
               stockQuantity: parseInt(stockQuantity, 10) || 0,
-              isAvailable, purchaseUrl,
-              imageUrls: finalImageUrls, videoUrl: finalVideoUrl,
+              isAvailable,
+              purchaseUrl: purchaseUrl || null,
+              imageUrls: finalImageUrls,
+              videoUrl: finalVideoUrl || null,
               updatedAt: serverTimestamp(),
             };
 
@@ -144,10 +146,11 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
                 duration: 5000,
             });
         } catch (error: any) {
+            console.error("Product update failed:", error);
             updateToast({
                 variant: "destructive",
                 title: "فشل تحديث المنتج",
-                description: error.message || "قد لا تملك الصلاحيات الكافية.",
+                description: String(error.message || error),
                 duration: 10000,
             });
         } finally {
