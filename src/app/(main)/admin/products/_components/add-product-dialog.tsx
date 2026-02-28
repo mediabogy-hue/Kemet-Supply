@@ -16,14 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useMemoFirebase, useStorage } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
-import { collection, doc, setDoc, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
+import { collection, doc, setDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
-import { Loader2, PlusCircle, Globe, Sparkles, Upload, Video, Image as ImageIcon } from "lucide-react";
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { PlusCircle, Upload, Video, Image as ImageIcon } from "lucide-react";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { compressImage } from "@/lib/utils";
 import Image from "next/image";
 
@@ -36,11 +35,9 @@ export function AddProductDialog() {
   const categoriesQuery = useMemoFirebase(() => (firestore && user) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<ProductCategory>(categoriesQuery);
 
-  // File Inputs
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Product fields
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -50,14 +47,11 @@ export function AddProductDialog() {
   const [purchaseUrl, setPurchaseUrl] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
   
-  // File State
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   
-  // Control state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const resetForm = () => {
       setName("");
@@ -70,10 +64,12 @@ export function AddProductDialog() {
       setIsAvailable(true);
       setImageFiles([]);
       setVideoFile(null);
-      setUploadProgress(0);
+      setIsSubmitting(false);
   };
 
-  const handleSaveProduct = async () => {
+  const handleSaveProduct = () => {
+    if (isSubmitting) return;
+
     const priceNumber = parseFloat(price);
     const commissionNumber = parseFloat(commission);
     const quantityNumber = parseInt(stockQuantity, 10);
@@ -93,95 +89,62 @@ export function AddProductDialog() {
     }
 
     setIsSubmitting(true);
-    
-    try {
-        const batch = writeBatch(firestore);
+    setIsOpen(false);
+
+    const { update: updateToast } = toast({
+      title: "جاري إضافة المنتج...",
+      description: "سيتم رفع الملفات وحفظ البيانات في الخلفية.",
+      duration: 999999, // Sticky toast
+    });
+
+    (async () => {
+      try {
         const productId = doc(collection(firestore, "id_generator")).id;
 
-        // --- File Upload Logic ---
-        let uploadedImageUrls: string[] = [];
-        let uploadedVideoUrl: string | undefined = undefined;
-
-        const totalFiles = imageFiles.length + (videoFile ? 1 : 0);
-        let filesUploaded = 0;
-
-        // Upload Images
         const imageUploadPromises = imageFiles.map(async (file) => {
-            const compressedBlob = await compressImage(file, { maxWidth: 1024, quality: 0.8 });
-            const fileRef = storageRef(storage, `products/${productId}/${Date.now()}-${file.name}`);
-            const uploadTask = uploadBytesResumable(fileRef, compressedBlob);
-
-            return new Promise<string>((resolve, reject) => {
-                uploadTask.on('state_changed',
-                    (snapshot) => {
-                        // This progress is per file. A more complex UI could show individual progress.
-                    },
-                    (error) => reject(error),
-                    async () => {
-                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                        filesUploaded++;
-                        setUploadProgress((filesUploaded / totalFiles) * 100);
-                        resolve(downloadURL);
-                    }
-                );
-            });
+          const compressedBlob = await compressImage(file, { maxWidth: 1024, quality: 0.8 });
+          const fileRef = storageRef(storage, `products/${productId}/${Date.now()}-${file.name}`);
+          const snapshot = await uploadBytes(fileRef, compressedBlob);
+          return getDownloadURL(snapshot.ref);
         });
         
-        uploadedImageUrls = await Promise.all(imageUploadPromises);
-
-        // Upload Video
+        const uploadedImageUrls = await Promise.all(imageUploadPromises);
+        
+        let uploadedVideoUrl: string | undefined = undefined;
         if (videoFile) {
              const fileRef = storageRef(storage, `products/${productId}/${Date.now()}-${videoFile.name}`);
-             const uploadTask = uploadBytesResumable(fileRef, videoFile);
-             uploadedVideoUrl = await new Promise<string>((resolve, reject) => {
-                uploadTask.on('state_changed', 
-                    (snapshot) => { /* Per-file progress */ }, 
-                    (error) => reject(error), 
-                    async () => {
-                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                        filesUploaded++;
-                        setUploadProgress((filesUploaded / totalFiles) * 100);
-                        resolve(downloadURL);
-                    });
-             });
+             const snapshot = await uploadBytes(fileRef, videoFile);
+             uploadedVideoUrl = await getDownloadURL(snapshot.ref);
         }
-        // --- End File Upload ---
         
         const productDocRef = doc(firestore, "products", productId);
-
-        const newProductData: Omit<Product, 'createdAt' | 'updatedAt'> & { createdAt: any, updatedAt: any } = {
-          id: productId,
-          name: name,
-          category: category,
-          description: description,
-          price: priceNumber,
-          commission: commissionNumber,
-          stockQuantity: quantityNumber,
-          isAvailable: isAvailable,
-          imageUrls: uploadedImageUrls,
-          videoUrl: uploadedVideoUrl,
-          purchaseUrl: purchaseUrl,
+        const newProductData: Omit<Product, 'createdAt' | 'updatedAt'> = {
+          id: productId, name, category, description,
+          price: priceNumber, commission: commissionNumber, stockQuantity: quantityNumber,
+          isAvailable, imageUrls: uploadedImageUrls, videoUrl: uploadedVideoUrl, purchaseUrl,
           merchantId: profile?.role === 'Merchant' ? user.uid : null,
           merchantName: profile?.role === 'Merchant' ? `${profile.firstName} ${profile.lastName}`.trim() : 'Kemet Supply',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
         };
         
-        batch.set(productDocRef, newProductData);
-        await batch.commit();
+        await setDoc(productDocRef, { ...newProductData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
-        setIsOpen(false);
-      }
-      catch (error: any) {
-        toast({
+        updateToast({
+          title: "✅ تم إضافة المنتج بنجاح!",
+          description: name,
+          duration: 5000,
+        });
+
+      } catch (error: any) {
+        updateToast({
           variant: "destructive",
           title: "فشل إضافة المنتج",
           description: error.message || "قد لا تملك الصلاحيات الكافية.",
+          duration: 10000,
         });
+      } finally {
+        resetForm();
       }
-      finally {
-          setIsSubmitting(false);
-      }
+    })();
   };
 
   return (
@@ -208,38 +171,38 @@ export function AddProductDialog() {
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">اسم المنتج</Label>
-                <Input id="name" placeholder="مثال: سماعة لاسلكية" value={name} onChange={(e) => setName(e.target.value)} disabled={isSubmitting}/>
+                <Input id="name" placeholder="مثال: سماعة لاسلكية" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">الفئة</Label>
-                <Input id="category" placeholder="اكتب اسم فئة جديدة أو موجودة" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isSubmitting}/>
+                <Input id="category" placeholder="اكتب اسم فئة جديدة أو موجودة" value={category} onChange={(e) => setCategory(e.target.value)} />
                </div>
                <div className="space-y-2">
                 <Label htmlFor="description">الوصف</Label>
-                <Textarea id="description" placeholder="وصف مختصر ومفيد للمنتج" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} disabled={isSubmitting}/>
+                <Textarea id="description" placeholder="وصف مختصر ومفيد للمنتج" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price">السعر (ج.م)</Label>
-                    <Input id="price" type="number" placeholder="99.99" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isSubmitting}/>
+                    <Input id="price" type="number" placeholder="99.99" value={price} onChange={(e) => setPrice(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="commission">العمولة (ج.م)</Label>
-                    <Input id="commission" type="number" placeholder="10.00" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={isSubmitting}/>
+                    <Input id="commission" type="number" placeholder="10.00" value={commission} onChange={(e) => setCommission(e.target.value)} />
                   </div>
               </div>
                <div className="space-y-2">
                 <Label htmlFor="stockQuantity">الكمية المتاحة</Label>
-                <Input id="stockQuantity" type="number" placeholder="100" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} disabled={isSubmitting}/>
+                <Input id="stockQuantity" type="number" placeholder="100" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} />
               </div>
 
                <div className="space-y-2">
                     <Label>ملفات المنتج</Label>
                     <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} disabled={isSubmitting}>
+                        <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()}>
                             <Upload className="me-2"/> رفع صور ({imageFiles.length})
                         </Button>
-                         <Button type="button" variant="outline" onClick={() => videoInputRef.current?.click()} disabled={isSubmitting}>
+                         <Button type="button" variant="outline" onClick={() => videoInputRef.current?.click()}>
                             <Video className="me-2"/> {videoFile ? "تغيير الفيديو" : "رفع فيديو"}
                         </Button>
                     </div>
@@ -260,32 +223,24 @@ export function AddProductDialog() {
               
               <div className="space-y-2">
                 <Label htmlFor="purchaseUrl">رابط الشراء من المورد (اختياري)</Label>
-                <Input id="purchaseUrl" placeholder="https://supplier.com/product" value={purchaseUrl} onChange={(e) => setPurchaseUrl(e.target.value)} disabled={isSubmitting}/>
+                <Input id="purchaseUrl" placeholder="https://supplier.com/product" value={purchaseUrl} onChange={(e) => setPurchaseUrl(e.target.value)} />
               </div>
                <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                  <div className="space-y-0.5">
                     <Label htmlFor="isAvailable">الحالة</Label>
                     <p className="text-xs text-muted-foreground">إلغاء التفعيل سيخفي المنتج من المتجر.</p>
                 </div>
-                <Switch id="isAvailable" checked={isAvailable} onCheckedChange={setIsAvailable} disabled={isSubmitting}/>
+                <Switch id="isAvailable" checked={isAvailable} onCheckedChange={setIsAvailable} />
               </div>
-
-              {isSubmitting && (
-                <div className="space-y-2">
-                    <Label>جاري رفع الملفات...</Label>
-                    <Progress value={uploadProgress} />
-                </div>
-              )}
             </div>
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" disabled={isSubmitting}>إلغاء</Button>
+            <Button variant="outline">إلغاء</Button>
           </DialogClose>
-          <Button type="button" onClick={handleSaveProduct} disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? 'جاري الحفظ...' : 'حفظ المنتج'}
+          <Button type="button" onClick={handleSaveProduct}>
+            حفظ المنتج
           </Button>
         </DialogFooter>
       </DialogContent>
