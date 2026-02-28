@@ -518,6 +518,12 @@ export default function PublicProductPage() {
                             <CardDescription>املأ بياناتك أدناه لإكمال الطلب وسيتم التواصل معك للتأكيد.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                             {!dropshipperId && (
+                                <div className="mb-4 rounded-md border-l-4 border-destructive bg-destructive/10 p-4 text-destructive-foreground">
+                                    <h4 className="font-bold">رابط تسويق غير صالح</h4>
+                                    <p className="text-sm">لا يمكن إتمام الطلب من خلال هذا الرابط. يرجى التأكد من استخدام الرابط الصحيح الذي أرسله لك المسوق.</p>
+                                </div>
+                            )}
                              <form onSubmit={handleSubmit(handleOrderSubmit)} className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="customer-name">الاسم الثلاثي</Label>
@@ -666,7 +672,6 @@ export default function PublicProductPage() {
                                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !dropshipperId}>
                                     {isSubmitting ? 'جاري إرسال الطلب...' : `تأكيد الطلب - ${totalAmount.toFixed(2)} ج.م`}
                                 </Button>
-                                {(!dropshipperId) && <p className="text-center text-sm text-destructive">رابط التسويق غير صالح أو المنتج غير متاح حاليًا.</p>}
                             </form>
                         </CardContent>
                     </Card>
