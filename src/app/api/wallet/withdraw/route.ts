@@ -1,8 +1,6 @@
 
 import { NextResponse } from "next/server";
-import { getAdminApp, getAdminDb } from "@/firebase/server-init";
 import type { UserProfile } from "@/lib/types";
-import { FieldValue } from "firebase-admin/firestore";
 
 // Next.js route segment config
 export const runtime = "nodejs";
@@ -11,6 +9,11 @@ export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
+    // Dynamically import server-only modules ONLY at runtime inside the function.
+    // This prevents the Next.js build process from crashing during static analysis.
+    const { getAdminApp, getAdminDb } = await import("@/firebase/server-init");
+    const { FieldValue } = await import("firebase-admin/firestore");
+
     const authorization = req.headers.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -92,5 +95,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-    
