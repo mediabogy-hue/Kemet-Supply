@@ -29,16 +29,26 @@ const scrapeProductFlow = ai.defineFlow(
   },
   async (input) => {
     
+    // Using a more comprehensive set of headers to mimic a real, modern browser
     const response = await fetch(input.url, {
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Sec-Ch-Ua': '"Google Chrome";v="125", "Chromium";v="125", ";Not.A/Brand";v="24"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
         }
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.statusText}`);
+        throw new Error(`Failed to fetch URL: ${response.statusText} (Status: ${response.status})`);
     }
     const htmlContent = await response.text();
 
@@ -46,9 +56,9 @@ const scrapeProductFlow = ai.defineFlow(
       model: 'googleai/gemini-1.5-flash-latest',
       prompt: `You are an expert web scraper for e-commerce sites. Your task is to analyze the following HTML content from a product page and extract the product information in the requested JSON format. Prioritize structured data like JSON-LD if available in the HTML.
 
-HTML Content (first 25,000 characters):
+HTML Content (first 50,000 characters):
 \`\`\`html
-${htmlContent.substring(0, 25000)}
+${htmlContent.substring(0, 50000)}
 \`\`\`
 `,
       output: {
