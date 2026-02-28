@@ -102,7 +102,7 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">إجمالي الأرباح (آخر 30 يوم)</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <DollarSign className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
                     {ordersLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{stats.totalCommission.toFixed(2)} ج.م</div>}
@@ -112,7 +112,7 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">الطلبات المكتملة (آخر 30 يوم)</CardTitle>
-                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    <ShoppingCart className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
                     {ordersLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">+{stats.deliveredOrders}</div>}
@@ -122,7 +122,7 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">الطلبات قيد التنفيذ</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
+                    <Activity className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
                     {ordersLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.pendingOrders}</div>}

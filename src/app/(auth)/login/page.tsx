@@ -74,7 +74,7 @@ export default function LoginPage() {
                     <div className="flex items-center">
                       <Label htmlFor="password">كلمة المرور</Label>
                       <Link href="/forgot-password" passHref legacyBehavior>
-                        <a className="ms-auto inline-block text-sm underline">
+                        <a className="ms-auto inline-block text-sm underline text-primary">
                           نسيت كلمة المرور؟
                         </a>
                       </Link>
@@ -98,7 +98,7 @@ export default function LoginPage() {
               <div className="mt-4 text-center text-sm">
                 ليس لديك حساب؟{" "}
                 <Link href="/register" passHref legacyBehavior>
-                    <a className="underline">
+                    <a className="underline text-primary">
                         إنشاء حساب
                     </a>
                 </Link>
@@ -106,20 +106,20 @@ export default function LoginPage() {
             </CardContent>
         </Card>
       </div>
-      <div className="hidden bg-muted lg:block relative">
+      <div className="hidden lg:block relative">
         <Image
-          src="https://picsum.photos/seed/authbg/1280/800"
+          src="https://picsum.photos/seed/pharaoh-tech/1280/800"
           alt="Kemet Supply Platform"
-          data-ai-hint="abstract tech"
+          data-ai-hint="pharaoh tech abstract"
           fill
           className="object-cover"
           sizes="50vw"
           priority
         />
-         <div className="relative z-10 flex items-center justify-center h-full bg-black/50">
+         <div className="relative z-10 flex items-center justify-center h-full bg-black/60">
             <div className="text-center text-white p-8 rounded-lg max-w-md">
                 <h2 className="text-4xl font-bold">بوابتك للنجاح في التجارة الإلكترونية</h2>
-                <p className="mt-4 text-lg">
+                <p className="mt-4 text-lg text-white/80">
                     منصة واحدة لإدارة تجارتك. انضم إلى آلاف المسوقين بالعمولة والتجار الذين يحققون النجاح معنا. سهولة، سرعة، وأرباح مضمونة.
                 </p>
             </div>
