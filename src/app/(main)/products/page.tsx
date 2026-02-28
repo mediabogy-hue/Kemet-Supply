@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useSession } from '@/auth/SessionProvider';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,11 +14,12 @@ import { ProductCard } from './_components/product-card';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
+    const { user } = useSession();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
     const productsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !user) return null;
 
         let q = query(collection(firestore, 'products'), where('isAvailable', '==', true), orderBy('name', 'asc'));
 
@@ -26,7 +28,7 @@ export default function ProductsPage() {
         }
 
         return q;
-    }, [firestore, selectedCategory]);
+    }, [firestore, user, selectedCategory]);
 
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
 
