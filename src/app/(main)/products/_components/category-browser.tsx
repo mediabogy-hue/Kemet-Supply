@@ -76,6 +76,11 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
                         <span className="text-sm font-medium text-center">{category.name}</span>
                     </div>
                 ))}
+                {!isLoading && availableCategories.length === 0 && (
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                        <p>لم يتم إضافة فئات للمنتجات بعد.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

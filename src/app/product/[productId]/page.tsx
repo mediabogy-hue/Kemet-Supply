@@ -10,7 +10,7 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, downloadAsset } from '@/lib/utils';
 
 
 import type { Product, Payment, ReferredCustomer, Order } from '@/lib/types';
@@ -20,9 +20,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from "@/components/ui/toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/logo';
-import { Truck, CreditCard, ShieldCheck, Undo2, Landmark, PlayCircle, Copy, Loader2 } from 'lucide-react';
+import { Truck, CreditCard, ShieldCheck, Undo2, Landmark, PlayCircle, Copy, Loader2, Download } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -132,6 +133,7 @@ export default function PublicProductPage() {
 
     const [paymentSettings, setPaymentSettings] = useState<Record<string, any> | null>(null);
     const [publicSettingsLoading, setPublicSettingsLoading] = useState(false);
+    const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
 
     useEffect(() => {
         if (firestore && productId && dropshipperId && !hasTrackedClick.current) {
@@ -334,6 +336,25 @@ export default function PublicProductPage() {
            });
         }
     };
+    
+    const handleDownloadAsset = async (url: string, index: number, type: 'image' | 'video') => {
+        if (!product) return;
+        const fileExtension = url.split('.').pop()?.split('?')[0] || (type === 'image' ? 'jpg' : 'mp4');
+        const filename = `${product.name.replace(/ /g, '-')}-${type}-${index + 1}.${fileExtension}`;
+        try {
+            await downloadAsset(url, filename);
+            toast({ title: 'بدء تحميل الملف', description: filename });
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast({
+                variant: 'destructive',
+                title: 'فشل التحميل',
+                description: 'لا يمكن تحميل الملف. قد يكون الرابط محميًا.',
+                action: <ToastAction altText="Open Link" onClick={() => window.open(url, '_blank')}>فتح الرابط</ToastAction>
+            });
+        }
+    }
+
 
     if (productLoading) {
         return (
@@ -452,11 +473,19 @@ export default function PublicProductPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <div>
-                        <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
-                        <p className="text-2xl font-bold text-primary mt-2">{totalAmount.toFixed(2)} ج.م</p>
-                        <p className="text-muted-foreground mt-4 whitespace-pre-wrap">{product.description}</p>
+                    <div className="flex justify-between items-start gap-4">
+                        <div>
+                            <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
+                            <p className="text-2xl font-bold text-primary mt-2">{totalAmount.toFixed(2)} ج.م</p>
+                        </div>
+                        <Button variant="outline" onClick={() => setIsDownloadDialogOpen(true)}>
+                            <Download className="me-2"/>
+                            تحميل المرفقات
+                        </Button>
                     </div>
+
+                    <p className="text-muted-foreground whitespace-pre-wrap">{product.description}</p>
+                    
 
                     <Card>
                         <CardContent className="p-4">
@@ -657,16 +686,63 @@ export default function PublicProductPage() {
                 </div>
             </div>
 
+            <Dialog open={isDownloadDialogOpen} onOpenChange={setIsDownloadDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>تحميل المادة الإعلانية</DialogTitle>
+                        <DialogDescription>
+                            اضغط على الملفات لتحميلها. قد تحتاج إلى السماح للمتصفح بتنزيل ملفات متعددة.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto space-y-3 p-1">
+                        {product.imageUrls?.map((url, index) => (
+                            <div key={`dl-img-${index}`} className="flex items-center justify-between gap-2 rounded-md border p-2">
+                                <div className="flex items-center gap-3">
+                                    <Image src={url} alt={`Image ${index+1}`} width={48} height={48} className="rounded object-cover aspect-square" />
+                                    <span className="text-sm font-medium">صورة {index + 1}</span>
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => handleDownloadAsset(url, index, 'image')}>
+                                    <Download className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        ))}
+                        {product.videoUrl && (
+                             <div className="flex items-center justify-between gap-2 rounded-md border p-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded bg-black flex items-center justify-center">
+                                        <PlayCircle className="h-6 w-6 text-white"/>
+                                    </div>
+                                    <span className="text-sm font-medium">فيديو</span>
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => handleDownloadAsset(product.videoUrl!, 0, 'video')}>
+                                    <Download className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        )}
+                         {!product.imageUrls?.length && !product.videoUrl && (
+                            <p className="text-sm text-muted-foreground text-center py-4">لا توجد مرفقات متاحة للتحميل.</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">
+                                إغلاق
+                            </Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {relatedProducts && relatedProducts.length > 0 && (
                 <div className="mt-16">
                     <h2 className="text-3xl font-bold mb-8 text-center">منتجات مشابهة قد تعجبك</h2>
                     <Carousel
-                        opts={{ align: "start", loop: true }}
+                        opts={{ align: "start", loop: true, direction: "rtl" }}
                         className="w-full max-w-6xl mx-auto"
                     >
-                        <CarouselContent className="-ml-4">
+                        <CarouselContent className="-mr-4">
                             {relatedProducts.map((p) => (
-                                <CarouselItem key={p.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3">
+                                <CarouselItem key={p.id} className="pr-4 basis-full sm:basis-1/2 md:basis-1/3">
                                     <Card className="h-full flex flex-col overflow-hidden group">
                                         <Link href={`/product/${p.id}${dropshipperId ? `?ref=${dropshipperId}` : ''}`} className="block">
                                             <CardContent className="p-0 aspect-square bg-muted/30">

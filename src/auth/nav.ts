@@ -39,8 +39,8 @@ export const navLinks: NavLink[] = [
     },
     {
         href: "/reports",
-        label: "التقارير المالية",
-        icon: React.createElement(FileText),
+        label: "المحفظة المالية",
+        icon: React.createElement(Wallet),
         roles: ['Dropshipper'],
     },
      {

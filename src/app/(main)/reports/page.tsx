@@ -31,7 +31,7 @@ export default function ReportsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">التقارير المالية</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">المحفظة المالية</h1>
                     <p className="text-muted-foreground">
                         هنا يمكنك متابعة أرباحك وطلب سحب مستحقاتك.
                     </p>
