@@ -1,7 +1,6 @@
+
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { genkit } from '@genkit-ai/core';
-import { googleAI } from '@genkit-ai/google-genai';
 
 // Ensure this route runs on the Node.js runtime.
 export const runtime = "nodejs";
@@ -9,6 +8,10 @@ export const runtime = "nodejs";
 // The main POST handler for the API route.
 export async function POST(req: Request) {
     try {
+        // Dynamically import server-side libraries ONLY at runtime
+        const { genkit } = await import('@genkit-ai/core');
+        const { googleAI } = await import('@genkit-ai/google-genai');
+
         // Initialize Genkit ONCE inside the handler to ensure it only runs on the server at runtime.
         const ai = genkit({
             plugins: [googleAI()],
