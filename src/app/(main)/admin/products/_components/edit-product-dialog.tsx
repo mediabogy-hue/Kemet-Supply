@@ -15,14 +15,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useStorage } from "@/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import type { Product } from "@/lib/types";
+import { useFirestore, useStorage, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, updateDoc, serverTimestamp, collection, query, orderBy } from "firebase/firestore";
+import type { Product, ProductCategory } from "@/lib/types";
 import { Loader2, Upload, Trash2 } from "lucide-react";
 import { useSession } from "@/auth/SessionProvider";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { compressImage } from "@/lib/utils";
 import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 interface EditProductDialogProps {
@@ -35,6 +42,9 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
+
+  const categoriesQuery = useMemoFirebase(() => (firestore) ? query(collection(firestore, "productCategories"), orderBy("name", "asc")) : null, [firestore]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<ProductCategory>(categoriesQuery);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -167,7 +177,18 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">الفئة</Label>
-                <Input id="edit-category" placeholder="اكتب اسم فئة جديدة أو موجودة" value={category} onChange={(e) => setCategory(e.target.value)} />
+                <Select value={category} onValueChange={setCategory} disabled={categoriesLoading}>
+                    <SelectTrigger id="edit-category">
+                        <SelectValue placeholder={categoriesLoading ? "جاري تحميل الفئات..." : "اختر فئة المنتج"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {categories?.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>
+                                {cat.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
               </div>
                <div className="space-y-2">
                 <Label htmlFor="edit-description">الوصف</Label>

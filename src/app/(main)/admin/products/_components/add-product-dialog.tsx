@@ -25,6 +25,13 @@ import { PlusCircle, Upload, Loader2 } from "lucide-react";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { compressImage } from "@/lib/utils";
 import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function AddProductDialog() {
   const { user, profile } = useSession();
@@ -174,7 +181,18 @@ export function AddProductDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">الفئة</Label>
-                <Input id="category" placeholder="اكتب اسم فئة جديدة أو موجودة" value={category} onChange={(e) => setCategory(e.target.value)} />
+                 <Select value={category} onValueChange={setCategory} disabled={categoriesLoading}>
+                    <SelectTrigger id="category">
+                        <SelectValue placeholder={categoriesLoading ? "جاري تحميل الفئات..." : "اختر فئة المنتج"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {categories?.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>
+                                {cat.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                </div>
                <div className="space-y-2">
                 <Label htmlFor="description">الوصف</Label>
