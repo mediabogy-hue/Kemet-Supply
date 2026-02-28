@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc } from 'firebase/firestore';
@@ -126,6 +126,9 @@ export default function PublicProductPage() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
 
+    const [product, setProduct] = useState<Product | null>(null);
+    const [productLoading, setProductLoading] = useState(true);
+    const [productError, setProductError] = useState<Error | null>(null);
     const [orderSuccess, setOrderSuccess] = useState(false);
     
     const productId = params.productId as string;
@@ -136,6 +139,34 @@ export default function PublicProductPage() {
     const [paymentSettings, setPaymentSettings] = useState<Record<string, any> | null>(null);
     const [publicSettingsLoading, setPublicSettingsLoading] = useState(false);
     const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
+
+    useEffect(() => {
+        if (!firestore || !productId) {
+            setProductLoading(false);
+            return;
+        }
+
+        const fetchProduct = async () => {
+            try {
+                setProductLoading(true);
+                const productRef = doc(firestore, 'products', productId);
+                const docSnap = await getDoc(productRef);
+                if (docSnap.exists()) {
+                    setProduct({ id: docSnap.id, ...docSnap.data() } as Product);
+                } else {
+                    setProduct(null); // Not found
+                }
+                setProductError(null);
+            } catch (e: any) {
+                console.error("Direct product fetch failed:", e);
+                setProductError(e);
+            } finally {
+                setProductLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [firestore, productId]);
 
     useEffect(() => {
         if (firestore && productId && dropshipperId && !hasTrackedClick.current) {
@@ -154,13 +185,6 @@ export default function PublicProductPage() {
             });
         }
     }, [firestore, productId, dropshipperId]);
-
-    const productRef = useMemo(() => {
-        if (!firestore || !productId) return null;
-        return doc(firestore, 'products', productId);
-    }, [firestore, productId]);
-
-    const { data: product, isLoading: productLoading, error: productError } = useDoc<Product>(productRef);
 
     const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
 
