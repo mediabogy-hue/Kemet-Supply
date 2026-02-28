@@ -1,11 +1,10 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { db as firestore } from '@/lib/firebaseClient';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { doc, collection, serverTimestamp, setDoc, addDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -167,11 +166,8 @@ export default function PublicProductPage() {
                 dropshipperId,
                 createdAt: serverTimestamp(),
             }).catch(err => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `products/${productId}/clicks`,
-                    operation: 'create',
-                    requestResourceData: { productId, dropshipperId }
-                }));
+                console.error("Click tracking failed:", err);
+                // Silently fail. Not critical for user.
             });
         }
     }, [productId, dropshipperId]);
@@ -322,11 +318,6 @@ export default function PublicProductPage() {
 
         } catch (error) {
             console.error("Order submission error:", error);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-               path: `orders/${orderRef.id}`,
-               operation: 'create',
-               requestResourceData: orderData
-           }));
            toast({
                variant: 'destructive',
                title: 'حدث خطأ',
@@ -769,3 +760,5 @@ export default function PublicProductPage() {
         </div>
     );
 }
+
+    
