@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from "react";
@@ -21,8 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useMemoFirebase, useStorage } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { collection, doc, setDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import type { Product, ProductCategory } from "@/lib/types";
-import { PlusCircle, Upload } from "lucide-react";
+import type { Product, ProductCategory, ScrapedProductData } from "@/lib/types";
+import { PlusCircle, Upload, Sparkles, Loader2 } from "lucide-react";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { compressImage } from "@/lib/utils";
 import Image from "next/image";
@@ -38,6 +37,7 @@ export function AddProductDialog() {
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Form State
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -51,6 +51,11 @@ export function AddProductDialog() {
   const [imageUrlLinksInput, setImageUrlLinksInput] = useState("");
   const [videoUrlInput, setVideoUrlInput] = useState("");
   
+  // Scraper State
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+
+  // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -66,8 +71,47 @@ export function AddProductDialog() {
       setImageFiles([]);
       setImageUrlLinksInput("");
       setVideoUrlInput("");
+      setScrapeUrl("");
       setIsSubmitting(false);
   };
+
+  const handleScrapeProduct = async () => {
+    if (!scrapeUrl) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال رابط المنتج أولاً.' });
+      return;
+    }
+    setIsScraping(true);
+    try {
+      const response = await fetch('/api/scrape-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل جلب البيانات.');
+      }
+      const data: ScrapedProductData = await response.json();
+      
+      setName(data.name || '');
+      setDescription(data.description || '');
+      setPrice(data.price?.toString() || '');
+      setCategory(data.category || '');
+      setImageUrlLinksInput(data.imageUrls?.join('\n') || '');
+
+      toast({ title: 'تم جلب البيانات بنجاح!' });
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "فشل جلب البيانات",
+        description: error.message,
+      });
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
 
   const handleSaveProduct = () => {
     if (isSubmitting) return;
@@ -161,11 +205,35 @@ export function AddProductDialog() {
         <DialogHeader>
           <DialogTitle>إضافة منتج جديد</DialogTitle>
           <DialogDescription>
-            أدخل تفاصيل المنتج الجديد والملفات المطلوبة.
+            اختر طريقتك: املأ الحقول يدوياً، ارفع صوراً، أو استخدم الذكاء الاصطناعي لجلب البيانات من رابط.
           </DialogDescription>
         </DialogHeader>
         
         <div className="max-h-[65vh] overflow-y-auto px-1 space-y-4">
+            <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+              <Label htmlFor="scrape-url">جلب البيانات تلقائياً بالذكاء الاصطناعي</Label>
+              <div className="flex gap-2">
+                  <Input 
+                      id="scrape-url" 
+                      placeholder="https://www.amazon.eg/..."
+                      value={scrapeUrl}
+                      onChange={(e) => setScrapeUrl(e.target.value)}
+                      disabled={isScraping || isSubmitting}
+                  />
+                  <Button type="button" onClick={handleScrapeProduct} disabled={isScraping || isSubmitting || !scrapeUrl}>
+                      {isScraping ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  </Button>
+              </div>
+              <p className="text-xs text-muted-foreground pt-1">
+                  لصق رابط منتج من أمازون، نون، جوميا، إلخ. لتعبئة الحقول تلقائياً.
+              </p>
+            </div>
+
+            <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">أو أدخل البيانات يدوياً</span></div>
+            </div>
+
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">اسم المنتج</Label>

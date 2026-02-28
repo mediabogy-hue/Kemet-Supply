@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -18,8 +17,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useStorage } from "@/firebase";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import type { Product } from "@/lib/types";
-import { Loader2, Upload, Trash2 } from "lucide-react";
+import type { Product, ScrapedProductData } from "@/lib/types";
+import { Loader2, Upload, Trash2, Sparkles } from "lucide-react";
 import { useSession } from "@/auth/SessionProvider";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { compressImage } from "@/lib/utils";
@@ -39,6 +38,7 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Form State
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -53,11 +53,17 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImageUrlLinksInput, setNewImageUrlLinksInput] = useState("");
   
+  // Scraper State
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+
+  // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
     setNewImageFiles([]);
     setNewImageUrlLinksInput("");
+    setScrapeUrl("");
     setIsSubmitting(false);
   }
 
@@ -77,6 +83,43 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
         resetForm();
     }
   }, [product, isOpen]);
+
+  const handleScrapeProduct = async () => {
+    if (!scrapeUrl) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال رابط المنتج أولاً.' });
+      return;
+    }
+    setIsScraping(true);
+    try {
+      const response = await fetch('/api/scrape-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل جلب البيانات.');
+      }
+      const data: ScrapedProductData = await response.json();
+      
+      setName(data.name || name);
+      setDescription(data.description || description);
+      setPrice(data.price?.toString() || price);
+      setCategory(data.category || category);
+      setNewImageUrlLinksInput(prev => [prev, ...data.imageUrls].filter(Boolean).join('\n'));
+
+      toast({ title: 'تم جلب البيانات بنجاح!' });
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "فشل جلب البيانات",
+        description: error.message,
+      });
+    } finally {
+      setIsScraping(false);
+    }
+  };
 
   const handleRemoveImage = (urlToRemove: string) => {
     setImageUrls(prev => prev.filter(url => url !== urlToRemove));
@@ -159,6 +202,27 @@ export function EditProductDialog({ product, isOpen, onOpenChange }: EditProduct
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto px-2 space-y-4">
+             <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+              <Label htmlFor="scrape-url-edit">جلب البيانات تلقائياً بالذكاء الاصطناعي</Label>
+              <div className="flex gap-2">
+                  <Input 
+                      id="scrape-url-edit" 
+                      placeholder="لصق الرابط هنا لتحديث البيانات"
+                      value={scrapeUrl}
+                      onChange={(e) => setScrapeUrl(e.target.value)}
+                      disabled={isScraping || isSubmitting}
+                  />
+                  <Button type="button" onClick={handleScrapeProduct} disabled={isScraping || isSubmitting || !scrapeUrl}>
+                      {isScraping ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  </Button>
+              </div>
+            </div>
+            
+            <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">أو عدّل البيانات يدوياً</span></div>
+            </div>
+
             <div className="grid gap-4 py-4">
                <div className="space-y-2">
                 <Label htmlFor="edit-name">الاسم</Label>
