@@ -4,7 +4,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { doc, collection, serverTimestamp, setDoc, query, where, limit, addDoc, getDocs, getDoc } from 'firebase/firestore';
@@ -121,7 +122,7 @@ const orderSchema = z.object({
 type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function PublicProductPage() {
-    const firestore = useFirestore();
+    const { firestore } = useFirebase();
     const params = useParams();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -210,7 +211,7 @@ export default function PublicProductPage() {
         );
     }, [firestore, product]);
 
-    const { data: relatedProductsData, isLoading: relatedProductsLoading } = useCollection<Product>(relatedProductsQuery);
+    const { data: relatedProductsData, isLoading: relatedProductsLoading } = useCollection(relatedProductsQuery);
 
     const relatedProducts = useMemo(() => {
         if (!relatedProductsData || !product) return [];
@@ -833,3 +834,5 @@ export default function PublicProductPage() {
         </div>
     );
 }
+
+    
