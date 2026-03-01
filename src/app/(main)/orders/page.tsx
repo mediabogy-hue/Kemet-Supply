@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useSession } from '@/auth/SessionProvider';
-import { collection, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc } from 'firebase/firestore'; // Removed orderBy
 import type { Order, Shipment, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,16 +24,27 @@ export default function MyOrdersPage() {
     const [orderToViewShipment, setOrderToViewShipment] = useState<Order | null>(null);
     const [shipmentDetails, setShipmentDetails] = useState<Shipment | null>(null);
 
+    // Query without ordering to avoid needing a composite index
     const ordersQuery = useMemoFirebase(
         () => (firestore && user) ? query(
             collection(firestore, 'orders'),
-            where('dropshipperId', '==', user.uid),
-            orderBy('createdAt', 'desc')
+            where('dropshipperId', '==', user.uid)
         ) : null,
         [firestore, user]
     );
 
     const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
+
+    // Sort the data on the client-side
+    const sortedOrders = useMemo(() => {
+        if (!orders) return [];
+        return [...orders].sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.().getTime() || 0;
+            const dateB = b.createdAt?.toDate?.().getTime() || 0;
+            return dateB - dateA; // Sort descending
+        });
+    }, [orders]);
+
 
     const handleViewShipment = async (order: Order) => {
         if (!firestore || !order.shipmentId) return;
@@ -86,7 +96,7 @@ export default function MyOrdersPage() {
                             <Skeleton className="h-10 w-full" />
                         </div>
                     ) : (
-                        <DataTable columns={columns} data={orders || []} />
+                        <DataTable columns={columns} data={sortedOrders} />
                     )}
                 </CardContent>
             </Card>
