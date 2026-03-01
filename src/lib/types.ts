@@ -96,7 +96,7 @@ export interface Order {
   // Denormalized product info
   productId: string;
   productName: string;
-  productImageUrl?: string | null; // Added this field
+  productImageUrl?: string | null;
   quantity: number;
   unitPrice: number;
   unitCommission: number;

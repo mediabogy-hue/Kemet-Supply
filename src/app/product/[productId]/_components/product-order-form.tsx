@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -61,6 +62,7 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
     const quantity = watch('quantity');
     const paymentMethod = watch('customerPaymentMethod');
     const totalAmount = product.price * quantity;
+    const platformFee = totalAmount * 0.10;
 
     const onSubmit = async (data: OrderFormData) => {
         if (!firestore) {
@@ -108,6 +110,7 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
                 totalAmount: totalAmount,
                 unitCommission: product.commission,
                 totalCommission: product.commission * data.quantity,
+                platformFee: platformFee,
                 status: 'Pending',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -121,21 +124,6 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
                     senderPhoneNumber: data.paymentSenderNumber,
                     referenceNumber: data.paymentTransactionId,
                 };
-                
-                const paymentId = doc(collection(firestore, 'id_generator')).id;
-                const paymentDocRef = doc(firestore, `payments/${paymentId}`);
-                const paymentData: Omit<Payment, 'createdAt' | 'updatedAt'> = {
-                    id: paymentId,
-                    orderId: orderId,
-                    dropshipperId: refId,
-                    dropshipperName: dropshipperName,
-                    paymentMethodId: data.customerPaymentMethod,
-                    amount: totalAmount,
-                    status: 'Pending',
-                    senderPhoneNumber: data.paymentSenderNumber!,
-                    referenceNumber: data.paymentTransactionId!,
-                };
-                batch.set(paymentDocRef, { ...paymentData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
             }
 
             batch.set(orderRef, orderData);

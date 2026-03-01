@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import type { Order, Shipment, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DataTable } from '@/app/(main)/admin/orders/_components/data-table';
+import { DataTable } from './_components/data-table';
 import { ShipmentDetailsDrawer } from '@/components/shared/shipment-details-drawer';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -27,7 +28,8 @@ export default function MyOrdersPage() {
     const ordersQuery = useMemoFirebase(
         () => (firestore && user) ? query(
             collection(firestore, 'orders'),
-            where('dropshipperId', '==', user.uid)
+            where('dropshipperId', '==', user.uid),
+            orderBy('createdAt', 'desc')
         ) : null,
         [firestore, user]
     );
@@ -59,7 +61,7 @@ export default function MyOrdersPage() {
 
     const columns = useMemo(
         () => getDropshipperOrderColumns(handleViewShipment, handleReorder),
-        []
+        [router]
     );
 
      if (error) {
