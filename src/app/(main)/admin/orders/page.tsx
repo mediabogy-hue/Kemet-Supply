@@ -94,6 +94,10 @@ export default function AdminOrdersPage() {
                         if (isNaN(merchantProfit)) {
                             throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
                         }
+                        
+                        if (merchantProfit < 0) {
+                            throw new Error(`Negative profit (${merchantProfit.toFixed(2)}) calculated. Check commissions/fees.`);
+                        }
 
                         if (merchantProfit > 0) {
                             const merchantWalletRef = doc(firestore, 'wallets', merchantId);

@@ -92,6 +92,11 @@ export function RetroactiveSettlementButton() {
                             if (isNaN(merchantProfit)) {
                                 throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
                             }
+                            
+                            if (merchantProfit < 0) {
+                                throw new Error(`Negative profit (${merchantProfit.toFixed(2)}) calculated.`);
+                            }
+                            
                             if (merchantProfit > 0) {
                                 const merchantWalletRef = doc(firestore, 'wallets', merchantId);
                                 const merchantWalletDoc = await transaction.get(merchantWalletRef);
