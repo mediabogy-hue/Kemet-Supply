@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, getDocs } from 'firebase/firestore';
+import { useState, useMemo } from 'react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,33 +29,23 @@ export default function AdminProductsPage() {
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [productToAnalyze, setProductToAnalyze] = useState<Product | null>(null);
     const [productToUpdateStock, setProductToUpdateStock] = useState<Product | null>(null);
+    
+    // Use real-time listener for products
+    const productsQuery = useMemoFirebase(
+        () => (firestore ? query(collection(firestore, "products")) : null),
+        [firestore]
+    );
+    const { data: products, isLoading, error } = useCollection<Product>(productsQuery);
 
-    // New state for one-time data fetch
-    const [products, setProducts] = useState<Product[] | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-
-    useEffect(() => {
-        if (!firestore) return;
-
-        const fetchProducts = async () => {
-            setIsLoading(true);
-            try {
-                const q = query(collection(firestore, "products"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                const fetchedProducts = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Product);
-                setProducts(fetchedProducts);
-                setError(null);
-            } catch (err: any) {
-                setError(err);
-                toast({ variant: 'destructive', title: 'فشل تحميل المنتجات', description: err.message });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchProducts();
-    }, [firestore, toast]);
+    // Sort on the client to avoid indexing issues and for consistency
+    const sortedProducts = useMemo(() => {
+        if (!products) return [];
+        return [...products].sort((a, b) => {
+            const timeA = (a.createdAt as any)?.toMillis?.() || 0;
+            const timeB = (b.createdAt as any)?.toMillis?.() || 0;
+            return timeB - timeA;
+        });
+    }, [products]);
 
 
     const handleDelete = async () => {
@@ -65,9 +54,9 @@ export default function AdminProductsPage() {
         
         try {
             await deleteDoc(productRef);
-            // Manually update local state
-            setProducts(prev => prev?.filter(p => p.id !== productToDelete.id) || null);
+            // No need to manually update state, useCollection handles it.
             setProductToDelete(null);
+            toast({ title: "تم حذف المنتج بنجاح." });
         } catch (e) {
             console.error('Failed to delete product:', e);
             toast({ variant: 'destructive', title: 'فشل حذف المنتج' });
@@ -95,7 +84,7 @@ export default function AdminProductsPage() {
                             {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-96" />)}
                         </div>
                     ) : (
-                         products?.length === 0 ? (
+                         sortedProducts?.length === 0 ? (
                             <div className="text-center py-16">
                                 <h3 className="text-lg font-semibold">لا توجد منتجات</h3>
                                 <p className="text-muted-foreground mt-2">ابدأ بإضافة أول منتج إلى المنصة.</p>
@@ -103,7 +92,7 @@ export default function AdminProductsPage() {
                             </div>
                         ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {products?.map((product) => (
+                            {sortedProducts?.map((product) => (
                                 <Card key={product.id} className="overflow-hidden flex flex-col">
                                     <div className="relative">
                                         <Image
