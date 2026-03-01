@@ -66,15 +66,26 @@ export default function AdminOrdersPage() {
                 
                 // 2. Update dropshipper's wallet
                 const dropshipperWalletRef = doc(firestore, 'wallets', order.dropshipperId);
+                const dropshipperCommission = Number(order.totalCommission || 0);
+                 if (isNaN(dropshipperCommission)) {
+                    throw new Error("Invalid dropshipper commission amount.");
+                }
+
                 batch.set(dropshipperWalletRef, {
-                    availableBalance: increment(order.totalCommission),
+                    availableBalance: increment(dropshipperCommission),
                     updatedAt: serverTimestamp()
                 }, { merge: true });
 
-                // 3. Update merchant's wallet (ONLY if merchant exists)
-                if (order.merchantId) {
-                    const platformFee = order.platformFee || 0;
-                    const merchantProfit = order.totalAmount - order.totalCommission - platformFee;
+                // 3. Update merchant's wallet (ONLY if merchant exists and ID is valid)
+                if (order.merchantId && typeof order.merchantId === 'string' && order.merchantId.length > 5) {
+                    const platformFee = Number(order.platformFee || 0);
+                    const totalAmount = Number(order.totalAmount || 0);
+
+                    const merchantProfit = totalAmount - dropshipperCommission - platformFee;
+                    if (isNaN(merchantProfit)) {
+                        throw new Error("Invalid merchant profit calculation.");
+                    }
+
                     const merchantWalletRef = doc(firestore, 'wallets', order.merchantId);
                     batch.set(merchantWalletRef, {
                         availableBalance: increment(merchantProfit),
@@ -89,12 +100,12 @@ export default function AdminOrdersPage() {
                     description: `تم إضافة الأرباح إلى محافظ المسوق ${order.merchantId ? 'والتاجر' : ''}.`,
                 });
 
-            } catch (e) {
+            } catch (e: any) {
                 console.error('Failed to settle finances for order:', e);
                 toast({
                     variant: 'destructive',
                     title: 'فشل إتمام التسوية المالية',
-                    description: 'حدث خطأ أثناء تحديث المحافظ. الرجاء المحاولة مرة أخرى.',
+                    description: `حدث خطأ أثناء تحديث المحافظ. ${e.message}`,
                 });
             }
             return;
