@@ -8,7 +8,7 @@ export type UserRole = UserProfile['role'];
 const PERMISSIONS: Record<UserRole, string[]> = {
   Admin: ['/admin'],
   OrdersManager: ['/admin/orders', '/admin/shipping', '/admin/dashboard'],
-  FinanceManager: ['/admin/withdrawals', '/admin/payments', '/admin/dashboard'],
+  FinanceManager: ['/admin/withdrawals', '/admin/payments', '/admin/dashboard', '/admin/settlements'],
   Dropshipper: ['/dashboard', '/products', '/orders', '/reports', '/profile', '/policy'],
   Merchant: ['/merchant', '/profile', '/policy'],
 };

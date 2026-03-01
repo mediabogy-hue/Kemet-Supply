@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Order, Shipment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,98 +51,14 @@ export default function AdminOrdersPage() {
 
         toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
 
-        if (status === 'Delivered') {
-            if (order.status === 'Delivered' && order.isSettled) {
-                toast({ variant: 'destructive', title: 'الطلب تم توصيله وتسويته بالفعل', description: 'لا يمكن تسوية الطلب مرتين.' });
-                return;
-            }
-
-            try {
-                await runTransaction(firestore, async (transaction) => {
-                    const orderRef = doc(firestore, 'orders', order.id);
-
-                    const orderTotalAmount = Number(order.totalAmount || 0);
-                    const orderDropshipperCommission = Number(order.totalCommission || 0);
-                    const orderPlatformFee = Number(order.platformFee || 0);
-
-                    if (isNaN(orderTotalAmount) || isNaN(orderDropshipperCommission) || isNaN(orderPlatformFee)) {
-                        throw new Error(`Order ${order.id} contains invalid financial data.`);
-                    }
-
-                    // Settle for Dropshipper
-                    const dropshipperId = order.dropshipperId;
-                    if (typeof dropshipperId === 'string' && dropshipperId.trim() !== '' && orderDropshipperCommission > 0) {
-                        const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
-                        const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
-                        
-                        const currentBalance = dropshipperWalletDoc.data()?.availableBalance || 0;
-                        const newBalance = currentBalance + orderDropshipperCommission;
-
-                        transaction.set(dropshipperWalletRef, {
-                            id: dropshipperId,
-                            availableBalance: newBalance,
-                            updatedAt: serverTimestamp()
-                        }, { merge: true });
-                    }
-
-                    // Settle for Merchant
-                    const merchantId = order.merchantId;
-                    if (typeof merchantId === 'string' && merchantId.trim() !== '') {
-                        const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
-                        
-                        if (isNaN(merchantProfit)) {
-                            throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
-                        }
-                        
-                        if (merchantProfit > 0) {
-                             const merchantWalletRef = doc(firestore, 'wallets', merchantId);
-                            const merchantWalletDoc = await transaction.get(merchantWalletRef);
-
-                            const currentBalance = merchantWalletDoc.data()?.availableBalance || 0;
-                            const newBalance = currentBalance + merchantProfit;
-                            
-                            transaction.set(merchantWalletRef, {
-                                id: merchantId,
-                                availableBalance: newBalance,
-                                updatedAt: serverTimestamp()
-                            }, { merge: true });
-
-                        } else if (merchantProfit < 0) {
-                            throw new Error(`Negative profit (${merchantProfit.toFixed(2)}) calculated. Check order financials.`);
-                        }
-                    }
-                    
-                    transaction.update(orderRef, { 
-                        status: 'Delivered', 
-                        deliveredAt: serverTimestamp(), 
-                        updatedAt: serverTimestamp(),
-                        isSettled: true 
-                    });
-                });
-
-                toast({
-                    title: '🎉 تم تأكيد التوصيل والتسوية المالية!',
-                    description: `تم إيداع الأرباح في المحافظ.`,
-                });
-
-            } catch (e: any) {
-                console.error("FATAL: Financial settlement failed for order:", order.id, e);
-                toast({
-                    variant: 'destructive',
-                    title: 'فشل إتمام التسوية المالية',
-                    description: `حدث خطأ فادح أثناء تحديث المحافظ. ${e.message}`,
-                    duration: 10000,
-                });
-            }
-            return;
-        }
-
-        // For any status other than Delivered, just update the order.
+        // The settlement logic is now moved to the settlements page.
+        // This function just updates the status.
         try {
             const orderRef = doc(firestore, 'orders', order.id);
             const updateData: any = { status, updatedAt: serverTimestamp() };
             if (status === 'Confirmed') updateData.confirmedAt = serverTimestamp();
             if (status === 'Shipped') updateData.shippedAt = serverTimestamp();
+            if (status === 'Delivered') updateData.deliveredAt = serverTimestamp();
             if (status === 'Returned') updateData.returnedAt = serverTimestamp();
             if (status === 'Canceled') updateData.canceledAt = serverTimestamp();
 

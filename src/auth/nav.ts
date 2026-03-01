@@ -1,6 +1,7 @@
+
 import React from "react";
 import {
-  LayoutDashboard, Box, ShoppingCart, Users, Settings, FileText, BarChart, ShieldCheck, DollarSign, Truck, Package, Banknote, Store, Handshake, Wallet
+  LayoutDashboard, Box, ShoppingCart, Users, Settings, FileText, BarChart, ShieldCheck, DollarSign, Truck, Package, Banknote, Store, Handshake, Wallet, CreditCard
 } from "lucide-react";
 import type { UserRole } from "./permissions";
 
@@ -126,9 +127,15 @@ export const navLinks: NavLink[] = [
         roles: ['Admin', 'FinanceManager'],
     },
     {
+        href: "/admin/settlements",
+        label: "تسويات الأرباح",
+        icon: React.createElement(DollarSign),
+        roles: ['Admin', 'FinanceManager'],
+    },
+    {
         href: "/admin/payments",
         label: "تأكيد الدفع",
-        icon: React.createElement(DollarSign),
+        icon: React.createElement(CreditCard),
         roles: ['Admin', 'FinanceManager'],
     },
     {

@@ -8,7 +8,6 @@ import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeedDatabaseButton } from "./_components/seed-database-button";
-import { RetroactiveSettlementButton } from "./_components/retroactive-settlement-button";
 import { useCollection, useMemoFirebase, useFirestore } from "@/firebase";
 import type { Order } from "@/lib/types";
 import { collection, query, where, Timestamp } from "firebase/firestore";
@@ -121,7 +120,6 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-4">
                     <SeedDatabaseButton />
-                    <RetroactiveSettlementButton />
                 </CardContent>
             </Card>
         </div>
