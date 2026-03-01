@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from "firebase/firestore";
 
 // This is based on the `User` entity in `docs/backend.json`
@@ -108,6 +109,7 @@ export interface Order {
   // Merchant Info
   merchantId?: string | null;
   merchantName?: string | null;
+  isSettled?: boolean;
 }
 
 export interface Wallet {

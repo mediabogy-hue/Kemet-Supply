@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -51,8 +52,8 @@ export default function AdminOrdersPage() {
         toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
 
         if (status === 'Delivered') {
-            if (order.status === 'Delivered') {
-                toast({ variant: 'destructive', title: 'الطلب تم توصيله بالفعل', description: 'لا يمكن توصيل الطلب مرتين.' });
+            if (order.status === 'Delivered' && order.isSettled) {
+                toast({ variant: 'destructive', title: 'الطلب تم توصيله وتسويته بالفعل', description: 'لا يمكن تسوية الطلب مرتين.' });
                 return;
             }
 
@@ -60,7 +61,6 @@ export default function AdminOrdersPage() {
                 await runTransaction(firestore, async (transaction) => {
                     const orderRef = doc(firestore, 'orders', order.id);
                     
-                    // --- 1. Safely parse all monetary values from the order ---
                     const orderTotalAmount = Number(order.totalAmount || 0);
                     const orderDropshipperCommission = Number(order.totalCommission || 0);
                     const orderPlatformFee = Number(order.platformFee || 0);
@@ -69,7 +69,6 @@ export default function AdminOrdersPage() {
                         throw new Error(`Order ${order.id} contains invalid financial data.`);
                     }
 
-                    // --- 2. Update Dropshipper Wallet ---
                     const dropshipperId = order.dropshipperId;
                     if (!dropshipperId || typeof dropshipperId !== 'string') {
                         throw new Error(`Order ${order.id} has an invalid dropshipperId.`);
@@ -88,7 +87,6 @@ export default function AdminOrdersPage() {
                         }, { merge: true });
                     }
 
-                    // --- 3. Update Merchant Wallet (if applicable) ---
                     const merchantId = order.merchantId;
                     if (merchantId && typeof merchantId === 'string' && merchantId.length > 1) {
                         const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
@@ -105,16 +103,19 @@ export default function AdminOrdersPage() {
                             if (isNaN(currentMerchantBalance)) {
                                  throw new Error(`Merchant wallet ${merchantId} has an invalid balance.`);
                             }
-
                             transaction.set(merchantWalletRef, {
                                 availableBalance: currentMerchantBalance + merchantProfit,
                                 updatedAt: serverTimestamp()
                             }, { merge: true });
                         }
                     }
-
-                    // --- 4. Finally, update the order status ---
-                    transaction.update(orderRef, { status: 'Delivered', deliveredAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                    
+                    transaction.update(orderRef, { 
+                        status: 'Delivered', 
+                        deliveredAt: serverTimestamp(), 
+                        updatedAt: serverTimestamp(),
+                        isSettled: true 
+                    });
                 });
 
                 toast({
