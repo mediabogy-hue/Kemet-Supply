@@ -1,6 +1,5 @@
 import 'server-only';
 import { NextResponse } from "next/server";
-import { getAdminApp, getAdminDb, FieldValue } from '@/firebase/server-init';
 import type { Order, Wallet } from '@/lib/types';
 import admin from 'firebase-admin';
 
@@ -10,7 +9,7 @@ async function safelyIncrementWallet(
     userId: string,
     amount: number
 ): Promise<void> {
-    if (typeof userId !== 'string' || userId.trim() === '' || !Number.isFinite(amount) || amount <= 0) {
+    if (typeof userId !== 'string' || userId.trim() === '' || !Number.isFinite(amount)) {
         return;
     }
 
@@ -20,40 +19,44 @@ async function safelyIncrementWallet(
     if (walletDoc.exists) {
         const currentData = walletDoc.data() as Wallet;
         const currentBalance = Number(currentData.availableBalance || 0);
+
         if (isNaN(currentBalance)) {
+             // If balance is not a number, overwrite it instead of incrementing.
             transaction.update(walletRef, {
                 availableBalance: amount,
-                updatedAt: FieldValue.serverTimestamp(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
         } else {
              transaction.update(walletRef, {
-                availableBalance: FieldValue.increment(amount),
-                updatedAt: FieldValue.serverTimestamp(),
+                availableBalance: admin.firestore.FieldValue.increment(amount),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
         }
     } else {
+        // Create a full, valid wallet object if it doesn't exist.
         transaction.set(walletRef, {
             id: userId,
             availableBalance: amount,
             pendingBalance: 0,
             pendingWithdrawals: 0,
             totalWithdrawn: 0,
-            updatedAt: FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
     }
 }
 
 
 export async function handleSettleOrder(req: Request) {
-    const { getAdminApp, getAdminDb, FieldValue } = await import("@/firebase/server-init");
-    const adminApp = getAdminApp();
-    const adminDb = getAdminDb();
-        
-    if (!adminApp || !adminDb) {
-        return NextResponse.json({ error: "Server is not configured." }, { status: 503 });
-    }
-
     try {
+        const { getAdminApp, getAdminDb, FieldValue } = await import("@/firebase/server-init");
+        const adminApp = getAdminApp();
+        const adminDb = getAdminDb();
+            
+        if (!adminApp || !adminDb) {
+            console.error("API Error in handleSettleOrder: Firebase Admin DB is not initialized. This is likely due to a missing or invalid FIREBASE_SERVICE_ACCOUNT_KEY environment variable.");
+            return NextResponse.json({ error: "فشل الاتصال الآمن بقاعدة البيانات من الخادم. قد تكون هناك مشكلة في إعدادات الخادم." }, { status: 503 });
+        }
+
         const authorization = req.headers.get("Authorization");
         if (!authorization?.startsWith("Bearer ")) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -101,9 +104,13 @@ export async function handleSettleOrder(req: Request) {
             const orderPlatformFee = Number(orderData.platformFee || 0);
             const merchantProfit = orderTotalAmount - dropshipperCommission - orderPlatformFee;
 
-            await safelyIncrementWallet(transaction, adminDb, dropshipperId, dropshipperCommission);
+            if (dropshipperId && dropshipperCommission > 0) {
+                await safelyIncrementWallet(transaction, adminDb, dropshipperId, dropshipperCommission);
+            }
 
-            await safelyIncrementWallet(transaction, adminDb, merchantId, merchantProfit);
+            if (merchantId && merchantProfit > 0) {
+              await safelyIncrementWallet(transaction, adminDb, merchantId, merchantProfit);
+            }
             
             transaction.update(orderRef, { isSettled: true, updatedAt: FieldValue.serverTimestamp() });
         });
