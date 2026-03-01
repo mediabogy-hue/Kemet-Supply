@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useSession } from '@/firebase';
-import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import { Loader2, History } from 'lucide-react';
 import type { Order } from '@/lib/types';
 import {
@@ -68,46 +68,60 @@ export function RetroactiveSettlementButton() {
                             throw new Error(`Order ${order.id} contains invalid financial data.`);
                         }
 
+                        // Settle for Dropshipper
                         const dropshipperId = order.dropshipperId;
-                        if (typeof dropshipperId !== 'string' || dropshipperId.trim() === '') {
+                         if (typeof dropshipperId !== 'string' || dropshipperId.trim() === '') {
                             throw new Error(`Order ${order.id} has an invalid or empty dropshipperId.`);
                         }
-
                         if (orderDropshipperCommission > 0) {
                             const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
                             const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
-                            const currentDropshipperBalance = Number(dropshipperWalletDoc.data()?.availableBalance || 0);
-                            if (isNaN(currentDropshipperBalance)) {
-                                throw new Error(`Dropshipper wallet ${dropshipperId} has an invalid balance.`);
+                            if (dropshipperWalletDoc.exists()) {
+                                transaction.update(dropshipperWalletRef, {
+                                    availableBalance: increment(orderDropshipperCommission),
+                                    updatedAt: serverTimestamp()
+                                });
+                            } else {
+                                transaction.set(dropshipperWalletRef, {
+                                    id: dropshipperId,
+                                    availableBalance: orderDropshipperCommission,
+                                    pendingBalance: 0,
+                                    pendingWithdrawals: 0,
+                                    totalWithdrawn: 0,
+                                    updatedAt: serverTimestamp()
+                                });
                             }
-                            transaction.set(dropshipperWalletRef, {
-                                availableBalance: currentDropshipperBalance + orderDropshipperCommission,
-                                updatedAt: serverTimestamp()
-                            }, { merge: true });
                         }
 
+                        // Settle for Merchant
                         const merchantId = order.merchantId;
                         if (typeof merchantId === 'string' && merchantId.trim() !== '') {
                             const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
+                            
                             if (isNaN(merchantProfit)) {
                                 throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
-                            }
-                            
-                            if (merchantProfit < 0) {
-                                throw new Error(`Negative profit (${merchantProfit.toFixed(2)}) calculated.`);
                             }
                             
                             if (merchantProfit > 0) {
                                 const merchantWalletRef = doc(firestore, 'wallets', merchantId);
                                 const merchantWalletDoc = await transaction.get(merchantWalletRef);
-                                const currentMerchantBalance = Number(merchantWalletDoc.data()?.availableBalance || 0);
-                                if (isNaN(currentMerchantBalance)) {
-                                    throw new Error(`Merchant wallet ${merchantId} has an invalid balance.`);
+                                if (merchantWalletDoc.exists()) {
+                                    transaction.update(merchantWalletRef, {
+                                        availableBalance: increment(merchantProfit),
+                                        updatedAt: serverTimestamp()
+                                    });
+                                } else {
+                                    transaction.set(merchantWalletRef, {
+                                        id: merchantId,
+                                        availableBalance: merchantProfit,
+                                        pendingBalance: 0,
+                                        pendingWithdrawals: 0,
+                                        totalWithdrawn: 0,
+                                        updatedAt: serverTimestamp()
+                                    });
                                 }
-                                transaction.set(merchantWalletRef, {
-                                    availableBalance: currentMerchantBalance + merchantProfit,
-                                    updatedAt: serverTimestamp()
-                                }, { merge: true });
+                            } else if (merchantProfit < 0) {
+                                throw new Error(`Negative profit (${merchantProfit.toFixed(2)}) calculated.`);
                             }
                         }
 
