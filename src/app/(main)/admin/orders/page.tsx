@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, writeBatch, increment, setDoc } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
 import type { Order, Shipment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,7 +48,6 @@ export default function AdminOrdersPage() {
     const handleStatusUpdate = async (order: Order, status: Order['status']) => {
         if (!firestore) return;
 
-        const orderRef = doc(firestore, 'orders', order.id);
         toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
 
         if (status === 'Delivered') {
@@ -58,56 +57,63 @@ export default function AdminOrdersPage() {
             }
 
             try {
-                const batch = writeBatch(firestore);
-
-                // 1. Update order status
-                batch.update(orderRef, { status: 'Delivered', deliveredAt: serverTimestamp(), updatedAt: serverTimestamp() });
-
-                // 2. Settle Dropshipper's commission
-                const dropshipperId = order.dropshipperId;
-                const dropshipperCommission = Number(order.totalCommission || 0);
-
-                if (!dropshipperId || typeof dropshipperId !== 'string' || dropshipperId.length < 5) {
-                    throw new Error(`Invalid dropshipperId: ${dropshipperId}`);
-                }
-                if (isNaN(dropshipperCommission)) {
-                    throw new Error(`Invalid dropshipper commission amount for order ${order.id}`);
-                }
-
-                if (dropshipperCommission !== 0) { // Only update if there is a commission
-                    const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
-                    batch.set(dropshipperWalletRef, {
-                        availableBalance: increment(dropshipperCommission),
-                        updatedAt: serverTimestamp()
-                    }, { merge: true });
-                }
-
-                // 3. Settle Merchant's profit
-                const merchantId = order.merchantId;
-                if (merchantId && typeof merchantId === 'string' && merchantId.length > 5) {
-                    const totalAmount = Number(order.totalAmount || 0);
-                    const platformFee = Number(order.platformFee || 0);
+                await runTransaction(firestore, async (transaction) => {
+                    const orderRef = doc(firestore, 'orders', order.id);
+                    const dropshipperWalletRef = doc(firestore, 'wallets', order.dropshipperId);
                     
-                    if (isNaN(totalAmount) || isNaN(platformFee)) {
-                         throw new Error(`Invalid financial data for order ${order.id}. Amount: ${order.totalAmount}, Fee: ${order.platformFee}`);
+                    // 1. Validate data before reads
+                    const dropshipperId = order.dropshipperId;
+                    if (!dropshipperId || typeof dropshipperId !== 'string' || dropshipperId.length < 5) {
+                        throw new Error(`Invalid dropshipperId: ${dropshipperId}`);
+                    }
+                    
+                    const dropshipperCommission = Number(order.totalCommission || 0);
+                    if (isNaN(dropshipperCommission)) {
+                         throw new Error(`Invalid dropshipper commission amount for order ${order.id}`);
                     }
 
-                    const merchantProfit = totalAmount - dropshipperCommission - platformFee;
+                    // 2. Read wallet states within the transaction
+                    const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
+                    const currentDropshipperBalance = dropshipperWalletDoc.data()?.availableBalance || 0;
                     
-                    if (isNaN(merchantProfit)) {
-                        throw new Error(`Merchant profit calculation resulted in NaN for order ${order.id}`);
-                    }
+                    // 3. Update Order Status
+                    transaction.update(orderRef, { status: 'Delivered', deliveredAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
-                    if (merchantProfit !== 0) { // Only update if there is a profit/loss
-                        const merchantWalletRef = doc(firestore, 'wallets', merchantId);
-                        batch.set(merchantWalletRef, {
-                            availableBalance: increment(merchantProfit),
+                    // 4. Update Dropshipper Wallet
+                    if (dropshipperCommission !== 0) {
+                       transaction.set(dropshipperWalletRef, {
+                            availableBalance: currentDropshipperBalance + dropshipperCommission,
                             updatedAt: serverTimestamp()
                         }, { merge: true });
                     }
-                }
 
-                await batch.commit();
+                    // 5. Settle Merchant's profit if applicable
+                    const merchantId = order.merchantId;
+                    if (merchantId && typeof merchantId === 'string' && merchantId.length > 5) {
+                        const totalAmount = Number(order.totalAmount || 0);
+                        const platformFee = Number(order.platformFee || 0);
+
+                        if (isNaN(totalAmount) || isNaN(platformFee)) {
+                            throw new Error(`Invalid financial data for order ${order.id}. Amount: ${order.totalAmount}, Fee: ${order.platformFee}`);
+                        }
+
+                        const merchantProfit = totalAmount - dropshipperCommission - platformFee;
+                        if (isNaN(merchantProfit)) {
+                            throw new Error(`Merchant profit calculation resulted in NaN for order ${order.id}`);
+                        }
+
+                        if (merchantProfit !== 0) {
+                            const merchantWalletRef = doc(firestore, 'wallets', merchantId);
+                            const merchantWalletDoc = await transaction.get(merchantWalletRef);
+                            const currentMerchantBalance = merchantWalletDoc.data()?.availableBalance || 0;
+
+                            transaction.set(merchantWalletRef, {
+                                availableBalance: currentMerchantBalance + merchantProfit,
+                                updatedAt: serverTimestamp()
+                            }, { merge: true });
+                        }
+                    }
+                });
 
                 toast({
                     title: '🎉 تم تأكيد التوصيل والتسوية المالية!',
@@ -128,6 +134,7 @@ export default function AdminOrdersPage() {
 
         // For any status other than Delivered, just update the order.
         try {
+            const orderRef = doc(firestore, 'orders', order.id);
             const updateData: any = { status, updatedAt: serverTimestamp() };
             if (status === 'Confirmed') updateData.confirmedAt = serverTimestamp();
             if (status === 'Shipped') updateData.shippedAt = serverTimestamp();
@@ -166,7 +173,7 @@ export default function AdminOrdersPage() {
         
         try {
             await deleteDoc(orderRef);
-            // No need to update local state, useCollection handles it
+            // No need to update local state, useCollection handles it.
             setOrderToDelete(null);
         } catch (e) {
             console.error('Failed to delete order:', e);
