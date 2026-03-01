@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, getDocs, writeBatch, increment } from 'firebase/firestore';
 import type { Order, Shipment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +12,13 @@ import { DeleteOrderAlert } from './_components/delete-order-alert';
 import { BostaManualShipmentDialog } from './_components/bosta-manual-shipment-dialog';
 import { ShipmentDetailsDrawer } from '@/components/shared/shipment-details-drawer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSession } from '@/auth/SessionProvider';
 
 export default function AdminOrdersPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { isFinanceManager, isAdmin, isOrdersManager } = useSession();
+
 
     // State for dialogs and drawers
     const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
@@ -55,23 +57,74 @@ export default function AdminOrdersPage() {
 
     const handleStatusUpdate = async (order: Order, status: Order['status']) => {
         if (!firestore) return;
+
         const orderRef = doc(firestore, 'orders', order.id);
         toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
+
+        // Financial settlement logic for 'Delivered' status
+        if (status === 'Delivered') {
+            if (order.status === 'Delivered') {
+                toast({ variant: 'destructive', title: 'الطلب تم توصيله بالفعل', description: 'لا يمكن توصيل الطلب مرتين.' });
+                return;
+            }
+            if (!order.merchantId) {
+                toast({ variant: 'destructive', title: 'خطأ في بيانات الطلب', description: 'لا يمكن إتمام التسوية المالية، التاجر غير محدد.' });
+                return;
+            }
+
+            try {
+                const batch = writeBatch(firestore);
+
+                // 1. Update order status to Delivered
+                batch.update(orderRef, { status: 'Delivered', deliveredAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                
+                // 2. Update dropshipper's wallet
+                const dropshipperWalletRef = doc(firestore, 'wallets', order.dropshipperId);
+                batch.update(dropshipperWalletRef, {
+                    availableBalance: increment(order.totalCommission),
+                    updatedAt: serverTimestamp()
+                });
+
+                // 3. Update merchant's wallet
+                const merchantProfit = order.totalAmount - order.totalCommission - order.platformFee;
+                const merchantWalletRef = doc(firestore, 'wallets', order.merchantId);
+                batch.update(merchantWalletRef, {
+                    availableBalance: increment(merchantProfit),
+                    updatedAt: serverTimestamp()
+                });
+
+                await batch.commit();
+                
+                // Update local state
+                setOrders(prev => prev?.map(o => o.id === order.id ? { ...o, status: 'Delivered' } : o) || null);
+                
+                toast({
+                    title: '🎉 تم تأكيد التوصيل والتسوية المالية!',
+                    description: `تم إضافة الأرباح إلى محافظ المسوق والتاجر.`,
+                });
+
+            } catch (e) {
+                console.error('Failed to settle finances for order:', e);
+                toast({
+                    variant: 'destructive',
+                    title: 'فشل إتمام التسوية المالية',
+                    description: 'حدث خطأ أثناء تحديث المحافظ. الرجاء المحاولة مرة أخرى.',
+                });
+            }
+            return;
+        }
+
+        // For any status other than Delivered, just update the order.
         try {
             const updateData: any = { status, updatedAt: serverTimestamp() };
             if (status === 'Confirmed') updateData.confirmedAt = serverTimestamp();
             if (status === 'Shipped') updateData.shippedAt = serverTimestamp();
-            if (status === 'Delivered') updateData.deliveredAt = serverTimestamp();
             if (status === 'Returned') updateData.returnedAt = serverTimestamp();
             if (status === 'Canceled') updateData.canceledAt = serverTimestamp();
 
             await updateDoc(orderRef, updateData);
-            
-            // Manually update local state for faster UI feedback
-            setOrders(prevOrders => 
-                prevOrders?.map(o => o.id === order.id ? { ...o, status: status } : o) || null
-            );
-
+            setOrders(prev => prev?.map(o => o.id === order.id ? { ...o, status } : o) || null);
+            toast({ title: 'تم تحديث الحالة بنجاح.' });
         } catch (e) {
             console.error('Failed to update order status:', e);
             toast({ variant: 'destructive', title: 'فشل تحديث الحالة' });

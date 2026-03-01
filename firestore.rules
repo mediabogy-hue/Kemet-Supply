@@ -55,9 +55,9 @@ service cloud.firestore {
     match /wallets/{userId} {
         allow get: if isOwner(userId) || isFinanceManager() || isAdmin();
         // create is done via server-side function on user registration.
-        // update is done by finance manager when processing withdrawals.
+        // update is done by admin/finance manager when processing withdrawals or settling orders.
         allow create: if false; 
-        allow update: if isFinanceManager() || isAdmin();
+        allow update: if isFinanceManager() || isAdmin() || isOrdersManager();
     }
     
     // Public Settings
@@ -91,10 +91,10 @@ service cloud.firestore {
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 
         isStaff() ||
-        (isMerchant() && get(/databases/$(database)/documents/products/$(resource.data.productId)).data.merchantId == request.auth.uid)
+        (isMerchant() && resource.data.merchantId == request.auth.uid)
       );
-      // Order manager can update anything. Merchant can only update status.
-      allow update: if isOrdersManager() || (isMerchant() && get(/databases/$(database)/documents/products/$(resource.data.productId)).data.merchantId == request.auth.uid);
+      // Order manager/Admin can update anything. Merchant can update their own orders.
+      allow update: if isOrdersManager() || isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
       allow delete: if isAdmin();
     }
 

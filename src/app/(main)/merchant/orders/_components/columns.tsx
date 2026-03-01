@@ -1,4 +1,3 @@
-
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
@@ -10,8 +9,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, ArrowUpDown, CheckCircle } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, FilePen } from "lucide-react"
 import { format } from 'date-fns'
 import { OrderStatusBadge } from "./order-status-badge"
 
@@ -81,7 +84,9 @@ export const getMerchantOrderColumns = (
   {
     id: "actions",
     cell: ({ row }) => {
-      const order = row.original
+      const order = row.original;
+
+      const canUpdateStatus = ['Pending', 'Confirmed', 'Ready to Ship'].includes(order.status);
 
       return (
         <DropdownMenu>
@@ -93,11 +98,36 @@ export const getMerchantOrderColumns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-            {order.status === 'Pending' && (
-                <DropdownMenuItem onClick={() => onStatusUpdate(order, 'Confirmed')}>
-                    <CheckCircle className="me-2 text-green-500" />
-                    تأكيد الطلب (جاهز للشحن)
-                </DropdownMenuItem>
+            {canUpdateStatus ? (
+               <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <FilePen className="me-2" />
+                    <span>تغيير الحالة</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                        {order.status === 'Pending' && (
+                             <DropdownMenuItem onClick={() => onStatusUpdate(order, 'Confirmed')}>
+                                <OrderStatusBadge status="Confirmed" />
+                            </DropdownMenuItem>
+                        )}
+                        {order.status === 'Confirmed' && (
+                             <DropdownMenuItem onClick={() => onStatusUpdate(order, 'Ready to Ship')}>
+                               <OrderStatusBadge status="Ready to Ship" />
+                            </DropdownMenuItem>
+                        )}
+                         {order.status === 'Ready to Ship' && (
+                             <DropdownMenuItem onClick={() => onStatusUpdate(order, 'Shipped')}>
+                               <OrderStatusBadge status="Shipped" />
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+            </DropdownMenuSub>
+            ) : (
+                 <DropdownMenuItem disabled>
+                    <p className="text-xs text-muted-foreground">لا توجد إجراءات متاحة</p>
+                 </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

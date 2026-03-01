@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -37,11 +36,13 @@ export default function MerchantOrdersPage() {
             if (status === 'Confirmed') {
                 updateData.confirmedAt = serverTimestamp();
             }
+             if (status === 'Shipped') {
+                updateData.shippedAt = serverTimestamp();
+            }
 
             await updateDoc(orderRef, updateData);
             toast({
-                title: "تم تأكيد الطلب بنجاح!",
-                description: "سيقوم فريق العمل بتجهيز الشحنة."
+                title: "تم تحديث حالة الطلب بنجاح!",
             })
         } catch (e) {
             console.error('Failed to update order status:', e);
