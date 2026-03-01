@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -17,16 +16,21 @@ export default function SettlementsPage() {
     const { toast } = useToast();
     const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
 
-    const unsettledOrdersQuery = useMemoFirebase(
+    // Query for delivered orders, then filter client-side to avoid composite index
+    const deliveredOrdersQuery = useMemoFirebase(
         () => (firestore ? query(
             collection(firestore, 'orders'),
-            where('status', '==', 'Delivered'),
-            where('isSettled', '!=', true)
+            where('status', '==', 'Delivered')
         ) : null),
         [firestore]
     );
 
-    const { data: orders, isLoading, error } = useCollection<Order>(unsettledOrdersQuery);
+    const { data: deliveredOrders, isLoading, error } = useCollection<Order>(deliveredOrdersQuery);
+
+    const orders = useMemo(() => {
+        if (!deliveredOrders) return [];
+        return deliveredOrders.filter(order => order.isSettled !== true);
+    }, [deliveredOrders]);
     
     const handleSettleOrder = async (order: Order) => {
         if (!firestore) return;
