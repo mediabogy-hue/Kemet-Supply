@@ -69,8 +69,8 @@ export function RetroactiveSettlementButton() {
                         }
 
                         const dropshipperId = order.dropshipperId;
-                        if (!dropshipperId || typeof dropshipperId !== 'string') {
-                            throw new Error(`Order ${order.id} has an invalid dropshipperId.`);
+                        if (typeof dropshipperId !== 'string' || dropshipperId.trim() === '') {
+                            throw new Error(`Order ${order.id} has an invalid or empty dropshipperId.`);
                         }
 
                         if (orderDropshipperCommission > 0) {
@@ -87,7 +87,7 @@ export function RetroactiveSettlementButton() {
                         }
 
                         const merchantId = order.merchantId;
-                        if (merchantId && typeof merchantId === 'string' && merchantId.length > 1) {
+                        if (typeof merchantId === 'string' && merchantId.trim() !== '') {
                             const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
                             if (isNaN(merchantProfit)) {
                                 throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
