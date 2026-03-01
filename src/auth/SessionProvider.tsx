@@ -19,7 +19,6 @@ export interface SessionContextState {
   isMerchant: boolean;
   isStaff: boolean;
   isDropshipper: boolean;
-  firestore: ReturnType<typeof useFirebase>['firestore']
 }
 
 const SessionContext = createContext<SessionContextState | undefined>(undefined);
@@ -102,9 +101,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isMerchant: role === 'Merchant',
       isStaff: ['Admin', 'OrdersManager', 'FinanceManager'].includes(role || ''),
       isDropshipper: role === 'Dropshipper',
-      firestore,
     };
-  }, [user, profile, isLoading, error, firestore]);
+  }, [user, profile, isLoading, error]);
 
   return (
     <SessionContext.Provider value={contextValue}>

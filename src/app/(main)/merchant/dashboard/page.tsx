@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/auth/SessionProvider";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection, useMemoFirebase, useFirestore } from "@/firebase";
 import type { Order, Product } from "@/lib/types";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,8 @@ import { ar } from 'date-fns/locale';
 import { OrderStatusBadge } from '@/app/(main)/merchant/orders/_components/order-status-badge';
 
 export default function MerchantDashboardPage() {
-  const { profile, user, firestore } = useSession();
+  const { profile, user } = useSession();
+  const firestore = useFirestore();
 
   // Fetch merchant's products
   const productsQuery = useMemoFirebase(() => {

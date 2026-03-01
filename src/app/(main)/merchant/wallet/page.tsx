@@ -2,7 +2,7 @@
 'use client';
 
 import { useSession } from "@/auth/SessionProvider";
-import { useDoc, useCollection, useMemoFirebase } from "@/firebase";
+import { useDoc, useCollection, useMemoFirebase, useFirestore } from "@/firebase";
 import { doc, collection, query, orderBy } from "firebase/firestore";
 import type { Wallet, WithdrawalRequest } from "@/lib/types";
 
@@ -16,7 +16,8 @@ import { ShieldCheck } from "lucide-react";
 
 
 export default function MerchantWalletPage() {
-    const { user, profile, firestore, isLoading: sessionLoading } = useSession();
+    const { user, profile, isLoading: sessionLoading } = useSession();
+    const firestore = useFirestore();
 
     const walletRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'wallets', user.uid) : null, [firestore, user]);
     const { data: wallet, isLoading: walletLoading } = useDoc<Wallet>(walletRef);
