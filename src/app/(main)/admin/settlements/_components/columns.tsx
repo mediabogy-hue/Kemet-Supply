@@ -55,8 +55,8 @@ export const getColumns = (
     accessorKey: "deliveredAt",
     header: "تاريخ التوصيل",
     cell: ({ row }) => {
-        const date = row.original.deliveredAt?.toDate();
-        return date ? date.toLocaleDateString('ar-EG') : 'غير محدد';
+        const date = row.original.deliveredAt;
+        return date ? new Date(date).toLocaleDateString('ar-EG') : 'غير محدد';
     }
   },
   {

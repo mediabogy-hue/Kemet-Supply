@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,27 +10,54 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DataTable } from './_components/data-table';
 import { getColumns } from './_components/columns';
 
-
 export default function SettlementsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
 
-    // Fetch all delivered orders. This is a simple query that doesn't need a composite index.
-    const deliveredOrdersQuery = useMemoFirebase(
-        () => (firestore ? query(
-            collection(firestore, 'orders'),
-            where('status', '==', 'Delivered')
-        ) : null),
-        [firestore]
-    );
-    const { data: deliveredOrders, isLoading, error } = useCollection<Order>(deliveredOrdersQuery);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Filter for unsettled orders on the client side. This is more robust than a complex query.
-    const orders = useMemo(() => {
-        if (!deliveredOrders) return [];
-        return deliveredOrders.filter(order => order.isSettled !== true);
-    }, [deliveredOrders]);
+    const fetchPendingSettlements = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/settlements/pending');
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to fetch data from server.');
+            }
+            const data: any[] = await response.json();
+            
+            // Convert ISO strings back to Date objects for client-side processing
+            const parsedData = data.map(order => ({
+                ...order,
+                createdAt: new Date(order.createdAt),
+                updatedAt: new Date(order.updatedAt),
+                deliveredAt: order.deliveredAt ? new Date(order.deliveredAt) : undefined,
+                confirmedAt: order.confirmedAt ? new Date(order.confirmedAt) : undefined,
+                shippedAt: order.shippedAt ? new Date(order.shippedAt) : undefined,
+                returnedAt: order.returnedAt ? new Date(order.returnedAt) : undefined,
+                canceledAt: order.canceledAt ? new Date(order.canceledAt) : undefined,
+            }));
+
+            setOrders(parsedData);
+        } catch (e: any) {
+            setError(e.message);
+            toast({
+                variant: 'destructive',
+                title: 'فشل تحميل بيانات التسويات',
+                description: e.message,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+
+    useEffect(() => {
+        fetchPendingSettlements();
+    }, [fetchPendingSettlements]);
 
     
     const handleSettleOrder = async (order: Order) => {
@@ -62,19 +88,13 @@ export default function SettlementsPage() {
                     const walletRef = doc(firestore, 'wallets', dropshipperId);
                     const walletDoc = await transaction.get(walletRef);
                     
-                    if (walletDoc.exists()) {
-                        const currentBalance = Number(walletDoc.data()?.availableBalance);
-                         if (isNaN(currentBalance)) {
-                            // Correct the corrupt data and update
-                            transaction.update(walletRef, { availableBalance: orderDropshipperCommission, updatedAt: serverTimestamp() });
-                        } else {
-                            transaction.update(walletRef, { 
-                                availableBalance: currentBalance + orderDropshipperCommission,
-                                updatedAt: serverTimestamp() 
-                            });
-                        }
+                    const currentBalance = Number(walletDoc.data()?.availableBalance);
+                    if (walletDoc.exists() && !isNaN(currentBalance)) {
+                        transaction.update(walletRef, { 
+                            availableBalance: currentBalance + orderDropshipperCommission,
+                            updatedAt: serverTimestamp() 
+                        });
                     } else {
-                        // Create a full, valid wallet if it doesn't exist
                         transaction.set(walletRef, {
                             id: dropshipperId,
                             availableBalance: orderDropshipperCommission,
@@ -82,7 +102,7 @@ export default function SettlementsPage() {
                             pendingWithdrawals: 0,
                             totalWithdrawn: 0,
                             updatedAt: serverTimestamp(),
-                        });
+                        }, { merge: true });
                     }
                 }
 
@@ -98,19 +118,14 @@ export default function SettlementsPage() {
                     if (merchantProfit > 0) {
                         const walletRef = doc(firestore, 'wallets', merchantId);
                         const walletDoc = await transaction.get(walletRef);
-
-                        if (walletDoc.exists()) {
-                            const currentBalance = Number(walletDoc.data()?.availableBalance);
-                            if (isNaN(currentBalance)) {
-                               transaction.update(walletRef, { availableBalance: merchantProfit, updatedAt: serverTimestamp() });
-                            } else {
-                                transaction.update(walletRef, { 
-                                    availableBalance: currentBalance + merchantProfit,
-                                    updatedAt: serverTimestamp() 
-                                });
-                            }
+                        
+                        const currentBalance = Number(walletDoc.data()?.availableBalance);
+                        if (walletDoc.exists() && !isNaN(currentBalance)) {
+                            transaction.update(walletRef, { 
+                                availableBalance: currentBalance + merchantProfit,
+                                updatedAt: serverTimestamp() 
+                            });
                         } else {
-                            // Create a full, valid wallet if it doesn't exist
                             transaction.set(walletRef, {
                                 id: merchantId,
                                 availableBalance: merchantProfit,
@@ -118,7 +133,7 @@ export default function SettlementsPage() {
                                 pendingWithdrawals: 0,
                                 totalWithdrawn: 0,
                                 updatedAt: serverTimestamp(),
-                            });
+                            }, { merge: true });
                         }
                     }
                 }
@@ -130,6 +145,7 @@ export default function SettlementsPage() {
                 title: '🎉 تمت التسوية بنجاح!',
                 description: `تم إيداع الأرباح في المحافظ للطلب #${order.id.substring(0, 5)}.`,
             });
+            fetchPendingSettlements();
         } catch (e: any) {
              console.error(`FATAL: Financial settlement failed for order ${order.id}:`, e);
              toast({
@@ -157,14 +173,7 @@ export default function SettlementsPage() {
                     <CardTitle className="text-destructive">خطأ في تحميل البيانات</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-destructive">فشل تحميل الطلبات: {error.message}</p>
-                    {error.message.includes("The query requires an index") && (
-                        <div className="mt-4 p-4 border border-dashed border-destructive rounded-lg bg-destructive/10">
-                            <h3 className="font-semibold">إجراء مطلوب:</h3>
-                            <p>لتحسين أداء هذه الصفحة، يتطلب الأمر إضافة فهرس مخصص لقاعدة البيانات. هذا إجراء آمن ومطلوب لفرز البيانات بكفاءة.</p>
-                            <p className="mt-2">الرجاء فتح "أدوات المطورين" في متصفحك (Developer Tools)، والبحث في قسم "الكونسول" (Console) عن رسالة الخطأ التي تحتوي على رابط، ثم الضغط على هذا الرابط لإنشاء الفهرس المطلوب.</p>
-                        </div>
-                    )}
+                    <p className="text-destructive">فشل تحميل الطلبات: {error}</p>
                 </CardContent>
             </Card>
           </div>

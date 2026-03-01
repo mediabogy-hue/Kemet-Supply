@@ -87,13 +87,13 @@ export interface Order {
   totalAmount: number;
   totalCommission: number;
   status: 'Pending' | 'Confirmed' | 'Ready to Ship' | 'Shipped' | 'Delivered' | 'Returned' | 'Canceled';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  confirmedAt?: Timestamp;
-  shippedAt?: Timestamp;
-  deliveredAt?: Timestamp;
-  returnedAt?: Timestamp;
-  canceledAt?: Timestamp;
+  createdAt: Timestamp | string;
+  updatedAt: Timestamp | string;
+  confirmedAt?: Timestamp | string;
+  shippedAt?: Timestamp | string;
+  deliveredAt?: Timestamp | string;
+  returnedAt?: Timestamp | string;
+  canceledAt?: Timestamp | string;
   // Denormalized product info
   productId: string;
   productName: string;
