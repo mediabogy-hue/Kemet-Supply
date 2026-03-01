@@ -51,7 +51,6 @@ export default function AdminOrdersPage() {
         const orderRef = doc(firestore, 'orders', order.id);
         toast({ title: `جاري تحديث حالة الطلب إلى ${status}...` });
 
-        // Financial settlement logic for 'Delivered' status
         if (status === 'Delivered') {
             if (order.status === 'Delivered') {
                 toast({ variant: 'destructive', title: 'الطلب تم توصيله بالفعل', description: 'لا يمكن توصيل الطلب مرتين.' });
@@ -61,51 +60,67 @@ export default function AdminOrdersPage() {
             try {
                 const batch = writeBatch(firestore);
 
-                // 1. Update order status to Delivered
+                // 1. Update order status
                 batch.update(orderRef, { status: 'Delivered', deliveredAt: serverTimestamp(), updatedAt: serverTimestamp() });
-                
-                // 2. Update dropshipper's wallet
-                const dropshipperWalletRef = doc(firestore, 'wallets', order.dropshipperId);
+
+                // 2. Settle Dropshipper's commission
+                const dropshipperId = order.dropshipperId;
                 const dropshipperCommission = Number(order.totalCommission || 0);
-                 if (isNaN(dropshipperCommission)) {
-                    throw new Error("Invalid dropshipper commission amount.");
+
+                if (!dropshipperId || typeof dropshipperId !== 'string' || dropshipperId.length < 5) {
+                    throw new Error(`Invalid dropshipperId: ${dropshipperId}`);
+                }
+                if (isNaN(dropshipperCommission)) {
+                    throw new Error(`Invalid dropshipper commission amount for order ${order.id}`);
                 }
 
-                batch.set(dropshipperWalletRef, {
-                    availableBalance: increment(dropshipperCommission),
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-
-                // 3. Update merchant's wallet (ONLY if merchant exists and ID is valid)
-                if (order.merchantId && typeof order.merchantId === 'string' && order.merchantId.length > 5) {
-                    const platformFee = Number(order.platformFee || 0);
-                    const totalAmount = Number(order.totalAmount || 0);
-
-                    const merchantProfit = totalAmount - dropshipperCommission - platformFee;
-                    if (isNaN(merchantProfit)) {
-                        throw new Error("Invalid merchant profit calculation.");
-                    }
-
-                    const merchantWalletRef = doc(firestore, 'wallets', order.merchantId);
-                    batch.set(merchantWalletRef, {
-                        availableBalance: increment(merchantProfit),
+                if (dropshipperCommission !== 0) { // Only update if there is a commission
+                    const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
+                    batch.set(dropshipperWalletRef, {
+                        availableBalance: increment(dropshipperCommission),
                         updatedAt: serverTimestamp()
                     }, { merge: true });
                 }
-                
+
+                // 3. Settle Merchant's profit
+                const merchantId = order.merchantId;
+                if (merchantId && typeof merchantId === 'string' && merchantId.length > 5) {
+                    const totalAmount = Number(order.totalAmount || 0);
+                    const platformFee = Number(order.platformFee || 0);
+                    
+                    if (isNaN(totalAmount) || isNaN(platformFee)) {
+                         throw new Error(`Invalid financial data for order ${order.id}. Amount: ${order.totalAmount}, Fee: ${order.platformFee}`);
+                    }
+
+                    const merchantProfit = totalAmount - dropshipperCommission - platformFee;
+                    
+                    if (isNaN(merchantProfit)) {
+                        throw new Error(`Merchant profit calculation resulted in NaN for order ${order.id}`);
+                    }
+
+                    if (merchantProfit !== 0) { // Only update if there is a profit/loss
+                        const merchantWalletRef = doc(firestore, 'wallets', merchantId);
+                        batch.set(merchantWalletRef, {
+                            availableBalance: increment(merchantProfit),
+                            updatedAt: serverTimestamp()
+                        }, { merge: true });
+                    }
+                }
+
                 await batch.commit();
-                
+
                 toast({
                     title: '🎉 تم تأكيد التوصيل والتسوية المالية!',
-                    description: `تم إضافة الأرباح إلى محافظ المسوق ${order.merchantId ? 'والتاجر' : ''}.`,
+                    description: `تم إيداع الأرباح في المحافظ.`,
                 });
 
             } catch (e: any) {
-                console.error('Failed to settle finances for order:', e);
+                console.error("FATAL: Financial settlement failed for order:", order.id, e);
                 toast({
                     variant: 'destructive',
                     title: 'فشل إتمام التسوية المالية',
-                    description: `حدث خطأ أثناء تحديث المحافظ. ${e.message}`,
+                    description: `حدث خطأ فادح أثناء تحديث المحافظ. ${e.message}`,
+                    duration: 10000,
                 });
             }
             return;
