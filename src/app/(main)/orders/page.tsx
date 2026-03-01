@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useSession } from '@/auth/SessionProvider';
 import { collection, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
-import type { Order, Shipment } from '@/lib/types';
+import type { Order, Shipment, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
