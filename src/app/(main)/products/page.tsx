@@ -46,6 +46,7 @@ export default function ProductsPage() {
             <CategoryBrowser 
                 selectedCategory={selectedCategory}
                 onSelectCategory={setSelectedCategory}
+                firestore={firestore}
             />
             
             <div className="relative mx-auto w-full max-w-lg">
