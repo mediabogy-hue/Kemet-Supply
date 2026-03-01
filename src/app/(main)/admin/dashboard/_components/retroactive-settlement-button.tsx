@@ -37,9 +37,9 @@ export function RetroactiveSettlementButton() {
 
         let processedCount = 0;
         let errorCount = 0;
+        let failedOrderErrors: string[] = [];
 
         try {
-            // Query for delivered orders that have not been settled yet
             const q = query(
                 collection(firestore, "orders"),
                 where("status", "==", "Delivered"),
@@ -77,6 +77,9 @@ export function RetroactiveSettlementButton() {
                             const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
                             const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
                             const currentDropshipperBalance = Number(dropshipperWalletDoc.data()?.availableBalance || 0);
+                            if (isNaN(currentDropshipperBalance)) {
+                                throw new Error(`Dropshipper wallet ${dropshipperId} has an invalid balance.`);
+                            }
                             transaction.set(dropshipperWalletRef, {
                                 availableBalance: currentDropshipperBalance + orderDropshipperCommission,
                                 updatedAt: serverTimestamp()
@@ -86,10 +89,16 @@ export function RetroactiveSettlementButton() {
                         const merchantId = order.merchantId;
                         if (merchantId && typeof merchantId === 'string' && merchantId.length > 1) {
                             const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
+                            if (isNaN(merchantProfit)) {
+                                throw new Error(`Merchant profit calculation failed for order ${order.id}.`);
+                            }
                             if (merchantProfit > 0) {
                                 const merchantWalletRef = doc(firestore, 'wallets', merchantId);
                                 const merchantWalletDoc = await transaction.get(merchantWalletRef);
                                 const currentMerchantBalance = Number(merchantWalletDoc.data()?.availableBalance || 0);
+                                if (isNaN(currentMerchantBalance)) {
+                                    throw new Error(`Merchant wallet ${merchantId} has an invalid balance.`);
+                                }
                                 transaction.set(merchantWalletRef, {
                                     availableBalance: currentMerchantBalance + merchantProfit,
                                     updatedAt: serverTimestamp()
@@ -102,14 +111,24 @@ export function RetroactiveSettlementButton() {
                     processedCount++;
                 } catch (e: any) {
                     console.error(`Failed to settle order ${order.id}:`, e);
+                    failedOrderErrors.push(`الطلب ${order.id.substring(0,5)}: ${e.message}`);
                     errorCount++;
                 }
             }
 
-            toast({
-                title: 'اكتملت التسوية!',
-                description: `تمت تسوية ${processedCount} طلب بنجاح. فشلت ${errorCount} طلبات.`,
-            });
+            if (errorCount > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: `فشل تسوية ${errorCount} طلب`,
+                    description: `تمت تسوية ${processedCount} طلب بنجاح. الأخطاء: ${failedOrderErrors.slice(0, 2).join(', ')}`,
+                    duration: 10000,
+                });
+            } else {
+                toast({
+                    title: 'اكتملت التسوية بنجاح!',
+                    description: `تمت تسوية ${processedCount} طلب.`,
+                });
+            }
 
         } catch (error: any) {
             console.error("Failed to query old orders:", error);
