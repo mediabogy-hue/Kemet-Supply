@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -7,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/auth/SessionProvider";
 import { useFirebase } from '@/firebase/provider';
-import { useCollection, useMemoFirebase } from "@/firebase";
-import type { Order } from "@/lib/types";
-import { collection, query, where, Timestamp } from "firebase/firestore";
+import { useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import type { Order, Wallet } from "@/lib/types";
+import { collection, query, where, Timestamp, doc } from "firebase/firestore";
 import { format, subDays } from 'date-fns';
 import { RecentSales } from './_components/recent-sales';
-import { DollarSign, ShoppingCart, Activity } from 'lucide-react';
+import { DollarSign, ShoppingCart, Activity, Wallet as WalletIcon, PlusCircle, ShoppingBag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 const SalesChart = dynamic(
   () => import('./_components/sales-chart').then(mod => mod.SalesChart),
@@ -26,7 +27,7 @@ export default function DashboardPage() {
     const { user, profile } = useSession();
     const { firestore } = useFirebase();
 
-    // Fetch all orders for the user, then filter by date on the client
+    // === QUERIES ===
     const ordersQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
         return query(
@@ -35,9 +36,15 @@ export default function DashboardPage() {
         );
     }, [firestore, user]);
 
-    const { data: allOrders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);
+    const walletRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'wallets', user.uid) : null, [firestore, user]);
 
-    // Memoize the date-filtered orders
+    // === DATA FETCHING ===
+    const { data: allOrders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);
+    const { data: wallet, isLoading: walletLoading } = useDoc<Wallet>(walletRef);
+    
+    const overallLoading = ordersLoading || walletLoading;
+
+    // === MEMOIZED CALCULATIONS ===
     const orders = useMemo(() => {
         if (!allOrders) return null;
         const thirtyDaysAgo = subDays(new Date(), 30);
@@ -103,22 +110,38 @@ export default function DashboardPage() {
 
     return (
     <div className="space-y-6">
-        <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-                مرحباً بك، {profile?.firstName || 'المسوق'}!
-            </h1>
-            <p className="text-muted-foreground">
-                هذه لوحة التحكم الخاصة بك. يمكنك من هنا متابعة أداءك.
-            </p>
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                    مرحباً بك، {profile?.firstName || 'المسوق'}!
+                </h1>
+                <p className="text-muted-foreground">
+                    هذه لوحة التحكم الخاصة بك. يمكنك من هنا متابعة أداءك.
+                </p>
+            </div>
+            <div className="flex items-center gap-2">
+                 <Button asChild variant="outline"><Link href="/products"><ShoppingBag /> تصفح المنتجات</Link></Button>
+                 <Button asChild><Link href="/orders/new"><PlusCircle /> إضافة طلب جديد</Link></Button>
+            </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">الرصيد القابل للسحب</CardTitle>
+                    <WalletIcon className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                    {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{(wallet?.availableBalance || 0).toFixed(2)} ج.م</div>}
+                    <p className="text-xs text-muted-foreground">الأرباح الجاهزة للسحب الآن.</p>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">إجمالي الأرباح (آخر 30 يوم)</CardTitle>
                     <DollarSign className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                    {ordersLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{stats.totalCommission.toFixed(2)} ج.م</div>}
+                    {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{stats.totalCommission.toFixed(2)} ج.م</div>}
                     <p className="text-xs text-muted-foreground">الأرباح من الطلبات التي تم توصيلها.</p>
                 </CardContent>
             </Card>
@@ -128,7 +151,7 @@ export default function DashboardPage() {
                     <ShoppingCart className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                    {ordersLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">+{stats.deliveredOrders}</div>}
+                    {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">+{stats.deliveredOrders}</div>}
                     <p className="text-xs text-muted-foreground">عدد الطلبات التي تم توصيلها بنجاح.</p>
                 </CardContent>
             </Card>
@@ -138,7 +161,7 @@ export default function DashboardPage() {
                     <Activity className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                    {ordersLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.pendingOrders}</div>}
+                    {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.pendingOrders}</div>}
                     <p className="text-xs text-muted-foreground">الطلبات قيد الانتظار أو الشحن.</p>
                 </CardContent>
             </Card>

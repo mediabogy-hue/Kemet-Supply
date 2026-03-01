@@ -1,23 +1,24 @@
-
 'use client';
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/auth/SessionProvider";
-import { useCollection, useMemoFirebase, useFirestore } from "@/firebase";
-import type { Order, Product } from "@/lib/types";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { useCollection, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
+import type { Order, Product, Wallet } from "@/lib/types";
+import { collection, query, where, orderBy, limit, doc } from "firebase/firestore";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Box, ShoppingCart, Activity } from 'lucide-react';
+import { Box, ShoppingCart, Activity, Wallet as WalletIcon, Package, PackageX, PlusCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { OrderStatusBadge } from '@/app/(main)/merchant/orders/_components/order-status-badge';
+import { Button } from '@/components/ui/button';
 
 export default function MerchantDashboardPage() {
   const { profile, user } = useSession();
   const firestore = useFirestore();
 
-  // Fetch merchant's products
+  // === QUERIES ===
   const productsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -25,80 +26,103 @@ export default function MerchantDashboardPage() {
         where("merchantId", "==", user.uid)
     );
   }, [firestore, user]);
-  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
 
-  // Fetch orders for merchant's products
   const ordersQuery = useMemoFirebase(() => {
       if (!firestore || !user) return null;
       return query(
           collection(firestore, "orders"),
           where("merchantId", "==", user.uid),
-          limit(20) // Limit for dashboard performance
+          orderBy("createdAt", "desc"),
+          limit(20)
       );
   }, [firestore, user]);
-  const { data: orders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);
 
+  const walletRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'wallets', user.uid) : null, [firestore, user]);
+
+  // === DATA FETCHING ===
+  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
+  const { data: orders, isLoading: ordersLoading } = useCollection<Order>(ordersQuery);
+  const { data: wallet, isLoading: walletLoading } = useDoc<Wallet>(walletRef);
+  
+  const overallLoading = productsLoading || ordersLoading || walletLoading;
+
+  // === STATS & DATA CALCULATION ===
   const stats = useMemo(() => {
-      if (productsLoading || ordersLoading) return { totalProducts: 0, totalSales: 0, pendingOrders: 0 };
+      if (!products || !orders) return { totalProducts: 0, totalSales: 0, pendingOrders: 0, outOfStockCount: 0 };
       
-      const totalProducts = products?.length || 0;
+      const totalProducts = products.length;
+      const outOfStockCount = products.filter(p => p.stockQuantity === 0).length;
       
-      const totalSales = orders?.reduce((sum, order) => {
+      const totalSales = orders.reduce((sum, order) => {
           return (order.status === 'Delivered') ? sum + order.totalAmount : sum;
-      }, 0) || 0;
+      }, 0);
       
-      const pendingOrders = orders?.filter(o => o.status === 'Pending').length || 0;
+      const pendingOrders = orders.filter(o => o.status === 'Pending').length;
       
-      return { totalProducts, totalSales, pendingOrders };
-  }, [products, orders, productsLoading, ordersLoading]);
+      return { totalProducts, totalSales, pendingOrders, outOfStockCount };
+  }, [products, orders]);
 
   const recentOrders = useMemo(() => {
     return orders?.slice(0, 5) || [];
   }, [orders]);
 
 
-  const isLoading = productsLoading || ordersLoading;
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          مرحباً بك، {profile?.firstName || 'التاجر'}!
-        </h1>
-        <p className="text-muted-foreground">
-          نظرة عامة على منتجاتك ومبيعاتك.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+            مرحباً بك، {profile?.firstName || 'التاجر'}!
+            </h1>
+            <p className="text-muted-foreground">
+            نظرة عامة على منتجاتك ومبيعاتك.
+            </p>
+        </div>
+         <div className="flex items-center gap-2">
+            <Button asChild variant="outline"><Link href="/merchant/orders"><ShoppingCart /> متابعة الطلبات</Link></Button>
+            <Button asChild><Link href="/merchant/products"><PlusCircle /> إضافة منتج جديد</Link></Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">إجمالي منتجاتي</CardTitle>
-                  <Box className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">الرصيد القابل للسحب</CardTitle>
+                  <WalletIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                  {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.totalProducts}</div>}
-                  <p className="text-xs text-muted-foreground">عدد المنتجات التي قمت بإضافتها</p>
+                  {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{(wallet?.availableBalance || 0).toFixed(2)} ج.م</div>}
+                  <p className="text-xs text-muted-foreground">الأرباح الجاهزة للسحب الآن.</p>
               </CardContent>
           </Card>
-          <Card>
+           <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">إجمالي المبيعات المكتملة</CardTitle>
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                  {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{stats.totalSales.toFixed(2)} ج.م</div>}
+                  {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{stats.totalSales.toFixed(2)} ج.م</div>}
                   <p className="text-xs text-muted-foreground">من الطلبات التي تم توصيلها</p>
+              </CardContent>
+          </Card>
+           <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">إجمالي منتجاتي</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                  {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.totalProducts}</div>}
+                  <p className="text-xs text-muted-foreground">عدد المنتجات التي قمت بإضافتها</p>
               </CardContent>
           </Card>
           <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">طلبات تحتاج تأكيد</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">منتجات نفدت كميتها</CardTitle>
+                  <PackageX className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                  {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.pendingOrders}</div>}
-                  <p className="text-xs text-muted-foreground">طلبات جديدة في انتظار تأكيدك</p>
+                  {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{stats.outOfStockCount}</div>}
+                  <p className="text-xs text-muted-foreground">منتجات تحتاج لإعادة توفير مخزون</p>
               </CardContent>
           </Card>
       </div>
@@ -111,7 +135,7 @@ export default function MerchantDashboardPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
-            {isLoading ? (
+            {overallLoading ? (
                 <div className="space-y-2">
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />

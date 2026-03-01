@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,9 +7,9 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeedDatabaseButton } from "./_components/seed-database-button";
 import { useCollection, useMemoFirebase, useFirestore } from "@/firebase";
-import type { Order } from "@/lib/types";
+import type { Order, Product, WithdrawalRequest } from "@/lib/types";
 import { collection, query, where, Timestamp } from "firebase/firestore";
-import { DollarSign, ShoppingCart } from "lucide-react";
+import { DollarSign, ShoppingCart, Banknote, Package } from "lucide-react";
 
 // Dynamically import the chart component to prevent SSR issues and improve performance
 const SalesByHourChart = dynamic(
@@ -27,20 +25,36 @@ export default function AdminDashboardPage() {
     const { profile } = useSession();
     const firestore = useFirestore();
 
+    // === QUERIES ===
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    // Memoize the query to prevent re-renders
     const todaysOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(
             collection(firestore, "orders"),
             where("createdAt", ">=", Timestamp.fromDate(todayStart))
         );
-    }, [firestore, todayStart.getTime()]); // Depend on time value to re-run if day changes
+    }, [firestore, todayStart.getTime()]);
 
+    const pendingWithdrawalsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, "adminWithdrawalRequests"), where("status", "==", "Pending"));
+    }, [firestore]);
+
+    const productsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, "products"));
+    }, [firestore]);
+    
+    // === DATA FETCHING ===
     const { data: todaysOrders, isLoading: ordersLoading } = useCollection<Order>(todaysOrdersQuery);
+    const { data: pendingWithdrawals, isLoading: withdrawalsLoading } = useCollection<WithdrawalRequest>(pendingWithdrawalsQuery);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsQuery);
 
+    const overallLoading = ordersLoading || withdrawalsLoading || productsLoading;
+
+    // === STATS CALCULATION ===
     const salesByHour = useMemo(() => {
         const hours = Array.from({ length: 24 }, (_, i) => ({ name: `${i}:00`, total: 0 }));
         if (todaysOrders) {
@@ -57,6 +71,12 @@ export default function AdminDashboardPage() {
     const totalSalesToday = useMemo(() => {
         return salesByHour.reduce((sum, hour) => sum + hour.total, 0);
     }, [salesByHour]);
+
+    const totalPendingWithdrawals = useMemo(() => {
+        return pendingWithdrawals?.reduce((sum, req) => sum + req.amount, 0) || 0;
+    }, [pendingWithdrawals]);
+    
+    const totalProducts = useMemo(() => products?.length || 0, [products]);
     
     return (
         <div className="space-y-6">
@@ -78,7 +98,7 @@ export default function AdminDashboardPage() {
                         <DollarSign className="h-5 w-5 text-primary" />
                     </CardHeader>
                     <CardContent>
-                         {ordersLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{totalSalesToday.toFixed(2)} ج.م</div>}
+                         {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{totalSalesToday.toFixed(2)} ج.م</div>}
                         <p className="text-xs text-muted-foreground">
                             مبيعات اليوم حتى الآن
                         </p>
@@ -90,13 +110,36 @@ export default function AdminDashboardPage() {
                         <ShoppingCart className="h-5 w-5 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        {ordersLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{todaysOrders?.length || 0}</div>}
+                        {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{todaysOrders?.length || 0}</div>}
                         <p className="text-xs text-muted-foreground">
                              {todaysOrders?.filter(o => o.status === 'Delivered').length || 0} طلب تم توصيله
                         </p>
                     </CardContent>
                 </Card>
-                 {/* Add more stat cards here */}
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">إجمالي السحوبات المعلقة</CardTitle>
+                        <Banknote className="h-5 w-5 text-primary" />
+                    </CardHeader>
+                    <CardContent>
+                        {overallLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{totalPendingWithdrawals.toFixed(2)} ج.م</div>}
+                        <p className="text-xs text-muted-foreground">
+                            مجموع المبالغ المطلوبة للسحب
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">إجمالي المنتجات</CardTitle>
+                        <Package className="h-5 w-5 text-primary" />
+                    </CardHeader>
+                    <CardContent>
+                        {overallLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{totalProducts}</div>}
+                        <p className="text-xs text-muted-foreground">
+                             إجمالي المنتجات المسجلة بالمنصة
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
             <Card>
