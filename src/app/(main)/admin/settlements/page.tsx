@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, query, where, doc, runTransaction, serverTimestamp, increment, orderBy, limit } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,21 +18,21 @@ export default function SettlementsPage() {
     const { isAdmin, isFinanceManager } = useSession();
     const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
 
-    // Fetch all delivered orders client-side. This is a simple query and doesn't require a composite index.
-    const deliveredOrdersQuery = useMemoFirebase(() => {
+    // Fetch latest 200 orders to avoid browser crashes and complex index requirements.
+    // This is a more robust approach than trying to query for the specific status.
+    const recentOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'orders'), where('status', '==', 'Delivered'));
+        return query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'), limit(200));
     }, [firestore]);
 
-    const { data: deliveredOrders, isLoading, error } = useCollection<Order>(deliveredOrdersQuery);
+    const { data: recentOrders, isLoading, error } = useCollection<Order>(recentOrdersQuery);
 
-    // Filter for pending settlements on the client side.
+    // Filter for pending settlements on the client side from the fetched orders.
     const pendingSettlements = useMemo(() => {
-        if (!deliveredOrders) return [];
-        return deliveredOrders
-            .filter(order => order.isSettled !== true)
-            .sort((a, b) => (b.createdAt as any).toDate().getTime() - (a.createdAt as any).toDate().getTime());
-    }, [deliveredOrders]);
+        if (!recentOrders) return [];
+        // The query already sorts by date, so we just need to filter.
+        return recentOrders.filter(order => order.status === 'Delivered' && order.isSettled !== true);
+    }, [recentOrders]);
 
     const handleSettleOrder = async (order: Order) => {
         if (!firestore) {
@@ -47,25 +48,23 @@ export default function SettlementsPage() {
         try {
             await runTransaction(firestore, async (transaction) => {
                 const orderRef = doc(firestore, 'orders', order.id);
-                
-                // Safety check inside transaction
                 const freshOrderDoc = await transaction.get(orderRef);
                 if (!freshOrderDoc.exists() || freshOrderDoc.data().isSettled === true) {
-                    toast({ variant: "destructive", title: "تمت التسوية بالفعل", description: "هذا الطلب تمت تسويته بواسطة مستخدم آخر." });
-                    return;
+                    throw new Error(`تمت تسوية الطلب #${order.id.substring(0,5)} بالفعل.`);
                 }
 
                 // 1. Mark order as settled
-                transaction.update(orderRef, { isSettled: true, updatedAt: serverTimestamp() });
+                transaction.update(orderRef, { isSettled: true, settledAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
                 // 2. Settle dropshipper commission
                 const dropshipperId = order.dropshipperId;
                 const dropshipperCommission = Number(order.totalCommission || 0);
-
                 if (dropshipperId && dropshipperCommission > 0) {
                     const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
+                    const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
+                    const currentBalance = Number(dropshipperWalletDoc.data()?.availableBalance || 0);
                     transaction.update(dropshipperWalletRef, { 
-                        availableBalance: increment(dropshipperCommission),
+                        availableBalance: currentBalance + dropshipperCommission,
                         updatedAt: serverTimestamp() 
                     });
                 }
@@ -82,12 +81,13 @@ export default function SettlementsPage() {
                         const merchantWalletDoc = await transaction.get(merchantWalletRef);
 
                         if (merchantWalletDoc.exists()) {
+                             const currentMerchantBalance = Number(merchantWalletDoc.data()?.availableBalance || 0);
                              transaction.update(merchantWalletRef, { 
-                                availableBalance: increment(merchantProfit),
+                                availableBalance: currentMerchantBalance + merchantProfit,
                                 updatedAt: serverTimestamp() 
                             });
                         } else {
-                            // Create a full, new wallet if it doesn't exist to prevent data corruption
+                            // Create a full, new wallet if it doesn't exist
                             transaction.set(merchantWalletRef, {
                                 id: merchantId,
                                 availableBalance: merchantProfit,
@@ -150,7 +150,7 @@ export default function SettlementsPage() {
                 <CardHeader>
                     <CardTitle>طلبات بانتظار التسوية</CardTitle>
                     <CardDescription>
-                        هذه الطلبات تم توصيلها وبانتظار توزيع أرباحها.
+                        هذه الطلبات تم توصيلها وبانتظار توزيع أرباحها. يتم عرض آخر 200 طلب فقط.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
