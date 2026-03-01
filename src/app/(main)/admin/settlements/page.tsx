@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '@/firebase';
 import type { Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,7 @@ import { DataTable } from './_components/data-table';
 import { getColumns } from './_components/columns';
 
 export default function SettlementsPage() {
-    const firestore = useFirestore();
+    const auth = useAuth();
     const { toast } = useToast();
     const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
 
@@ -30,7 +29,6 @@ export default function SettlementsPage() {
             }
             const data: any[] = await response.json();
             
-            // Convert ISO strings back to Date objects for client-side processing
             const parsedData = data.map(order => ({
                 ...order,
                 createdAt: new Date(order.createdAt),
@@ -61,93 +59,38 @@ export default function SettlementsPage() {
 
     
     const handleSettleOrder = async (order: Order) => {
-        if (!firestore) return;
+        if (!auth.currentUser) {
+            toast({ variant: 'destructive', title: 'خطأ في المصادقة', description: 'الرجاء تسجيل الخروج والدخول مرة أخرى.' });
+            return;
+        }
 
         setSettlingOrderId(order.id);
         
         try {
-            await runTransaction(firestore, async (transaction) => {
-                const orderRef = doc(firestore, 'orders', order.id);
-                const orderDoc = await transaction.get(orderRef);
-
-                if (!orderDoc.exists() || orderDoc.data().isSettled === true) {
-                    throw new Error(`الطلب #${order.id.substring(0,5)} تم تسويته بالفعل أو غير موجود.`);
-                }
-
-                const orderData = orderDoc.data();
-                const orderTotalAmount = Number(orderData.totalAmount || 0);
-                const orderDropshipperCommission = Number(orderData.totalCommission || 0);
-                const orderPlatformFee = Number(orderData.platformFee || 0);
-
-                if (isNaN(orderTotalAmount) || isNaN(orderDropshipperCommission) || isNaN(orderPlatformFee)) {
-                    throw new Error(`البيانات المالية للطلب #${order.id.substring(0,7)} غير صالحة.`);
-                }
-                
-                const dropshipperId = orderData.dropshipperId;
-                if (typeof dropshipperId === 'string' && dropshipperId.trim() !== '' && orderDropshipperCommission > 0) {
-                    const walletRef = doc(firestore, 'wallets', dropshipperId);
-                    const walletDoc = await transaction.get(walletRef);
-                    
-                    const currentBalance = Number(walletDoc.data()?.availableBalance);
-                    if (walletDoc.exists() && !isNaN(currentBalance)) {
-                        transaction.update(walletRef, { 
-                            availableBalance: currentBalance + orderDropshipperCommission,
-                            updatedAt: serverTimestamp() 
-                        });
-                    } else {
-                        transaction.set(walletRef, {
-                            id: dropshipperId,
-                            availableBalance: orderDropshipperCommission,
-                            pendingBalance: 0,
-                            pendingWithdrawals: 0,
-                            totalWithdrawn: 0,
-                            updatedAt: serverTimestamp(),
-                        }, { merge: true });
-                    }
-                }
-
-                const merchantId = orderData.merchantId;
-                if (typeof merchantId === 'string' && merchantId.trim() !== '') {
-                    const merchantProfit = orderTotalAmount - orderDropshipperCommission - orderPlatformFee;
-                    if (isNaN(merchantProfit)) {
-                        throw new Error(`فشل حساب ربح التاجر للطلب #${order.id.substring(0,7)}.`);
-                    }
-                    if (merchantProfit < 0) {
-                        throw new Error(`ربح التاجر سالب (${merchantProfit.toFixed(2)}) للطلب #${order.id.substring(0,7)}. لن تتم التسوية.`);
-                    }
-                    if (merchantProfit > 0) {
-                        const walletRef = doc(firestore, 'wallets', merchantId);
-                        const walletDoc = await transaction.get(walletRef);
-                        
-                        const currentBalance = Number(walletDoc.data()?.availableBalance);
-                        if (walletDoc.exists() && !isNaN(currentBalance)) {
-                            transaction.update(walletRef, { 
-                                availableBalance: currentBalance + merchantProfit,
-                                updatedAt: serverTimestamp() 
-                            });
-                        } else {
-                            transaction.set(walletRef, {
-                                id: merchantId,
-                                availableBalance: merchantProfit,
-                                pendingBalance: 0,
-                                pendingWithdrawals: 0,
-                                totalWithdrawn: 0,
-                                updatedAt: serverTimestamp(),
-                            }, { merge: true });
-                        }
-                    }
-                }
-                
-                transaction.update(orderRef, { isSettled: true, updatedAt: serverTimestamp() });
+            const token = await auth.currentUser.getIdToken();
+            const response = await fetch('/api/settlements/settle-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ orderId: order.id })
             });
 
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'فشل إتمام التسوية.');
+            }
+            
             toast({
                 title: '🎉 تمت التسوية بنجاح!',
                 description: `تم إيداع الأرباح في المحافظ للطلب #${order.id.substring(0, 5)}.`,
             });
             fetchPendingSettlements();
+
         } catch (e: any) {
-             console.error(`FATAL: Financial settlement failed for order ${order.id}:`, e);
+             console.error(`FATAL: Client-side settlement trigger failed for order ${order.id}:`, e);
              toast({
                 variant: 'destructive',
                 title: 'فشل إتمام التسوية المالية',
