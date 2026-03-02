@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -49,13 +50,10 @@ export default function SettlementsPage() {
                     throw new Error(`تمت تسوية الطلب #${order.id.substring(0,5)} بالفعل.`);
                 }
                 
-                // Recalculate commissions to ensure correctness
-                const orderUnitPrice = Number(order.unitPrice || 0);
-                const orderQuantity = Number(order.quantity || 1);
-                const orderTotalAmount = orderUnitPrice * orderQuantity;
-
-                const dropshipperCommission = (orderUnitPrice * 0.0125) * orderQuantity;
-                const platformFee = orderTotalAmount * 0.05;
+                // Use the financial data stored on the order object itself as the source of truth.
+                const orderTotalAmount = Number(order.totalAmount || 0);
+                const dropshipperCommission = Number(order.totalCommission || 0);
+                const platformFee = Number(order.platformFee || 0);
 
 
                 // 1. Mark order as settled
