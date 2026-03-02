@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useMemoFirebase, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { collection, query, where, serverTimestamp, doc, setDoc } from "firebase/firestore";
-import type { Product } from "@/lib/types";
+import type { Product, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";

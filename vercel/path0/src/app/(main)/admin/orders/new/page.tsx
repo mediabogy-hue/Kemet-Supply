@@ -58,8 +58,11 @@ export default function NewOrderPage() {
   const selectedProductId = watch("productId");
   const selectedProduct = products?.find(p => p.id === selectedProductId);
   const quantity = watch("quantity");
+
   const totalAmount = selectedProduct ? selectedProduct.price * quantity : 0;
-  const totalCommission = selectedProduct ? (selectedProduct.commission || 0) * quantity : 0;
+  const unitCommission = selectedProduct ? selectedProduct.price * 0.0125 : 0;
+  const totalCommission = unitCommission * quantity;
+  const platformFee = totalAmount * 0.05;
 
   const onSubmit = async (data: OrderFormData) => {
     if (!user || !firestore || !selectedProduct || !userProfile) {
@@ -83,22 +86,19 @@ export default function NewOrderPage() {
       customerNotes: data.notes || "",
       productId: selectedProduct.id,
       productName: selectedProduct.name,
+      productImageUrl: selectedProduct.imageUrls?.[0] || null,
       quantity: data.quantity,
       unitPrice: selectedProduct.price,
-      unitCommission: selectedProduct.commission || 0,
+      unitCommission: unitCommission,
       totalAmount: totalAmount,
       totalCommission: totalCommission,
-      platformFee: 0,
+      platformFee: platformFee,
       status: "Pending",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       merchantId: selectedProduct.merchantId || null,
       merchantName: selectedProduct.merchantName || null,
     };
-    
-    if (selectedProduct.merchantInfo) {
-      orderData.merchantInfo = selectedProduct.merchantInfo;
-    }
 
     try {
         await setDoc(orderRef, orderData);
