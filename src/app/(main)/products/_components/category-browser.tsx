@@ -1,10 +1,11 @@
+
 'use client';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { ProductCategory } from '@/lib/types';
 import { useMemo } from 'react';
 
@@ -17,15 +18,17 @@ interface CategoryBrowserProps {
 export function CategoryBrowser({ selectedCategory, onSelectCategory }: CategoryBrowserProps) {
     const firestore = useFirestore();
     
-    // Fetch all categories and filter/sort on the client to avoid indexing issues.
-    const categoriesQuery = useMemoFirebase(() => (firestore ? collection(firestore, "productCategories") : null), [firestore]);
+    // Fetch only available categories directly from Firestore
+    const categoriesQuery = useMemoFirebase(
+        () => (firestore ? query(collection(firestore, "productCategories"), where("isAvailable", "==", true)) : null),
+        [firestore]
+    );
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesQuery);
 
-    const availableCategories = useMemo(() => {
+    // Categories are now pre-filtered by the query, just need to sort them.
+    const sortedCategories = useMemo(() => {
         if (!categories) return [];
-        return categories
-            .filter(cat => cat.isAvailable)
-            .sort((a, b) => a.name.localeCompare(b.name));
+        return [...categories].sort((a, b) => a.name.localeCompare(b.name));
     }, [categories]);
 
     return (
@@ -53,7 +56,7 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
                         <Skeleton className="h-4 w-20" />
                     </div>
                 ))}
-                {!isLoading && availableCategories?.map((category) => (
+                {!isLoading && sortedCategories?.map((category) => (
                      <div key={category.id} className="flex flex-col items-center gap-2 group">
                         <button
                              onClick={() => onSelectCategory(category.name)}
@@ -74,7 +77,7 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
                         <span className="text-sm font-medium text-center">{category.name}</span>
                     </div>
                 ))}
-                {!isLoading && availableCategories.length === 0 && (
+                {!isLoading && sortedCategories.length === 0 && (
                     <div className="col-span-full text-center py-8 text-muted-foreground">
                         <p>لم يتم إضافة فئات للمنتجات بعد.</p>
                     </div>

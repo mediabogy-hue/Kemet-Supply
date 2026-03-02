@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -19,7 +20,7 @@ export default function ProductsPage() {
 
     // Fetch only available products for better performance
     const productsQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, 'products'), where('approvalStatus', '==', 'Approved')) : null),
+        () => (firestore ? query(collection(firestore, 'products'), where('isAvailable', '==', true)) : null),
         [firestore]
     );
     const { data: products, isLoading: productsLoading, error } = useCollection<Product>(productsQuery);
