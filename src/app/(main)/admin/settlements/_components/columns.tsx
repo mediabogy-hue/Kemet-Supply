@@ -1,4 +1,3 @@
-
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
@@ -46,7 +45,9 @@ export const getColumns = (
     header: "ربح التاجر",
     cell: ({ row }) => {
         const order = row.original;
-        const profit = (order.totalAmount || 0) - (order.totalCommission || 0) - (order.platformFee || 0);
+        // Defensive calculation for old orders where platformFee might be 0 or missing
+        const platformFee = order.platformFee || ((order.totalAmount || 0) * 0.05);
+        const profit = (order.totalAmount || 0) - (order.totalCommission || 0) - platformFee;
         if (!order.merchantId) return <span className="text-muted-foreground">-</span>;
         return <span className="font-semibold">{profit.toFixed(2)} ج.م</span>
     }
@@ -55,7 +56,9 @@ export const getColumns = (
     accessorKey: "platformFee",
     header: "عمولة المنصة",
     cell: ({ row }) => {
-        const fee = row.original.platformFee || 0;
+        const order = row.original;
+        // Defensive calculation for old orders where platformFee might be 0 or missing
+        const fee = order.platformFee || ((order.totalAmount || 0) * 0.05);
         return <span className="font-semibold text-sky-500">{fee.toFixed(2)} ج.م</span>
     }
   },

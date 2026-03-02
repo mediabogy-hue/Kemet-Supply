@@ -56,7 +56,13 @@ export default function SettlementsPage() {
                 // 2. DEFINE all financial values from the FRESH, RELIABLE order data.
                 const orderTotalAmount = Number(freshOrderData.totalAmount || 0);
                 const dropshipperCommission = Number(freshOrderData.totalCommission || 0);
-                const platformFee = Number(freshOrderData.platformFee || 0);
+                
+                // DEFENSIVE CALCULATION: If platformFee is missing or 0 on an old order, calculate it.
+                let platformFee = Number(freshOrderData.platformFee || 0);
+                if (platformFee === 0 && orderTotalAmount > 0) {
+                    platformFee = orderTotalAmount * 0.05;
+                }
+
                 // THE CORRECT and FINAL calculation for merchant profit.
                 const merchantProfit = orderTotalAmount - dropshipperCommission - platformFee;
 
