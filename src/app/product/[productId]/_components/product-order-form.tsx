@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -62,7 +61,9 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
     const quantity = watch('quantity');
     const paymentMethod = watch('customerPaymentMethod');
     const totalAmount = product.price * quantity;
-    const platformFee = totalAmount * 0.10;
+    const unitCommission = product.price * 0.0125;
+    const totalCommission = unitCommission * quantity;
+    const platformFee = totalAmount * 0.05;
 
     const onSubmit = async (data: OrderFormData) => {
         if (!firestore) {
@@ -108,8 +109,8 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
                 quantity: data.quantity,
                 unitPrice: product.price,
                 totalAmount: totalAmount,
-                unitCommission: product.commission,
-                totalCommission: product.commission * data.quantity,
+                unitCommission: unitCommission,
+                totalCommission: totalCommission,
                 platformFee: platformFee,
                 status: 'Pending',
                 createdAt: serverTimestamp(),

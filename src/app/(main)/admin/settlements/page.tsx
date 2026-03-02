@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -49,11 +48,18 @@ export default function SettlementsPage() {
                 if (!freshOrderDoc.exists() || freshOrderDoc.data().isSettled === true) {
                     throw new Error(`تمت تسوية الطلب #${order.id.substring(0,5)} بالفعل.`);
                 }
+                
+                // Recalculate commissions to ensure correctness
+                const orderUnitPrice = Number(order.unitPrice || 0);
+                const orderQuantity = Number(order.quantity || 1);
+                const orderTotalAmount = orderUnitPrice * orderQuantity;
+
+                const dropshipperCommission = (orderUnitPrice * 0.0125) * orderQuantity;
+                const platformFee = orderTotalAmount * 0.05;
+
 
                 // 1. Mark order as settled
                 transaction.update(orderRef, { isSettled: true, settledAt: serverTimestamp(), updatedAt: serverTimestamp() });
-
-                const dropshipperCommission = Number(order.totalCommission || 0);
 
                 // 2. Settle dropshipper commission (robustly)
                 const dropshipperId = order.dropshipperId;
@@ -83,9 +89,7 @@ export default function SettlementsPage() {
                 const merchantId = order.merchantId;
                 // Defensive check: Ensure merchantId is a valid non-empty string.
                 if (merchantId && typeof merchantId === 'string' && merchantId.length > 0) {
-                    const orderTotalAmount = Number(order.totalAmount || 0);
-                    const orderPlatformFee = Number(order.platformFee || 0);
-                    const merchantProfit = orderTotalAmount - dropshipperCommission - orderPlatformFee;
+                    const merchantProfit = orderTotalAmount - dropshipperCommission - platformFee;
                     
                     if (merchantProfit > 0) {
                         const merchantWalletRef = doc(firestore, 'wallets', merchantId);
