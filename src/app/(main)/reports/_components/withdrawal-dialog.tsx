@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -21,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { collection, doc, writeBatch, serverTimestamp } from "firebase/firestore";
+import { collection, doc, serverTimestamp, runTransaction, increment } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { useSession } from "@/auth/SessionProvider";
 
@@ -95,31 +94,46 @@ export function WithdrawalDialog({ availableBalance, userProfile }: WithdrawalDi
     }
     
     try {
-        const batch = writeBatch(firestore);
-        const newId = doc(collection(firestore, 'id_generator')).id;
+        await runTransaction(firestore, async (transaction) => {
+            const walletRef = doc(firestore, 'wallets', user.uid);
+            const walletDoc = await transaction.get(walletRef);
 
-        const userWithdrawalRef = doc(firestore, `users/${user.uid}/withdrawalRequests`, newId);
-        const adminWithdrawalRef = doc(firestore, `adminWithdrawalRequests`, newId);
+            if (!walletDoc.exists()) {
+                throw new Error("لم يتم العثور على محفظتك.");
+            }
 
-        const withdrawalData = {
-          id: newId,
-          userId: user.uid,
-          userName: `${userProfile.firstName} ${userProfile.lastName}`.trim(),
-          amount: data.amount,
-          method: data.method,
-          paymentIdentifier: paymentIdentifier,
-          status: "Pending" as const,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
+            const currentBalance = walletDoc.data().availableBalance || 0;
+            if (data.amount > currentBalance) {
+                throw new Error("الرصيد المتاح غير كافٍ.");
+            }
+            
+            // Hold the funds
+            transaction.update(walletRef, {
+                availableBalance: increment(-data.amount),
+                pendingWithdrawals: increment(data.amount),
+                updatedAt: serverTimestamp()
+            });
 
-        // Write to both locations
-        batch.set(userWithdrawalRef, withdrawalData);
-        batch.set(adminWithdrawalRef, withdrawalData);
+            // Create withdrawal requests
+            const newId = doc(collection(firestore, 'id_generator')).id;
+            const userWithdrawalRef = doc(firestore, `users/${user.uid}/withdrawalRequests`, newId);
+            const adminWithdrawalRef = doc(firestore, `adminWithdrawalRequests`, newId);
+            
+            const withdrawalData = {
+              id: newId,
+              userId: user.uid,
+              userName: `${userProfile.firstName} ${userProfile.lastName}`.trim(),
+              amount: data.amount,
+              method: data.method,
+              paymentIdentifier: paymentIdentifier,
+              status: "Pending" as const,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            };
 
-        // No wallet update needed here. Admin will do it upon approval.
-
-        await batch.commit();
+            transaction.set(userWithdrawalRef, withdrawalData);
+            transaction.set(adminWithdrawalRef, withdrawalData);
+        });
 
         toast({ title: "تم إرسال طلب السحب بنجاح!" });
         reset();
