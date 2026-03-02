@@ -1,14 +1,47 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Wallet, RefreshCcw, AlertTriangle } from "lucide-react";
+import { Calendar, Wallet, RefreshCcw, AlertTriangle, TrendingUp, Truck } from "lucide-react";
 
 export default function PoliciesPage() {
   return (
     <div className="flex flex-col gap-8">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">سياسات وأحكام السحب</h1>
+            <h1 className="text-3xl font-bold tracking-tight">السياسات والأحكام</h1>
             <p className="text-muted-foreground">آخر تحديث: 1 يوليو 2024</p>
         </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-primary"/>
+                    سياسة العمولات والأرباح
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-muted-foreground">
+                 <ul className="list-disc pe-6 space-y-2">
+                    <li>عمولة المسوق: ثابتة بنسبة **1.25%** من إجمالي سعر الطلب.</li>
+                    <li>عمولة المنصة: ثابتة بنسبة **5%** من إجمالي سعر الطلب.</li>
+                    <li>ربح التاجر: هو المبلغ المتبقي بعد خصم عمولة المسوق وعمولة المنصة.</li>
+                </ul>
+                <p>
+                    تصبح أرباح الطلب متاحة للسحب فور تغيير حالة الطلب إلى **"تم التوصيل" (Delivered)**. لم يعد هناك فترة انتظار للأرباح المعلقة.
+                </p>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-6 w-6 text-primary"/>
+                    سياسة الشحن والتكاليف
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-muted-foreground">
+                 <ul className="list-disc pe-6 space-y-2">
+                    <li>تعتبر تكاليف الشحن متغيرة وتعتمد على محافظة العميل.</li>
+                    <li className="font-semibold text-amber-400">تنبيه هام للتجار: سيتم خصم تكلفة الشحن الفعلية من ربحك النهائي لكل طلب. هذا الخصم لا يظهر حاليًا في لوحة التحكم بشكل مباشر ولكنه سيتم تطبيقه عند التسوية المالية النهائية.</li>
+                </ul>
+            </CardContent>
+        </Card>
 
         <Card>
             <CardHeader>
@@ -51,13 +84,10 @@ export default function PoliciesPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <RefreshCcw className="h-6 w-6 text-primary"/>
-                    سياسة الأرباح والطلبات المرتجعة
+                    سياسة الطلبات المرتجعة
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-muted-foreground">
-                <p>
-                    تصبح أرباح الطلب متاحة للسحب فور تغيير حالة الطلب إلى **"تم التوصيل" (Delivered)**. لم يعد هناك فترة انتظار للأرباح المعلقة.
-                </p>
                 <p>
                     في حال تم إرجاع الطلب من قبل العميل أو تم إلغاؤه بعد تأكيده، سيتم خصم العمولة المرتبطة بهذا الطلب من رصيد أرباحك. إذا كان الرصيد لا يكفي، فسيتم خصمها من الأرباح المستقبلية.
                 </p>

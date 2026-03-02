@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -18,11 +17,14 @@ export default function AdminPaymentsPage() {
     const { toast } = useToast();
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    
+    // List of non-cash payment methods
+    const onlinePaymentMethods: Order['customerPaymentMethod'][] = ["Vodafone Cash", "InstaPay", "Telda", "Bank Transfer"];
 
     const paymentsQuery = useMemoFirebase(
         () => (firestore ? query(
             collection(firestore, 'orders'), 
-            where('customerPaymentMethod', '!=', 'Cash on Delivery'),
+            where('customerPaymentMethod', 'in', onlinePaymentMethods),
             where('customerPaymentStatus', '==', 'Pending')
         ) : null),
         [firestore]
@@ -58,7 +60,22 @@ export default function AdminPaymentsPage() {
     );
 
     if (error) {
-        return <p className="text-destructive">خطأ في تحميل الدفعات: {error.message}</p>;
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">تأكيد الدفع</h1>
+                    <p className="text-muted-foreground">مراجعة وتأكيد إثباتات الدفع المرسلة من العملاء.</p>
+                </div>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="text-destructive">خطأ في تحميل الدفعات</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-destructive">{error.message}</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     return (
