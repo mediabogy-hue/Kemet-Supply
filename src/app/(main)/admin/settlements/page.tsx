@@ -80,7 +80,8 @@ export default function SettlementsPage() {
 
                 // 3. Settle merchant profit (robustly)
                 const merchantId = order.merchantId;
-                if (merchantId) {
+                // Defensive check: Ensure merchantId is a valid non-empty string.
+                if (merchantId && typeof merchantId === 'string' && merchantId.length > 0) {
                     const orderTotalAmount = Number(order.totalAmount || 0);
                     const orderPlatformFee = Number(order.platformFee || 0);
                     const merchantProfit = orderTotalAmount - dropshipperCommission - orderPlatformFee;
@@ -115,11 +116,12 @@ export default function SettlementsPage() {
             });
 
         } catch (e: any) {
+             const errorMessage = e.message || "حدث خطأ غير متوقع أثناء محاولة تحديث قاعدة البيانات.";
              console.error(`FATAL: Client-side settlement transaction failed for order ${order.id}:`, e);
              toast({
                 variant: 'destructive',
                 title: 'فشل إتمام التسوية المالية',
-                description: e.message || "حدث خطأ غير متوقع أثناء محاولة تحديث قاعدة البيانات.",
+                description: `الطلب: #${order.id.substring(0,5)}. السبب: ${errorMessage}`,
                 duration: 10000,
             });
         } finally {
