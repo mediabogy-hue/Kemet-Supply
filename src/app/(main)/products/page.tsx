@@ -18,12 +18,12 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch only available AND approved products for better performance and consistency.
+    // Fetch only approved products to avoid needing a composite index.
+    // We will filter for `isAvailable` on the client side.
     const productsQuery = useMemoFirebase(
         () => (firestore 
             ? query(
                 collection(firestore, 'products'), 
-                where('isAvailable', '==', true),
                 where('approvalStatus', '==', 'Approved')
               ) 
             : null),
@@ -37,7 +37,7 @@ export default function ProductsPage() {
             toast({
                 variant: 'destructive',
                 title: 'فشل تحميل المنتجات',
-                description: 'قد يتطلب الأمر إنشاء فهرس في قاعدة البيانات. يرجى المحاولة مرة أخرى بعد قليل.',
+                description: 'حدث خطأ أثناء جلب البيانات. يرجى المحاولة مرة أخرى.',
             });
             console.error("Product query error:", error);
         }
@@ -48,7 +48,8 @@ export default function ProductsPage() {
         if (!products) return [];
         
         let processedProducts = products
-            // isAvailable and approvalStatus are now filtered in the query
+            // Client-side filtering for availability and category/search term
+            .filter(p => p.isAvailable === true)
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
             
@@ -89,7 +90,7 @@ export default function ProductsPage() {
                 ) : (
                     <div className="col-span-full text-center py-16">
                         <h3 className="text-lg font-semibold">لا توجد منتجات</h3>
-                        <p className="text-muted-foreground mt-2">لا توجد منتجات تطابق بحثك أو الفئة المحددة حاليًا.</p>
+                        <p className="text-muted-foreground mt-2">لا توجد منتجات متاحة للعرض حاليًا. قد تكون قيد المراجعة أو غير مضافة بعد.</p>
                     </div>
                 )}
             </div>
