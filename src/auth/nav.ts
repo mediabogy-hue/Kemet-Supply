@@ -106,19 +106,19 @@ export const navLinks: NavLink[] = [
         href: "/admin/products",
         label: "إدارة المنتجات",
         icon: React.createElement(Box),
-        roles: ['Admin'],
+        roles: ['Admin', 'OrdersManager'],
     },
     {
         href: "/admin/categories",
         label: "الفئات",
         icon: React.createElement(FileText),
-        roles: ['Admin'],
+        roles: ['Admin', 'OrdersManager'],
     },
     {
         href: "/admin/inventory",
         label: "المخزون",
         icon: React.createElement(Package),
-        roles: ['Admin'],
+        roles: ['Admin', 'OrdersManager'],
     },
     {
         href: "/admin/withdrawals",
