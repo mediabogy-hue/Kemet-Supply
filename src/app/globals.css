@@ -51,44 +51,6 @@
     --sidebar-border: 45 68% 52% / 0.1;
     --sidebar-ring: 45 68% 52%;
   }
-
-  .dark {
-    /* The dark theme is now the default theme. This block can be removed or kept for reference. */
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 45 68% 52%;
-    --primary-foreground: 0 0% 8%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 45 68% 52% / 0.1;
-    --accent-foreground: 45 68% 52%;
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 45 68% 52% / 0.15;
-    --input: 45 68% 52% / 0.15;
-    --ring: 45 68% 52%;
-    
-    --chart-1: 45 68% 52%;
-    --chart-2: 45 50% 65%;
-    --chart-3: 45 40% 75%;
-    --chart-4: 0 0% 60%;
-    --chart-5: 0 0% 80%;
-
-    --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 75%;
-    --sidebar-primary: 45 68% 52%;
-    --sidebar-primary-foreground: 0 0% 8%;
-    --sidebar-accent: 45 68% 52% / 0.1;
-    --sidebar-accent-foreground: 45 68% 52%;
-    --sidebar-border: 45 68% 52% / 0.1;
-    --sidebar-ring: 45 68% 52%;
-  }
 }
 
 @layer base {

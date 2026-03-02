@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,8 +27,11 @@ export default function AdminDashboardPage() {
     const firestore = useFirestore();
 
     // === QUERIES ===
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = useMemo(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }, []);
 
     const todaysOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -35,7 +39,7 @@ export default function AdminDashboardPage() {
             collection(firestore, "orders"),
             where("createdAt", ">=", Timestamp.fromDate(todayStart))
         );
-    }, [firestore, todayStart.getTime()]);
+    }, [firestore, todayStart]);
 
     const pendingWithdrawalsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -60,7 +64,8 @@ export default function AdminDashboardPage() {
         if (todaysOrders) {
             todaysOrders.forEach(order => {
                 if (order.status !== 'Canceled' && order.status !== 'Returned') {
-                    const hour = order.createdAt.toDate().getHours();
+                    const orderDate = order.createdAt instanceof Timestamp ? order.createdAt.toDate() : new Date(order.createdAt);
+                    const hour = orderDate.getHours();
                     hours[hour].total += order.totalAmount;
                 }
             });

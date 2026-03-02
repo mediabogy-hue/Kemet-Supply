@@ -2,7 +2,7 @@
 'use client';
 import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, doc, deleteDoc, limit } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,7 @@ export default function AdminCategoriesPage() {
 
     // Fetch categories
     const categoriesQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "productCategories"), orderBy("createdAt", "desc")) : null),
+        () => (firestore ? query(collection(firestore, "productCategories"), orderBy("createdAt", "desc"), limit(50)) : null),
         [firestore]
     );
     const { data: categories, isLoading, error } = useCollection<ProductCategory>(categoriesQuery);

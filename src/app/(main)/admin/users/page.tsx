@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, limit } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/auth/SessionProvider';
@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
     const [userToGrantBonus, setUserToGrantBonus] = useState<UserProfile | null>(null);
 
     const usersQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "users"), orderBy("createdAt", "desc")) : null),
+        () => (firestore ? query(collection(firestore, "users"), orderBy("createdAt", "desc"), limit(100)) : null),
         [firestore]
     );
     const { data: users, isLoading, error } = useCollection<UserProfile>(usersQuery);

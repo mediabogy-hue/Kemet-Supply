@@ -1,7 +1,8 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where, doc, writeBatch, serverTimestamp, increment, runTransaction } from 'firebase/firestore';
+import { collection, query, orderBy, where, doc, writeBatch, serverTimestamp, increment, runTransaction, limit } from 'firebase/firestore';
 import type { WithdrawalRequest, Wallet } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { KpiCard } from './_components/kpi-card';
@@ -25,7 +26,7 @@ export default function AdminWithdrawalsPage() {
 
     const withdrawalsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        let q = query(collection(firestore, 'adminWithdrawalRequests'), orderBy('createdAt', 'desc'));
+        let q = query(collection(firestore, 'adminWithdrawalRequests'), orderBy('createdAt', 'desc'), limit(200));
         if (statusFilter !== 'all') {
             q = query(q, where('status', '==', statusFilter));
         }

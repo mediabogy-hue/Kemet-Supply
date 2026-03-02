@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useSession } from '@/auth/SessionProvider';
-import { collection, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,7 +22,9 @@ export default function MerchantOrdersPage() {
     const ordersQuery = useMemoFirebase(
         () => (firestore && user) ? query(
             collection(firestore, "orders"),
-            where("merchantId", "==", user.uid)
+            where("merchantId", "==", user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(100)
         ) : null,
         [firestore, user]
     );
@@ -30,11 +32,7 @@ export default function MerchantOrdersPage() {
 
     const sortedOrders = useMemo(() => {
         if (!orders) return [];
-        return [...orders].sort((a, b) => {
-            const dateA = a.createdAt?.toDate?.().getTime() || 0;
-            const dateB = b.createdAt?.toDate?.().getTime() || 0;
-            return dateB - dateA; // Sort descending
-        });
+        return orders; // Already sorted by query
     }, [orders]);
     
     const handleStatusUpdate = async (order: Order, status: Order['status']) => {

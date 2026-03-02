@@ -12,7 +12,6 @@ import { initiateAnonymousSignIn, initiateEmailSignUp, initiateEmailSignIn } fro
 import { FirestorePermissionError } from './errors';
 import { errorEmitter } from './error-emitter';
 import type { AppEvents } from './error-emitter';
-import { useUser } from './auth/use-user';
 
 // Re-export provider hooks from the provider file itself to avoid cycles
 import { useFirebase, useAuth, useFirestore, useStorage, useFirebaseApp } from './provider';
@@ -38,7 +37,6 @@ export {
   initiateEmailSignIn,
   FirestorePermissionError,
   errorEmitter,
-  useUser,
   // Re-export the provider hooks
   useFirebase,
   useAuth,
