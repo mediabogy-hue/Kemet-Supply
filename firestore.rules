@@ -99,12 +99,13 @@ service cloud.firestore {
 
     // Withdrawal requests
     match /adminWithdrawalRequests/{reqId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         allow read, list, update, delete: if isFinanceManager() || isAdmin();
-        allow create: if false; // Only server can create
     }
     match /users/{userId}/withdrawalRequests/{reqId} {
+        allow create: if isOwner(userId);
         allow read, list: if isOwner(userId);
-        allow create: if false; // Managed by server-side logic
+        allow update, delete: if isFinanceManager() || isAdmin();
     }
     
     // Merchant Inquiries can be created by anyone.
@@ -128,7 +129,7 @@ service cloud.firestore {
 
     // Helper collections
     match /id_generator/{docId} {
-        allow create: if isSignedIn();
+        allow create: if isSignedIn() || request.auth == null;
     }
     match /webhooks_bosta/{webhookId} {
         allow create: if true; // Webhooks can write
