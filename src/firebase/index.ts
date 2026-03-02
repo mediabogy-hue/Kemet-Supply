@@ -17,6 +17,7 @@ import { initiateAnonymousSignIn, initiateEmailSignUp, initiateEmailSignIn } fro
 import { FirestorePermissionError } from './errors';
 import { errorEmitter } from './error-emitter';
 import type { AppEvents } from './error-emitter';
+import { useUser } from './auth/use-user';
 
 // Export types
 export type {
@@ -39,6 +40,7 @@ export {
   initiateEmailSignIn,
   FirestorePermissionError,
   errorEmitter,
+  useUser,
 };
 
 
