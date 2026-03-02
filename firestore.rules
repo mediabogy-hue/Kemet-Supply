@@ -85,7 +85,7 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
+      allow create: if request.resource.data.dropshipperId != null;
       allow list: if isSignedIn(); // Allow list queries for all signed-in users
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 
