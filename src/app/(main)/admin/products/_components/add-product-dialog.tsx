@@ -127,7 +127,7 @@ export function AddProductDialog() {
           id: productId, name, category, description,
           price: priceNumber, commission: commissionNumber, stockQuantity: quantityNumber,
           isAvailable: quantityNumber > 0,
-          approvalStatus: 'Approved',
+          approvalStatus: profile?.role === 'Merchant' ? 'Pending' : 'Approved',
           imageUrls: finalImageUrls, 
           videoUrl: finalVideoUrl || null,
           purchaseUrl: purchaseUrl || null,
