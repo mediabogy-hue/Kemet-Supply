@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -50,17 +49,18 @@ export default function SettlementsPage() {
                     throw new Error(`تمت تسوية الطلب #${order.id.substring(0,5)} بالفعل.`);
                 }
                 
-                // Use the financial data stored on the order object itself as the source of truth.
-                const orderTotalAmount = Number(order.totalAmount || 0);
-                const dropshipperCommission = Number(order.totalCommission || 0);
-                const platformFee = Number(order.platformFee || 0);
-
+                // CRITICAL FIX: Use data from the fresh document read within the transaction
+                const freshOrderData = freshOrderDoc.data() as Order;
+                
+                const orderTotalAmount = Number(freshOrderData.totalAmount || 0);
+                const dropshipperCommission = Number(freshOrderData.totalCommission || 0);
+                const platformFee = Number(freshOrderData.platformFee || 0);
 
                 // 1. Mark order as settled
                 transaction.update(orderRef, { isSettled: true, settledAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
                 // 2. Settle dropshipper commission (robustly)
-                const dropshipperId = order.dropshipperId;
+                const dropshipperId = freshOrderData.dropshipperId;
                 if (dropshipperId && dropshipperCommission > 0) {
                     const dropshipperWalletRef = doc(firestore, 'wallets', dropshipperId);
                     const dropshipperWalletDoc = await transaction.get(dropshipperWalletRef);
@@ -84,7 +84,7 @@ export default function SettlementsPage() {
                 }
 
                 // 3. Settle merchant profit (robustly)
-                const merchantId = order.merchantId;
+                const merchantId = freshOrderData.merchantId;
                 // Defensive check: Ensure merchantId is a valid non-empty string.
                 if (merchantId && typeof merchantId === 'string' && merchantId.length > 0) {
                     const merchantProfit = orderTotalAmount - dropshipperCommission - platformFee;
