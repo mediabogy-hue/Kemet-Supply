@@ -52,6 +52,14 @@ export const getColumns = (
     }
   },
   {
+    accessorKey: "platformFee",
+    header: "عمولة المنصة",
+    cell: ({ row }) => {
+        const fee = row.original.platformFee || 0;
+        return <span className="font-semibold text-sky-500">{fee.toFixed(2)} ج.م</span>
+    }
+  },
+  {
     accessorKey: "deliveredAt",
     header: "تاريخ التوصيل",
     cell: ({ row }) => {
