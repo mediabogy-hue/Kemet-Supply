@@ -82,8 +82,6 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
         }
 
         try {
-            // We can't fetch the dropshipper's name here due to security rules (public users can't read profiles).
-            // We'll use a generic placeholder. The name can be looked up by admins later using the refId.
             const dropshipperName = "المسوق بالعمولة";
 
             const batch = writeBatch(firestore);

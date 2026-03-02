@@ -20,7 +20,6 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    // Fetch only available categories directly from Firestore
     const categoriesQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, "productCategories"), where("isAvailable", "==", true)) : null),
         [firestore]
@@ -32,14 +31,13 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
             toast({
                 variant: "destructive",
                 title: "فشل تحميل الفئات",
-                description: "قد تكون هناك مشكلة في صلاحيات الوصول إلى البيانات.",
+                description: error.message,
             });
             console.error("Category fetch error:", error);
         }
     }, [error, toast]);
 
 
-    // Categories are now pre-filtered by the query, just need to sort them.
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
         return [...categories].sort((a, b) => a.name.localeCompare(b.name));

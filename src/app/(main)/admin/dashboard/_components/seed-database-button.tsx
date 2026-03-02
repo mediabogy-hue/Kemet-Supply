@@ -6,26 +6,26 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { writeBatch, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { Loader2, DatabaseZap } from 'lucide-react';
-import type { Order } from '@/lib/types';
+import type { Order, Product, ProductCategory, UserProfile } from '@/lib/types';
 
-const dropshippers = [
+const dropshippers: Omit<UserProfile, 'role' | 'createdAt' | 'updatedAt' | 'isActive'>[] = [
     { id: 'dropshipper-ahmad-ali', firstName: 'أحمد', lastName: 'علي', email: 'ahmad.ali@example.com' },
     { id: 'dropshipper-fatima-mohamed', firstName: 'فاطمة', lastName: 'محمد', email: 'fatima.mohamed@example.com' },
     { id: 'dropshipper-youssef-hassan', firstName: 'يوسف', lastName: 'حسن', email: 'youssef.hassan@example.com' },
 ];
 
-const categories = [
-    { id: 'electronics-cat', name: 'إلكترونيات', imageUrl: 'https://picsum.photos/seed/electronics/200', dataAiHint: 'electronics' },
-    { id: 'clothing-cat', name: 'ملابس', imageUrl: 'https://picsum.photos/seed/clothing/200', dataAiHint: 'clothing' },
-    { id: 'kitchen-cat', name: 'أدوات منزلية', imageUrl: 'https://picsum.photos/seed/kitchen/200', dataAiHint: 'kitchenware' },
+const categories: Omit<ProductCategory, 'createdAt' | 'updatedAt'>[] = [
+    { id: 'electronics-cat', name: 'إلكترونيات', imageUrl: 'https://picsum.photos/seed/electronics/200', dataAiHint: 'electronics', isAvailable: true },
+    { id: 'clothing-cat', name: 'ملابس', imageUrl: 'https://picsum.photos/seed/clothing/200', dataAiHint: 'clothing', isAvailable: true },
+    { id: 'kitchen-cat', name: 'أدوات منزلية', imageUrl: 'https://picsum.photos/seed/kitchen/200', dataAiHint: 'kitchenware', isAvailable: true },
 ];
 
-const products = [
-    { id: 'product-headphones', name: 'سماعة رأس لاسلكية', description: 'صوت نقي وبطارية تدوم طويلاً', category: 'إلكترونيات', price: 750, commission: 80, stockQuantity: 50, isAvailable: true, imageUrls: ['https://picsum.photos/seed/headphones/600'] },
-    { id: 'product-tshirt', name: 'تيشيرت قطني أسود', description: 'تيشيرت مريح وعالي الجودة', category: 'ملابس', price: 300, commission: 40, stockQuantity: 120, isAvailable: true, imageUrls: ['https://picsum.photos/seed/tshirt/600'] },
-    { id: 'product-blender', name: 'خلاط كهربائي قوي', description: 'للعصائر والمشروبات الباردة', category: 'أدوات منزلية', price: 1200, commission: 150, stockQuantity: 30, isAvailable: true, imageUrls: ['https://picsum.photos/seed/blender/600'] },
-    { id: 'product-smartwatch', name: 'ساعة ذكية رياضية', description: 'تتبع نشاطك اليومي ونبضات القلب', category: 'إلكترونيات', price: 1500, commission: 200, stockQuantity: 40, isAvailable: true, imageUrls: ['https://picsum.photos/seed/smartwatch/600'] },
-    { id: 'product-jeans', name: 'بنطلون جينز أزرق', description: 'تصميم عصري ومناسب لجميع الأوقات', category: 'ملابس', price: 550, commission: 60, stockQuantity: 80, isAvailable: true, imageUrls: ['https://picsum.photos/seed/jeans/600'] },
+const products: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
+    { name: 'سماعة رأس لاسلكية', description: 'صوت نقي وبطارية تدوم طويلاً', category: 'إلكترونيات', price: 750, commission: 80, stockQuantity: 50, isAvailable: true, approvalStatus: 'Approved', imageUrls: ['https://picsum.photos/seed/headphones/600'] },
+    { name: 'تيشيرت قطني أسود', description: 'تيشيرت مريح وعالي الجودة', category: 'ملابس', price: 300, commission: 40, stockQuantity: 120, isAvailable: true, approvalStatus: 'Approved', imageUrls: ['https://picsum.photos/seed/tshirt/600'] },
+    { name: 'خلاط كهربائي قوي', description: 'للعصائر والمشروبات الباردة', category: 'أدوات منزلية', price: 1200, commission: 150, stockQuantity: 30, isAvailable: true, approvalStatus: 'Approved', imageUrls: ['https://picsum.photos/seed/blender/600'] },
+    { name: 'ساعة ذكية رياضية', description: 'تتبع نشاطك اليومي ونبضات القلب', category: 'إلكترونيات', price: 1500, commission: 200, stockQuantity: 40, isAvailable: true, approvalStatus: 'Approved', imageUrls: ['https://picsum.photos/seed/smartwatch/600'] },
+    { name: 'بنطلون جينز أزرق', description: 'تصميم عصري ومناسب لجميع الأوقات', category: 'ملابس', price: 550, commission: 60, stockQuantity: 80, isAvailable: true, approvalStatus: 'Approved', imageUrls: ['https://picsum.photos/seed/jeans/600'] },
 ];
 
 export function SeedDatabaseButton() {
@@ -50,7 +50,6 @@ export function SeedDatabaseButton() {
                 const userRef = doc(firestore, 'users', user.id);
                 batch.set(userRef, {
                     ...user,
-                    id: user.id,
                     role: 'Dropshipper',
                     isActive: true,
                     createdAt: serverTimestamp(),
@@ -71,13 +70,14 @@ export function SeedDatabaseButton() {
             // 2. Seed Categories
             categories.forEach(category => {
                 const categoryRef = doc(firestore, 'productCategories', category.id);
-                batch.set(categoryRef, { ...category, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), isAvailable: true });
+                batch.set(categoryRef, { ...category, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
             });
 
             // 3. Seed Products
             products.forEach(product => {
-                const productRef = doc(firestore, 'products', product.id);
-                const productData: any = { ...product, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+                const productId = doc(collection(firestore, 'id_generator')).id;
+                const productRef = doc(firestore, 'products', productId);
+                const productData: any = { ...product, id: productId, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
                 batch.set(productRef, productData);
             });
 
@@ -85,6 +85,8 @@ export function SeedDatabaseButton() {
             const customerNames = ['خالد إبراهيم', 'نورة عبدالله', 'سالم القحطاني', 'مريم الغامدي', 'عمر الزهراني'];
             const cities = ['القاهرة', 'الجيزة', 'الإسكندرية'];
             const statuses: Order['status'][] = ['Delivered', 'Shipped', 'Pending', 'Confirmed', 'Returned', 'Canceled'];
+            const allProductIds = products.map((p, i) => `product-seed-${i}`); // Assume we need stable IDs for orders
+
             for (let i = 0; i < 25; i++) {
                 const orderId = doc(collection(firestore, 'id_generator')).id;
                 const orderRef = doc(firestore, 'orders', orderId);
@@ -102,7 +104,7 @@ export function SeedDatabaseButton() {
                     customerAddress: `123 شارع المثال، حي الأمل`,
                     customerCity: cities[i % cities.length],
                     customerPaymentMethod: 'Cash on Delivery',
-                    productId: randomProduct.id,
+                    productId: allProductIds[i % allProductIds.length],
                     productName: randomProduct.name,
                     quantity: quantity,
                     unitPrice: randomProduct.price,

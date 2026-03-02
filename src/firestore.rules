@@ -67,14 +67,14 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{productId} {
-        allow read: if true;
+        allow read: if true; // Public read for product pages
         allow create: if isAdmin() || isMerchant();
         // Merchant can only update their own products. Admin can update any.
         allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
         allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
     }
     match /productCategories/{categoryId} {
-        allow read: if true;
+        allow read: if true; // Public read for category browser
         allow create, update, delete: if isAdmin();
     }
      // Anyone can track a product click via the public page
@@ -85,6 +85,7 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
+      // Allow creation for logged-in users (dropshippers) or anonymous users (customers via affiliate link)
       allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
       allow list: if isSignedIn(); // Allow list queries for all signed-in users
       allow get: if isSignedIn() && (
