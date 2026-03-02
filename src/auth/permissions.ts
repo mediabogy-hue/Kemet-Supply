@@ -7,7 +7,7 @@ export type UserRole = UserProfile['role'];
 // The key is the role, the value is an array of path prefixes that role can access.
 const PERMISSIONS: Record<UserRole, string[]> = {
   Admin: ['/admin'],
-  OrdersManager: ['/admin/orders', '/admin/shipping', '/admin/dashboard', '/admin/products', '/admin/categories', '/admin/inventory'],
+  OrdersManager: ['/admin/dashboard', '/admin/orders', '/admin/shipping', '/admin/products', '/admin/categories', '/admin/inventory'],
   FinanceManager: ['/admin/withdrawals', '/admin/payments', '/admin/dashboard', '/admin/settlements'],
   Dropshipper: ['/dashboard', '/products', '/orders', '/reports', '/profile', '/policy'],
   Merchant: ['/merchant', '/profile', '/policy'],
