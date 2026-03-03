@@ -45,7 +45,7 @@ service cloud.firestore {
     // User profiles
     // A user can always read their own profile. Staff can read any profile.
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow get: if isOwner(userId) || isStaff();
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
