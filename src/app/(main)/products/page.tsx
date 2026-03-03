@@ -18,15 +18,10 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch only approved products to avoid needing a composite index.
-    // We will filter for `isAvailable` on the client side.
+    // Fetch all products and filter on the client. This is more robust against
+    // inconsistent data (e.g., missing 'approvalStatus' field on old documents).
     const productsQuery = useMemoFirebase(
-        () => (firestore 
-            ? query(
-                collection(firestore, 'products'), 
-                where('approvalStatus', '==', 'Approved')
-              ) 
-            : null),
+        () => (firestore ? query(collection(firestore, 'products')) : null),
         [firestore]
     );
     const { data: products, isLoading: productsLoading, error } = useCollection<Product>(productsQuery);
@@ -48,8 +43,8 @@ export default function ProductsPage() {
         if (!products) return [];
         
         let processedProducts = products
-            // Client-side filtering for availability and category/search term
-            .filter(p => p.isAvailable === true)
+            // Client-side filtering for availability, approval, category, and search term
+            .filter(p => p.approvalStatus === 'Approved' && p.isAvailable === true)
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
             

@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect } from 'react';
 import Image from 'next/image';
@@ -20,8 +21,10 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const firestore = useFirestore();
     const { toast } = useToast();
     
+    // Fetch all categories and filter on the client. This is more robust against
+    // inconsistent data (e.g., missing 'isAvailable' field on old documents).
     const categoriesQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "productCategories"), where("isAvailable", "==", true)) : null),
+        () => (firestore ? query(collection(firestore, "productCategories")) : null),
         [firestore]
     );
     const { data: categories, isLoading, error } = useCollection<ProductCategory>(categoriesQuery);
@@ -40,7 +43,9 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
 
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
-        return [...categories].sort((a, b) => a.name.localeCompare(b.name));
+        return [...categories]
+            .filter(c => c.isAvailable === true)
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [categories]);
 
     return (
