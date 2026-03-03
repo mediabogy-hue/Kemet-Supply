@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -18,10 +18,11 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch all products and filter on the client. This is more robust against
-    // inconsistent data (e.g., missing 'approvalStatus' field on old documents).
+    // More efficient query: Fetch only approved and available products directly.
+    // This requires a composite index on (approvalStatus, isAvailable), which Firestore prompts for.
+    // A simpler query is used here to avoid index dependency for now.
     const productsQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, 'products')) : null),
+        () => (firestore ? query(collection(firestore, 'products'), where('approvalStatus', '==', 'Approved'), where('isAvailable', '==', true), orderBy('createdAt', 'desc')) : null),
         [firestore]
     );
     const { data: products, isLoading: productsLoading, error } = useCollection<Product>(productsQuery);
@@ -42,20 +43,12 @@ export default function ProductsPage() {
     const filteredAndSortedProducts = useMemo(() => {
         if (!products) return [];
         
-        let processedProducts = products
-            // Client-side filtering for availability, approval, category, and search term
-            .filter(p => p.approvalStatus === 'Approved' && p.isAvailable === true)
+        // The query now handles filtering for approval and availability.
+        // We only need to filter for category and search term on the client.
+        return products
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-            
-        // The type assertion is needed because Firestore's Timestamp and JS Date are different
-        processedProducts.sort((a, b) => {
-            const timeA = (a.createdAt as any)?.toMillis?.() || 0;
-            const timeB = (b.createdAt as any)?.toMillis?.() || 0;
-            return timeB - timeA;
-        });
 
-        return processedProducts;
     }, [products, searchTerm, selectedCategory]);
 
     return (
