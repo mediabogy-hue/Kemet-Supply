@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -19,14 +19,10 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch only approved and available products directly from Firestore.
-    // This is the most efficient and reliable method.
+    // More robust query: Fetch all products and filter client-side.
+    // This avoids silent failures from missing Firestore indexes.
     const productsQuery = useMemoFirebase(
-        () => (firestore ? query(
-            collection(firestore, 'products'), 
-            where("approvalStatus", "==", "Approved"),
-            where("isAvailable", "==", true)
-        ) : null),
+        () => (firestore ? query(collection(firestore, 'products')) : null),
         [firestore]
     );
     const { data: products, isLoading: productsLoading, error } = useCollection<Product>(productsQuery);
@@ -36,8 +32,8 @@ export default function ProductsPage() {
             toast({
                 variant: 'destructive',
                 title: 'فشل تحميل المنتجات',
-                description: 'حدث خطأ أثناء جلب البيانات. قد تحتاج قاعدة البيانات إلى فهرس جديد. افتح أدوات المطور (F12) وابحث عن رابط في الـ Console.',
-                duration: 15000,
+                description: 'حدث خطأ أثناء جلب البيانات. الرجاء المحاولة مرة أخرى.',
+                duration: 10000,
             });
             console.error("Product query error:", error);
         }
@@ -46,9 +42,9 @@ export default function ProductsPage() {
     const filteredProducts = useMemo(() => {
         if (!products) return [];
         
-        // The main filtering is now done by the query.
-        // We only need to filter by category and search term on the client.
+        // Perform all filtering on the client-side for maximum robustness.
         return products
+            .filter(p => p.approvalStatus === 'Approved' && p.isAvailable === true)
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm, selectedCategory]);
