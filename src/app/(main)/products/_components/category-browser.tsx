@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { ProductCategory } from '@/lib/types';
 import { useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -20,9 +20,10 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    // Fetch all categories and filter on the client for robustness.
+    // Fetch only available categories directly from Firestore.
+    // This is more efficient and reliable.
     const categoriesQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "productCategories")) : null),
+        () => (firestore ? query(collection(firestore, "productCategories"), where("isAvailable", "==", true)) : null),
         [firestore]
     );
     const { data: categories, isLoading, error } = useCollection<ProductCategory>(categoriesQuery);
@@ -32,7 +33,8 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
             toast({
                 variant: "destructive",
                 title: "فشل تحميل الفئات",
-                description: 'حدث خطأ أثناء جلب البيانات. يرجى التأكد من صلاحيات قراءة قاعدة البيانات.',
+                description: 'حدث خطأ أثناء جلب البيانات. قد تحتاج قاعدة البيانات إلى فهرس جديد. افتح أدوات المطور (F12) وابحث عن رابط في الـ Console.',
+                duration: 15000,
             });
             console.error("Category fetch error:", error);
         }
@@ -40,8 +42,8 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
 
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
-        // Client-side filtering
-        return categories.filter(c => c.isAvailable === true);
+        // No more client-side filtering needed, query handles it.
+        return categories;
     }, [categories]);
 
     return (
@@ -92,7 +94,6 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
                 ))}
                 {!isLoading && (!sortedCategories || sortedCategories.length === 0) && (
                     <div className="col-span-full text-center py-8 text-muted-foreground">
-                        {/* This message will appear if no categories are 'isAvailable: true' */}
                         <p>لم يتم إضافة فئات للمنتجات بعد.</p>
                     </div>
                 )}

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -19,9 +19,14 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch all products, filter on the client. This is more robust against missing index issues.
+    // Fetch only approved and available products directly from Firestore.
+    // This is the most efficient and reliable method.
     const productsQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, 'products')) : null),
+        () => (firestore ? query(
+            collection(firestore, 'products'), 
+            where("approvalStatus", "==", "Approved"),
+            where("isAvailable", "==", true)
+        ) : null),
         [firestore]
     );
     const { data: products, isLoading: productsLoading, error } = useCollection<Product>(productsQuery);
@@ -31,8 +36,8 @@ export default function ProductsPage() {
             toast({
                 variant: 'destructive',
                 title: 'فشل تحميل المنتجات',
-                description: 'حدث خطأ أثناء جلب البيانات. يرجى التأكد من صلاحيات قراءة قاعدة البيانات.',
-                duration: 10000,
+                description: 'حدث خطأ أثناء جلب البيانات. قد تحتاج قاعدة البيانات إلى فهرس جديد. افتح أدوات المطور (F12) وابحث عن رابط في الـ Console.',
+                duration: 15000,
             });
             console.error("Product query error:", error);
         }
@@ -41,8 +46,9 @@ export default function ProductsPage() {
     const filteredProducts = useMemo(() => {
         if (!products) return [];
         
+        // The main filtering is now done by the query.
+        // We only need to filter by category and search term on the client.
         return products
-            .filter(p => p.isAvailable === true && p.approvalStatus === 'Approved')
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm, selectedCategory]);
@@ -75,7 +81,7 @@ export default function ProductsPage() {
                     <div className="col-span-full text-center py-16">
                         <h3 className="text-xl font-semibold">لا توجد منتجات لعرضها</h3>
                         <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                            قد تكون قاعدة البيانات فارغة، أو أن المنتجات الموجودة غير متاحة للتسويق حاليًا.
+                            لا توجد منتجات تطابق الفلاتر الحالية، أو أن قاعدة البيانات فارغة.
                         </p>
                          <Button asChild className="mt-6">
                             <Link href="/admin/dashboard">
