@@ -7,7 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ProductOrderForm } from './product-order-form';
 import { Separator } from '@/components/ui/separator';
 
-export function ProductView({ product, refId }: { product: Product, refId: string | null }) {
+export function ProductView({ product, refId, dropshipperName }: { product: Product, refId: string | null, dropshipperName: string | null }) {
     
     return (
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
@@ -64,7 +64,7 @@ export function ProductView({ product, refId }: { product: Product, refId: strin
                    <p className="whitespace-pre-wrap">{product.description}</p>
                 </div>
 
-                <ProductOrderForm product={product} refId={refId} />
+                <ProductOrderForm product={product} refId={refId} dropshipperName={dropshipperName} />
             </div>
         </div>
     );

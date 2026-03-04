@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -43,9 +44,10 @@ type OrderFormData = z.infer<typeof orderSchema>;
 interface ProductOrderFormProps {
     product: Product;
     refId: string | null;
+    dropshipperName: string | null;
 }
 
-export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
+export function ProductOrderForm({ product, refId, dropshipperName }: ProductOrderFormProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isSuccess, setIsSuccess] = useState(false);
@@ -82,7 +84,7 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
         }
 
         try {
-            const dropshipperName = "المسوق بالعمولة";
+            const finalDropshipperName = dropshipperName || "مسوق غير معروف";
 
             const batch = writeBatch(firestore);
             const orderId = doc(collection(firestore, 'id_generator')).id;
@@ -91,7 +93,7 @@ export function ProductOrderForm({ product, refId }: ProductOrderFormProps) {
             const orderData: any = {
                 id: orderId,
                 dropshipperId: refId,
-                dropshipperName,
+                dropshipperName: finalDropshipperName,
                 customerName: data.customerName,
                 customerPhone: data.customerPhone,
                 customerAddress: data.customerAddress,

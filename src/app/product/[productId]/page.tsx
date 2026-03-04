@@ -1,6 +1,6 @@
 
 import { getAdminDb } from '@/firebase/server-init';
-import type { Product } from '@/lib/types';
+import type { Product, UserProfile } from '@/lib/types';
 import { ProductView } from './_components/product-view';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
@@ -42,6 +42,24 @@ async function getProduct(productId: string): Promise<Product | null> {
     }
 }
 
+async function getDropshipperName(refId: string | null): Promise<string | null> {
+    if (!refId) return null;
+    const db = getAdminDb();
+    if (!db) return null;
+    try {
+        const userRef = db.collection('users').doc(refId);
+        const docSnap = await userRef.get();
+        if (docSnap.exists) {
+            const profile = docSnap.data() as UserProfile;
+            return `${profile.firstName} ${profile.lastName}`.trim();
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching dropshipper name on server:", error);
+        return null;
+    }
+}
+
 
 export default async function PublicProductPage({ 
     params,
@@ -52,6 +70,7 @@ export default async function PublicProductPage({
 }) {
     const product = await getProduct(params.productId);
     const refId = typeof searchParams.ref === 'string' ? searchParams.ref : null;
+    const dropshipperName = await getDropshipperName(refId);
 
     if (!product) {
          return (
@@ -70,7 +89,7 @@ export default async function PublicProductPage({
     
     return (
         <div className="container mx-auto p-4 md:p-8 max-w-6xl">
-            <ProductView product={product} refId={refId} />
+            <ProductView product={product} refId={refId} dropshipperName={dropshipperName} />
         </div>
     );
 }
