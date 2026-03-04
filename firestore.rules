@@ -67,7 +67,10 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{productId} {
-        allow get, list: if isSignedIn();
+        // ANYONE can read a single product document. This is for public product pages.
+        allow get: if true; 
+        // Only signed-in users can list all products.
+        allow list: if isSignedIn();
         allow create: if isAdmin() || isMerchant();
         // Merchant can only update their own products. Admin can update any.
         allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
