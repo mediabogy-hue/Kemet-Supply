@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect } from 'react';
 import Image from 'next/image';
@@ -6,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { ProductCategory } from '@/lib/types';
 import { useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,8 +20,9 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const firestore = useFirestore();
     const { toast } = useToast();
     
+    // Fetch only available categories
     const categoriesQuery = useMemoFirebase(
-        () => (firestore ? query(collection(firestore, "productCategories")) : null),
+        () => (firestore ? query(collection(firestore, "productCategories"), where("isAvailable", "==", true)) : null),
         [firestore]
     );
     const { data: categories, isLoading, error } = useCollection<ProductCategory>(categoriesQuery);
@@ -41,7 +41,6 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
 
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
-        // Temporarily remove filtering to ensure data visibility
         return categories;
     }, [categories]);
 

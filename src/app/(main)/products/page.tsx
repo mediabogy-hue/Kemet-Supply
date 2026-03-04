@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,8 +10,6 @@ import { Search } from 'lucide-react';
 import { CategoryBrowser } from './_components/category-browser';
 import { ProductCard } from './_components/product-card';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -20,6 +17,7 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
+    // Fetch ALL products without any 'where' clauses.
     const productsQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, 'products')) : null),
         [firestore]
@@ -41,8 +39,9 @@ export default function ProductsPage() {
     const filteredProducts = useMemo(() => {
         if (!products) return [];
         
-        // Temporarily remove strict filtering to ensure visibility
+        // Apply business logic filtering on the client-side
         return products
+            .filter(p => p.isAvailable && p.approvalStatus === 'Approved')
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm, selectedCategory]);
@@ -75,7 +74,7 @@ export default function ProductsPage() {
                     <div className="col-span-full text-center py-16">
                         <h3 className="text-xl font-semibold">لا توجد منتجات لعرضها</h3>
                         <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                            يبدو أنه لم تتم إضافة أي منتجات حتى الآن. يرجى مراجعة الأدمن أو التجار.
+                            لا توجد حاليًا منتجات متاحة للتسويق. حاول تغيير الفلاتر أو تحقق مرة أخرى قريبًا.
                         </p>
                     </div>
                 )}
