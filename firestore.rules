@@ -45,7 +45,7 @@ service cloud.firestore {
     // User profiles
     // A user can always read their own profile. Staff can read any profile.
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow get: if isOwner(userId) || isStaff();
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
@@ -56,7 +56,7 @@ service cloud.firestore {
         allow get: if isOwner(userId) || isFinanceManager() || isAdmin();
         // Create/Update is done by staff when processing withdrawals or settling orders.
         // This allows creating a wallet on-the-fly if it's missing.
-        allow create, update: if isStaff();
+        allow create, update: if isStaff() || isAdmin();
     }
     
     // Public Settings
@@ -85,8 +85,8 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      // Allow creation for logged-in users (dropshippers) or anonymous users (customers via affiliate link)
-      allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
+      // Allow creation for logged-in users (dropshippers) or anonymous users (customers via affiliate link) or admins (for seeding)
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
       allow list: if isSignedIn(); // Allow list queries for all signed-in users
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 
@@ -130,7 +130,7 @@ service cloud.firestore {
 
     // Helper collections
     match /id_generator/{docId} {
-        allow create: if isSignedIn() || request.auth == null;
+        allow create: if isSignedIn() || request.auth == null || isAdmin();
     }
     match /webhooks_bosta/{webhookId} {
         allow create: if true; // Webhooks can write
