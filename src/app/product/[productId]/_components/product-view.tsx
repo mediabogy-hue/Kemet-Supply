@@ -80,7 +80,7 @@ function ImageGallery({ images, productName }: { images: string[], productName: 
 }
 
 export function ProductView({ product, refId, dropshipperName }: { product: Product, refId: string | null, dropshipperName: string | null }) {
-    const { user } = useSession();
+    const { user, isLoading: isSessionLoading } = useSession();
     const firestore = useFirestore();
     const { toast } = useToast();
 
@@ -136,7 +136,7 @@ export function ProductView({ product, refId, dropshipperName }: { product: Prod
 
                 <ProductOrderForm product={product} refId={refId} dropshipperName={dropshipperName} />
 
-                {user && (
+                {!isSessionLoading && user && (
                     <Card>
                         <CardHeader>
                             <CardTitle>المحتوى التسويقي</CardTitle>
