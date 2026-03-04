@@ -45,7 +45,7 @@ service cloud.firestore {
     // User profiles
     // A user can always read their own profile. Staff can read any profile.
     match /users/{userId} {
-      allow create: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId) || isStaff();
       allow update: if isOwner(userId) || isAdmin();
       allow list, delete: if isAdmin();
@@ -67,14 +67,14 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{productId} {
-        allow read: if true;
+        allow read: if isSignedIn();
         allow create: if isAdmin() || isMerchant();
         // Merchant can only update their own products. Admin can update any.
         allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
         allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
     }
     match /productCategories/{categoryId} {
-        allow read: if true;
+        allow read: if isSignedIn();
         allow create, update, delete: if isAdmin();
     }
      // Anyone can track a product click via the public page
@@ -85,7 +85,8 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      allow create: if request.resource.data.dropshipperId != null;
+      // Allow creation for logged-in users (dropshippers) or anonymous users (customers via affiliate link)
+      allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
       allow list: if isSignedIn(); // Allow list queries for all signed-in users
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 
