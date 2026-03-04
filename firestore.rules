@@ -43,7 +43,6 @@ service cloud.firestore {
     }
 
     // User profiles
-    // A user can always read their own profile. Staff can read any profile.
     match /users/{userId} {
       allow create: if isOwner(userId) || isAdmin();
       allow get: if isOwner(userId) || isStaff();
@@ -54,8 +53,6 @@ service cloud.firestore {
     // Wallets
     match /wallets/{userId} {
         allow get: if isOwner(userId) || isFinanceManager() || isAdmin();
-        // Create/Update is done by staff when processing withdrawals or settling orders.
-        // This allows creating a wallet on-the-fly if it's missing.
         allow create, update: if isStaff() || isAdmin();
     }
     
@@ -66,17 +63,28 @@ service cloud.firestore {
     }
 
     // Products and Categories
+    match /products/{document=**} {
+      // Rule for listing the collection
+      allow list: if true;
+    }
     match /products/{productId} {
-        allow read: if true;
-        allow create: if isAdmin() || isMerchant();
-        // Merchant can only update their own products. Admin can update any.
-        allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
-        allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
+      // Rule for getting a single document
+      allow get: if true;
+      // Write rules
+      allow create: if isAdmin() || isMerchant();
+      allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
+      allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
+    }
+
+    match /productCategories/{document=**} {
+      allow list: if true;
     }
     match /productCategories/{categoryId} {
-        allow read: if true;
-        allow create, update, delete: if isAdmin();
+      allow get: if true;
+      // Write rules
+      allow create, update, delete: if isAdmin();
     }
+    
      // Anyone can track a product click via the public page
     match /products/{productId}/clicks/{clickId} {
         allow create: if true;
@@ -85,15 +93,13 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      // Allow creation if the order has a dropshipperId. This works for public affiliate links and internal creation.
-      allow create: if request.resource.data.dropshipperId != null;
-      allow list: if isSignedIn(); // Allow list queries for all signed-in users
+      allow create: if (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
+      allow list: if isSignedIn();
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 
         isStaff() ||
         (isMerchant() && resource.data.merchantId == request.auth.uid)
       );
-      // Order manager/Admin can update anything. Merchant can update their own orders.
       allow update: if isOrdersManager() || isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
       allow delete: if isAdmin();
     }
@@ -130,7 +136,7 @@ service cloud.firestore {
 
     // Helper collections
     match /id_generator/{docId} {
-        allow create: if isSignedIn() || request.auth == null || isAdmin();
+        allow create: if isSignedIn() || request.auth == null;
     }
     match /webhooks_bosta/{webhookId} {
         allow create: if true; // Webhooks can write

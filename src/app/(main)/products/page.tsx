@@ -17,7 +17,6 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // Fetch ALL products without any 'where' clauses for maximum reliability.
     const productsQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, 'products')) : null),
         [firestore]
@@ -39,8 +38,8 @@ export default function ProductsPage() {
     const filteredProducts = useMemo(() => {
         if (!products) return [];
         
-        // Apply client-side filtering. Now shows all products regardless of status.
         return products
+            .filter(p => p.approvalStatus === 'Approved' && p.isAvailable)
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm, selectedCategory]);
