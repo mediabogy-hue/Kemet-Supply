@@ -160,10 +160,10 @@ export default function AdminProductsPage() {
                                         {product.approvalStatus === 'Pending' ? (
                                             <div className="flex gap-2 w-full p-2">
                                                 <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleApproval(product, 'Rejected')}>
-                                                    <X className="me-2" /> رفض
+                                                    <X className="me-2 h-4 w-4" /> رفض
                                                 </Button>
                                                 <Button size="sm" className="flex-1" onClick={() => handleApproval(product, 'Approved')}>
-                                                    <Check className="me-2" /> قبول
+                                                    <Check className="me-2 h-4 w-4" /> قبول
                                                 </Button>
                                             </div>
                                         ) : (
