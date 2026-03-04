@@ -67,14 +67,14 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{productId} {
-        allow get, list: if isSignedIn();
+        allow read: if true;
         allow create: if isAdmin() || isMerchant();
         // Merchant can only update their own products. Admin can update any.
         allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
         allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
     }
     match /productCategories/{categoryId} {
-        allow get, list: if isSignedIn();
+        allow read: if true;
         allow create, update, delete: if isAdmin();
     }
      // Anyone can track a product click via the public page
