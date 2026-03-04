@@ -85,8 +85,8 @@ service cloud.firestore {
     
     // Orders
     match /orders/{orderId} {
-      // Allow creation for logged-in users (dropshippers) or anonymous users (customers via affiliate link) or admins (for seeding)
-      allow create: if isAdmin() || (isSignedIn() && request.resource.data.dropshipperId == request.auth.uid) || request.auth == null;
+      // Allow creation if the order has a dropshipperId. This works for public affiliate links and internal creation.
+      allow create: if request.resource.data.dropshipperId != null;
       allow list: if isSignedIn(); // Allow list queries for all signed-in users
       allow get: if isSignedIn() && (
         resource.data.dropshipperId == request.auth.uid || 

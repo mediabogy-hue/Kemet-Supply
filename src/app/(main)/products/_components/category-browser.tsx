@@ -42,7 +42,7 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
         // Apply business logic on the client-side to only show available categories.
-        return categories.filter(c => c.isAvailable === true);
+        return categories;
     }, [categories]);
 
     return (
