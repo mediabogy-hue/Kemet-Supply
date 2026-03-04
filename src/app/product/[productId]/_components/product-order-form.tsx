@@ -23,7 +23,7 @@ const orderSchema = z.object({
     customerAddress: z.string().min(10, "الرجاء إدخال عنوان مفصل"),
     customerCity: z.string().min(1, "الرجاء اختيار المحافظة"),
     quantity: z.number().min(1).max(10),
-    customerPaymentMethod: z.enum(["Cash on Delivery", "Vodafone Cash", "InstaPay"], {
+    customerPaymentMethod: z.enum(["Cash on Delivery", "Vodafone Cash", "InstaPay", "Telda", "Bank Transfer"], {
         required_error: "الرجاء اختيار طريقة الدفع",
     }),
     paymentSenderNumber: z.string().optional(),
@@ -159,6 +159,20 @@ export function ProductOrderForm({ product, refId, dropshipperName }: ProductOrd
             </Card>
         );
     }
+
+    if (product.approvalStatus !== 'Approved') {
+        return (
+            <Card className="bg-yellow-500/10 border-yellow-500/30">
+                <CardHeader>
+                    <CardTitle className="text-yellow-400">المنتج قيد المراجعة</CardTitle>
+                    <CardDescription className="text-yellow-400/80">
+                        هذا المنتج غير متاح للطلب حاليًا لأنه قيد المراجعة من قبل الإدارة.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+    
      if (product.stockQuantity < 1) {
         return (
             <Card className="bg-yellow-500/10 border-yellow-500/30">
@@ -245,6 +259,8 @@ export function ProductOrderForm({ product, refId, dropshipperName }: ProductOrd
                                         <SelectItem value="Cash on Delivery">الدفع عند الاستلام</SelectItem>
                                         <SelectItem value="Vodafone Cash">فودافون كاش (دفع مسبق)</SelectItem>
                                         <SelectItem value="InstaPay">انستا باي (دفع مسبق)</SelectItem>
+                                        <SelectItem value="Telda">تيلدا (دفع مسبق)</SelectItem>
+                                        <SelectItem value="Bank Transfer">تحويل بنكي (دفع مسبق)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
@@ -259,6 +275,8 @@ export function ProductOrderForm({ product, refId, dropshipperName }: ProductOrd
                             </p>
                              {paymentMethod === 'Vodafone Cash' && <p className="font-mono p-2 bg-muted rounded-md text-center">01012345678</p>}
                              {paymentMethod === 'InstaPay' && <p className="font-mono p-2 bg-muted rounded-md text-center">kemet.supply@instapay</p>}
+                             {paymentMethod === 'Telda' && <p className="font-mono p-2 bg-muted rounded-md text-center">@kemet</p>}
+                             {paymentMethod === 'Bank Transfer' && <p className="font-mono p-2 bg-muted rounded-md text-center">QNB - EG12345678901234567890</p>}
 
                             <div className="space-y-2">
                                 <Label htmlFor="paymentSenderNumber">رقم الهاتف الذي تم منه التحويل</Label>

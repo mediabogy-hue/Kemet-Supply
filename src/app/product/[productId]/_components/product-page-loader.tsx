@@ -60,13 +60,14 @@ export async function ProductPageLoader({
         getDropshipperName(refId),
     ]);
     
-    if (!product || product.approvalStatus !== 'Approved' || !product.isAvailable) {
+    // Only check if product exists. The view component will handle availability status.
+    if (!product) {
         return (
             <Card className="bg-destructive/10 border-destructive/30">
                 <CardHeader>
-                    <CardTitle className="text-destructive">عفواً، المنتج غير متوفر</CardTitle>
+                    <CardTitle className="text-destructive">عفواً، المنتج غير موجود</CardTitle>
                     <CardDescription className="text-destructive/80">
-                        قد يكون الرابط الذي تتبعه غير صحيح أو أن المنتج لم يعد متاحاً للعرض.
+                        الرابط الذي تتبعه غير صحيح أو أن المنتج قد تم حذفه.
                     </CardDescription>
                 </CardHeader>
             </Card>
