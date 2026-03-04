@@ -63,23 +63,15 @@ service cloud.firestore {
     }
 
     // Products and Categories
-    match /products/{document=**} {
-      allow read: if true;
-    }
     match /products/{productId} {
-      // `get` and `list` are covered by the rule above.
-      // Write rules
+      allow read: if true;
       allow create: if isAdmin() || isMerchant();
       allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
       allow delete: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
     }
 
-    match /productCategories/{document=**} {
-      allow read: if true;
-    }
     match /productCategories/{categoryId} {
-      // `get` and `list` are covered by the rule above.
-      // Write rules
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
     
