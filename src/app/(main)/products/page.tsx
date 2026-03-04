@@ -7,7 +7,7 @@ import { collection, query } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Search, DatabaseZap } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { CategoryBrowser } from './_components/category-browser';
 import { ProductCard } from './_components/product-card';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +20,6 @@ export default function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    // More robust query: Fetch all products and filter client-side.
-    // This avoids silent failures from missing Firestore indexes.
     const productsQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, 'products')) : null),
         [firestore]
@@ -43,9 +41,8 @@ export default function ProductsPage() {
     const filteredProducts = useMemo(() => {
         if (!products) return [];
         
-        // Perform all filtering on the client-side for maximum robustness.
+        // Temporarily remove strict filtering to ensure visibility
         return products
-            .filter(p => p.approvalStatus === 'Approved' && p.isAvailable === true)
             .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
             .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm, selectedCategory]);
@@ -78,14 +75,8 @@ export default function ProductsPage() {
                     <div className="col-span-full text-center py-16">
                         <h3 className="text-xl font-semibold">لا توجد منتجات لعرضها</h3>
                         <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                            لا توجد منتجات تطابق الفلاتر الحالية، أو أن قاعدة البيانات فارغة.
+                            يبدو أنه لم تتم إضافة أي منتجات حتى الآن. يرجى مراجعة الأدمن أو التجار.
                         </p>
-                         <Button asChild className="mt-6">
-                            <Link href="/admin/dashboard">
-                                <DatabaseZap className="me-2" />
-                                جرب إضافة بيانات تجريبية من لوحة تحكم الأدمن
-                            </Link>
-                        </Button>
                     </div>
                 )}
             </div>

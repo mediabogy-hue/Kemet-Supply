@@ -21,8 +21,6 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    // More robust query: Fetch all categories and filter client-side.
-    // This avoids silent failures from missing Firestore indexes.
     const categoriesQuery = useMemoFirebase(
         () => (firestore ? query(collection(firestore, "productCategories")) : null),
         [firestore]
@@ -43,8 +41,8 @@ export function CategoryBrowser({ selectedCategory, onSelectCategory }: Category
 
     const sortedCategories = useMemo(() => {
         if (!categories) return [];
-        // Filter for available categories on the client for robustness.
-        return categories.filter(category => category.isAvailable);
+        // Temporarily remove filtering to ensure data visibility
+        return categories;
     }, [categories]);
 
     return (
