@@ -64,12 +64,10 @@ service cloud.firestore {
 
     // Products and Categories
     match /products/{document=**} {
-      // Rule for listing the collection
-      allow list: if true;
+      allow read: if true;
     }
     match /products/{productId} {
-      // Rule for getting a single document
-      allow get: if true;
+      // `get` and `list` are covered by the rule above.
       // Write rules
       allow create: if isAdmin() || isMerchant();
       allow update: if isAdmin() || (isMerchant() && resource.data.merchantId == request.auth.uid);
@@ -77,10 +75,10 @@ service cloud.firestore {
     }
 
     match /productCategories/{document=**} {
-      allow list: if true;
+      allow read: if true;
     }
     match /productCategories/{categoryId} {
-      allow get: if true;
+      // `get` and `list` are covered by the rule above.
       // Write rules
       allow create, update, delete: if isAdmin();
     }
