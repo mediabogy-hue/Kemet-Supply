@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 import { collection, doc, serverTimestamp, runTransaction, increment } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { useSession } from "@/auth/SessionProvider";

@@ -5,10 +5,7 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/auth/SessionProvider";
-import { useFirebase } from '@/firebase/provider';
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useDoc } from "@/firebase/firestore/use-doc";
-import { useMemoFirebase } from "@/hooks/useMemoFirebase";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import type { Order, Wallet } from "@/lib/types";
 import { collection, query, where, Timestamp, doc } from "firebase/firestore";
 import { format, subDays } from 'date-fns';
@@ -27,7 +24,7 @@ const SalesChart = dynamic(
 
 export default function DashboardPage() {
     const { user, profile } = useSession();
-    const { firestore } = useFirebase();
+    const firestore = useFirestore();
 
     // === QUERIES ===
     const ordersQuery = useMemoFirebase(() => {

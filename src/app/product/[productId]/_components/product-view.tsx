@@ -4,7 +4,7 @@ import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import { ProductOrderForm } from './product-order-form';
 import { Separator } from '@/components/ui/separator';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { doc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

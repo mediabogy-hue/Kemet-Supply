@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { doc, setDoc, collection, serverTimestamp, getDoc, writeBatch } from 'firebase/firestore';
 import type { Product, UserProfile, Payment } from '@/lib/types';
 import { governorates } from '@/lib/governorates';

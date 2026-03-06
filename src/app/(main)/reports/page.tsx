@@ -2,10 +2,7 @@
 'use client';
 
 import { useSession } from "@/auth/SessionProvider";
-import { useDoc } from "@/firebase/firestore/use-doc";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useMemoFirebase } from "@/hooks/useMemoFirebase";
-import { useFirestore } from "@/firebase/provider";
+import { useDoc, useCollection, useMemoFirebase, useFirestore } from "@/firebase";
 import { doc, collection, query, orderBy } from "firebase/firestore";
 import type { Wallet, WithdrawalRequest } from "@/lib/types";
 

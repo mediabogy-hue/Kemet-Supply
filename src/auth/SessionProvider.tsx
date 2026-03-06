@@ -3,7 +3,7 @@
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { User, onAuthStateChanged, Unsubscribe, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useFirebase } from '@/firebase/provider';
+import { useFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 export interface SessionContextState {
