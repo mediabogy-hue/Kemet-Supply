@@ -1,6 +1,6 @@
 
 
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp, FieldValue } from "firebase/firestore";
 
 // This is based on the `User` entity in `docs/backend.json`
 export interface UserProfile {
@@ -11,8 +11,8 @@ export interface UserProfile {
   lastName: string;
   phone?: string;
   photoURL?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: any;
+  updatedAt?: any;
   isActive?: boolean;
   initialPasswordChangeRequired?: boolean;
   // Level for dropshippers
@@ -21,7 +21,7 @@ export interface UserProfile {
   canTrackShift?: boolean;
   shiftStatus?: 'on' | 'off';
   activeShiftId?: string | null;
-  activeShiftStartTime?: Timestamp | null;
+  activeShiftStartTime?: any;
   // Sales target for dropshippers
   monthlySalesTarget?: number;
   monthlyReward?: number;
@@ -54,8 +54,8 @@ export interface Product {
   imageUrls: string[];
   videoUrl?: string;
   purchaseUrl?: string;
-  createdAt: Timestamp | string; // Allow string for serializability
-  updatedAt: Timestamp | string; // Allow string for serializability
+  createdAt: any; 
+  updatedAt: any; 
   merchantId?: string | null;
   merchantName?: string | null;
 }
@@ -66,8 +66,8 @@ export interface ProductCategory {
   imageUrl: string;
   dataAiHint: string;
   isAvailable: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Order {
@@ -88,13 +88,13 @@ export interface Order {
   totalAmount: number;
   totalCommission: number;
   status: 'Pending' | 'Confirmed' | 'Ready to Ship' | 'Shipped' | 'Delivered' | 'Returned' | 'Canceled';
-  createdAt: Timestamp | string;
-  updatedAt: Timestamp | string;
-  confirmedAt?: Timestamp | string;
-  shippedAt?: Timestamp | string;
-  deliveredAt?: Timestamp | string;
-  returnedAt?: Timestamp | string;
-  canceledAt?: Timestamp | string;
+  createdAt: any;
+  updatedAt: any;
+  confirmedAt?: any;
+  shippedAt?: any;
+  deliveredAt?: any;
+  returnedAt?: any;
+  canceledAt?: any;
   // Denormalized product info
   productId: string;
   productName: string;
@@ -119,7 +119,7 @@ export interface Wallet {
     pendingBalance: number;
     pendingWithdrawals: number;
     totalWithdrawn: number;
-    updatedAt: Timestamp;
+    updatedAt: any;
 }
 
 export interface WithdrawalRequest {
@@ -130,8 +130,8 @@ export interface WithdrawalRequest {
     method: 'Vodafone Cash' | 'InstaPay' | 'Bank Transfer' | 'Telda';
     paymentIdentifier: string; // The phone number, handle, or account number
     status: 'Pending' | 'Completed' | 'Rejected';
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: any;
+    updatedAt: any;
 }
 
 export interface Payment {
@@ -144,8 +144,8 @@ export interface Payment {
     status: 'Pending' | 'Verified' | 'Rejected';
     senderPhoneNumber: string;
     referenceNumber: string;
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: any;
+    updatedAt: any;
 }
 
 export interface AuditLog {
@@ -156,7 +156,7 @@ export interface AuditLog {
     entityId: string;
     oldValue?: string;
     newValue?: string;
-    createdAt: Timestamp;
+    createdAt: any;
 }
 
 export interface Bonus {
@@ -166,7 +166,7 @@ export interface Bonus {
     reason: string;
     adminId: string;
     adminName: string;
-    createdAt: Timestamp;
+    createdAt: any;
 }
 
 export interface Shipment {
@@ -184,9 +184,9 @@ export interface Shipment {
         cod: number;
         total: number;
     },
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
-    lastWebhookAt?: Timestamp;
+    createdAt: any;
+    updatedAt: any;
+    lastWebhookAt?: any;
     lastWebhookStatus?: string;
     lastWebhookPayload?: any;
     createdBy: string; // User ID of creator
@@ -196,7 +196,7 @@ export interface ShipmentEvent {
   id: string;
   status: string;
   description: string;
-  timestamp: Timestamp;
+  timestamp: any;
 }
 
 // For Marketing Automation
@@ -208,8 +208,8 @@ export interface ReferredCustomer {
   channel: 'whatsapp' | 'messenger' | 'instagram' | 'web';
   segment: string; // e.g., 'electronics_interest'
   consentStatus: 'granted' | 'pending' | 'denied';
-  createdAt: Timestamp;
-  lastInteractionAt: Timestamp;
+  createdAt: any;
+  lastInteractionAt: any;
 }
 
 export interface MerchantInquiry {
@@ -220,8 +220,8 @@ export interface MerchantInquiry {
   companyName?: string;
   message: string;
   status: 'New' | 'Contacted' | 'Approved' | 'Rejected';
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt: any;
+  updatedAt?: any;
   adminNotes?: string;
 }
 
@@ -232,7 +232,7 @@ export interface MarketingCampaign {
   channel: 'whatsapp' | 'messenger' | 'instagram';
   messageTemplate: string;
   status: 'draft' | 'active' | 'paused' | 'completed';
-  createdAt: Timestamp;
+  createdAt: any;
 }
 
 export interface AutomationSettings {
