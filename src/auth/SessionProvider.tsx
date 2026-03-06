@@ -26,7 +26,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const { auth, firestore } = useFirebase();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start loading and only set to false when a final state is reached.
+  const [authLoading, setAuthLoading] = useState(true); // For onAuthStateChanged
+  const [profileLoading, setProfileLoading] = useState(false); // For onSnapshot
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -38,42 +39,40 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         unsubscribeProfile = undefined;
       }
       
+      setUser(authUser); // Set user immediately, can be null
+
       if (authUser) {
-        // User is authenticated, now try to fetch their profile.
+        setProfileLoading(true); // Start loading profile since we have an auth user
         const profileDocRef = doc(firestore, 'users', authUser.uid);
+        
         unsubscribeProfile = onSnapshot(profileDocRef, (docSnap) => {
           if (docSnap.exists()) {
-            // SUCCESS: We have an auth user and a profile. The session is valid.
-            setUser(authUser);
             setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
             setError(null);
-            setIsLoading(false); // FINAL STATE: Logged in.
           } else {
-            // CRITICAL ERROR: Auth user exists but no profile document.
-            // This account is in a broken state. Log the user out to prevent infinite loops/broken UI.
-            console.error(`User with UID ${authUser.uid} is authenticated but has no profile document. Forcing sign out.`);
-            signOut(auth); // This triggers onAuthStateChanged again, isLoading remains true until the 'else' block is hit.
+            // Auth user exists but no profile. This is an invalid state.
+            setProfile(null);
+            console.error(`User with UID ${authUser.uid} has no profile. Forcing sign out.`);
+            // Force sign out, which will re-trigger onAuthStateChanged to a clean, logged-out state.
+            signOut(auth);
           }
+          setProfileLoading(false); // Profile loading is complete (or failed but handled).
         }, (profileError) => {
-          // CRITICAL ERROR: Failed to read profile document (e.g., permission denied).
-          console.error("Profile snapshot error, forcing sign out:", profileError);
+          console.error("Profile snapshot error:", profileError);
           setError(profileError);
-          signOut(auth); // This triggers onAuthStateChanged again.
+          setProfileLoading(false); // Finish loading profile (with an error)
         });
       } else {
-        // No authenticated user. This is a stable, valid state.
-        setUser(null);
+        // No auth user, so no profile to load. Reset all states.
         setProfile(null);
-        setError(null);
-        setIsLoading(false); // FINAL STATE: Logged out.
+        setProfileLoading(false);
       }
+      setAuthLoading(false); // Auth check is complete.
     }, (authError) => {
-      // An error occurred in the auth listener itself.
       console.error("Auth state error:", authError);
-      setUser(null);
-      setProfile(null);
       setError(authError);
-      setIsLoading(false); // FINAL STATE: Error.
+      setAuthLoading(false);
+      setProfileLoading(false);
     });
 
     return () => {
@@ -87,6 +86,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo((): SessionContextState => {
     const role = profile?.role || null;
     const isAdmin = role === 'Admin';
+    const isLoading = authLoading || profileLoading;
 
     return {
       user,
@@ -101,7 +101,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isStaff: ['Admin', 'OrdersManager', 'FinanceManager'].includes(role || ''),
       isDropshipper: role === 'Dropshipper',
     };
-  }, [user, profile, isLoading, error]);
+  }, [user, profile, authLoading, profileLoading, error]);
 
   return (
     <SessionContext.Provider value={contextValue}>

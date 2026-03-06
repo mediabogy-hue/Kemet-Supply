@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,9 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useStorage } from "@/firebase/provider";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useMemoFirebase } from "@/hooks/useMemoFirebase";
+import { useFirestore, useStorage, useCollection, useMemoFirebase } from "@/firebase";
 import { doc, updateDoc, serverTimestamp, collection, query, orderBy } from "firebase/firestore";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Loader2, Upload, Trash2 } from "lucide-react";

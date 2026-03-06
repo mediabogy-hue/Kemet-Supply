@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -80,16 +78,16 @@ export function useCollection<T = any>(
         setIsLoading(false);
         setLastUpdated(new Date());
       },
-      (error: FirestoreError) => {
+      (snapshotError: FirestoreError) => {
         // Fallback for permission errors to ensure stability.
-        if (error.code === 'permission-denied') {
+        if (snapshotError.code === 'permission-denied') {
             const contextualError = new FirestorePermissionError({
                 operation: 'list',
                 path: 'a collection', // Use a generic path to avoid relying on internal SDK properties.
             });
             setError(contextualError);
         } else {
-            setError(error);
+            setError(snapshotError);
         }
         
         setData(null);

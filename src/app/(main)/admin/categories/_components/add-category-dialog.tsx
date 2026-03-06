@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
 import { Loader2, PlusCircle } from "lucide-react";

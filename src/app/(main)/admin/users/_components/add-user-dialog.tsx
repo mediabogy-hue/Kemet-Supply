@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useAuth } from "@/firebase/provider";
+import { useFirestore, useAuth } from "@/firebase";
 import { useSession } from "@/auth/SessionProvider";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, writeBatch, collection } from "firebase/firestore";
@@ -116,6 +116,11 @@ export function AddUserDialog() {
         description: "الرجاء ملء جميع الحقول.",
       });
       return;
+    }
+
+    if(!firestore || !auth) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'خدمات Firebase غير متاحة.'});
+        return;
     }
 
     setIsSubmitting(true);
@@ -346,4 +351,3 @@ export function AddUserDialog() {
     </Dialog>
   );
 }
-    

@@ -1,6 +1,4 @@
-
-
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";

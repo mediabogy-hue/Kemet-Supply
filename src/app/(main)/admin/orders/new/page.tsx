@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -101,13 +100,19 @@ export default function NewOrderPage() {
       merchantName: selectedProduct.merchantName || null,
     };
 
-    try {
-        await setDoc(orderRef, orderData);
+    setDoc(orderRef, orderData)
+      .catch(async (error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: orderRef.path,
+          operation: 'create',
+          requestResourceData: orderData,
+        }));
+        toast({ variant: "destructive", title: "حدث خطأ", description: "لم نتمكن من إنشاء الطلب. قد لا تملك الصلاحيات الكافية." });
+      })
+      .then(() => {
         toast({ title: "تم إنشاء الطلب بنجاح!" });
         router.push("/orders");
-    } catch (error) {
-        toast({ variant: "destructive", title: "حدث خطأ", description: "لم نتمكن من إنشاء الطلب. قد لا تملك الصلاحيات الكافية." });
-    }
+      });
   };
 
 
@@ -269,5 +274,3 @@ export default function NewOrderPage() {
       </div>
   );
 }
-
-    

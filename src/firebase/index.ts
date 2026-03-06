@@ -28,3 +28,4 @@ export { useMemoFirebase } from '@/hooks/useMemoFirebase';
 export { errorEmitter } from './error-emitter';
 export { FirestorePermissionError } from './errors';
 export type { AppEvents } from './error-emitter';
+export type { SecurityRuleContext } from './errors';

@@ -1,5 +1,3 @@
-
-
 'use client';
     
 import { useState, useEffect } from 'react';
@@ -76,15 +74,15 @@ export function useDoc<T = any>(
         setIsLoading(false);
         setLastUpdated(new Date());
       },
-      (error: FirestoreError) => {
-        if (error.code === 'permission-denied' && memoizedDocRef) {
+      (snapshotError: FirestoreError) => {
+        if (snapshotError.code === 'permission-denied' && memoizedDocRef) {
             const contextualError = new FirestorePermissionError({
                 operation: 'get',
                 path: memoizedDocRef.path,
             });
             setError(contextualError);
         } else {
-            setError(error);
+            setError(snapshotError);
         }
         
         setData(null);

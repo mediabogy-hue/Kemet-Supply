@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ export function UpdateStockDialog({ product, isOpen, onOpenChange }: UpdateStock
 
     updateDoc(productDocRef, updatedData)
         .then(() => {
-            toast({ title: "تم تحديث المخزون بنجاح!" });
+            onOpenChange(false);
         })
         .catch(async (error: any) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -77,8 +77,6 @@ export function UpdateStockDialog({ product, isOpen, onOpenChange }: UpdateStock
         .finally(() => {
             setIsSubmitting(false);
         });
-    
-    onOpenChange(false);
   };
   
   if (!product) return null;
