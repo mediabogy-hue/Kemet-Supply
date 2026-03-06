@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSession } from "@/auth/SessionProvider";
@@ -11,18 +10,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const { user, role, isLoading } = useSession();
   const router = useRouter();
 
+  // Redirect logged-in users away from auth pages
   useEffect(() => {
-    // Only redirect if we are NOT loading, a user exists, AND they have a valid role.
     if (!isLoading && user && role) {
       const defaultPath = getDefaultPath(role);
       router.replace(defaultPath);
     }
   }, [isLoading, user, role, router]);
 
-  // Show loading indicator while the session is loading OR if a valid user is found
-  // (which means a redirect is about to happen).
+  // Show a loading screen while session is loading or while redirecting a logged-in user.
   if (isLoading || (!isLoading && user && role)) {
-     return (
+    return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Rocket className="h-5 w-5 animate-pulse text-primary" />
@@ -32,7 +30,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // If the session is loaded and there is NO user (or user has no role), show the children (login, register pages).
-  // This prevents the redirect loop for users in a broken state (auth exists, but profile doesn't).
+  // If not loading and no user, show the auth page (e.g., Login).
   return <>{children}</>;
 }
